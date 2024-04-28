@@ -42,7 +42,7 @@
 #include <rte_pcapng.h>
 
 #include "worker.h"
-#include "kage.h"
+#include "handlers/pcapng.h"
 
 /* MAC updating enabled by default */
 static int mac_updating = 1;

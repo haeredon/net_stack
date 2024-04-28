@@ -22,7 +22,7 @@
 #include <rte_string_fns.h>
 #include <rte_pcapng.h>
 
-#include "kage.h"
+#include "pcapng.h"
 #include "worker.h"
 
 

@@ -5,7 +5,8 @@
 APP = l2fwd
 
 # all source are stored in SRCS-y
-SRCS-y := main.c worker.c kage.c
+SRCS-y := main.c worker.c handlers/pcapng.c
+INCLUDES := -I ./
 
 PKGCONF ?= pkg-config
 
@@ -37,10 +38,10 @@ endif
 endif
 
 build/$(APP)-shared: $(SRCS-y) Makefile $(PC_FILE) | build
-	$(CC) $(CFLAGS) $(SRCS-y) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+	$(CC) $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 build/$(APP)-static: $(SRCS-y) Makefile $(PC_FILE) | build
-	$(CC) $(CFLAGS) $(SRCS-y) -o $@ $(LDFLAGS) $(LDFLAGS_STATIC)
+	$(CC) $(CFLAGS) $(SRCS-y) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_STATIC)
 
 build:
 	@mkdir -p $@

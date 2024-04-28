@@ -57,6 +57,8 @@ void pcapng_init_handler(struct handler_t* handler) {
 
     kage->pcap_fd = pcap_fd;
     kage->mem_pool = pool;
+
+    handler->priv = (void*) kage;
 }
 
 void pcapng_close_handler(struct handler_t* handler) {
@@ -84,8 +86,6 @@ uint16_t pcapng_read(struct rte_mbuf** packets, uint16_t num_packets, struct int
     if(num_written < 0) {
         RTE_LOG(ERR, USER1, "Failed to write pcapng packages to file, rte_errno: %u\n", rte_errno);        
         return -1;
-    } else if(num_written != i) {
-        RTE_LOG(ERR, USER1, "Did not write all packets to pcapng. Supposed to write %u, but wrote %u, rte_errno: \n", i, num_written);        
     }
 
     return i;

@@ -72,8 +72,8 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 
 		for (j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer[1] = { pkts_burst[j] };
-			rte_prefetch0(rte_pktmbuf_mtod(m, void *)); // learn more about this statement!!!
-			handlers->operations.read(buffer, nb_rx, interface, handlers->priv);
+			rte_prefetch0(rte_pktmbuf_mtod(buffer[0], void *)); // learn more about this statement!!!
+			handlers->operations.read(buffer, 1, interface, handlers->priv);
 		}
 
 		/* >8 End of read packet from RX queues. */
@@ -84,8 +84,12 @@ int worker_start_lcore_worker(void* setups) {
 	unsigned lcore_id = rte_lcore_id();
 
 	struct lcore_setup_t* lcore_setup = (struct lcore_setup_t*) setups;
+
+	lcore_setup->handlers->init(lcore_setup->handlers);
+
 	worker_main_loop(lcore_setup);
 	
+	lcore_setup->handlers->close(lcore_setup->handlers);
 
 	return 0;	
 }

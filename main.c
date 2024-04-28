@@ -963,7 +963,7 @@ main(int argc, char **argv)
 
 	ret = 0;
 	/* launch per-lcore init on every lcore */
-	rte_eal_mp_remote_launch(worker_start_lcore_worker, &setup, CALL_MAIN);
+	rte_eal_mp_remote_launch(worker_start_lcore_worker, setup, CALL_MAIN);
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {
 		if (rte_eal_wait_lcore(lcore_id) < 0) {
 			ret = -1;

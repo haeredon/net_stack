@@ -57,7 +57,7 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 
 	lcore_id = rte_lcore_id();
 	struct interface_t* interface = &setup->interface;
-	struct handler_t* handlers = setup->handlers;
+	struct handler_t** handlers = setup->handlers;
 
 	RTE_LOG(INFO, L2FWD, "entering main loop on lcore %u\n", lcore_id);
 
@@ -73,7 +73,10 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 		for (j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer[1] = { pkts_burst[j] };
 			rte_prefetch0(rte_pktmbuf_mtod(buffer[0], void *)); // learn more about this statement!!!
-			handlers->operations.read(buffer, 1, interface, handlers->priv);
+
+			for (uint8_t i = 0; i < setup->num_handlers; i++) {
+				handlers[i]->operations.read(buffer, 1, interface, handlers[i]->priv);	
+			}
 		}
 
 		/* >8 End of read packet from RX queues. */
@@ -85,11 +88,17 @@ int worker_start_lcore_worker(void* setups) {
 
 	struct lcore_setup_t* lcore_setup = (struct lcore_setup_t*) setups;
 
-	lcore_setup->handlers->init(lcore_setup->handlers);
-
+	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
+		struct handler_t* handler = lcore_setup->handlers[i];
+		handler->init(handler);
+	}
+	
 	worker_main_loop(lcore_setup);
 	
-	lcore_setup->handlers->close(lcore_setup->handlers);
+	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
+		struct handler_t* handler = lcore_setup->handlers[i];
+		handler->close(handler);
+	}
 
 	return 0;	
 }

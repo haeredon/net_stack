@@ -821,8 +821,11 @@ main(int argc, char **argv)
 	struct lcore_setup_t* setup = (struct lcore_setup_t*) rte_zmalloc("Lcore setup", sizeof(struct lcore_setup_t), 0);	
 	setup->interface.port = 0;
 	setup->interface.queue = 0;
-	setup->handlers = pcapng_create_handler();
-
+	
+	setup->handlers = (struct handler_t**) rte_zmalloc("handler array", sizeof(struct handler_t*) * 1, 0);
+	setup->handlers[0] = pcapng_create_handler();
+	setup->num_handlers = 1;
+	
 	nb_mbufs = RTE_MAX(nb_ports * (nb_rxd + nb_txd + MAX_PKT_BURST +
 		nb_lcores * MEMPOOL_CACHE_SIZE), 8192U);
 

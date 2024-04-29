@@ -24,7 +24,8 @@ struct handler_t {
 
 struct lcore_setup_t {
     struct interface_t interface;
-    struct handler_t* handlers;
+    struct handler_t** handlers;
+    uint8_t num_handlers;
 };
 
 int worker_start_lcore_worker(void* setups);

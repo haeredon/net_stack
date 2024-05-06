@@ -1,0 +1,10 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/skod/net_stack/build",
+            "binaryPath": "/home/skod/net_stack/build/l2fwd-shared",
+            "binaryArgs": ["-l", "0", "-n", "4", "--in-memory" "--", "-q", "8", "-p", "0x3", "-P"]
+        }
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
+}

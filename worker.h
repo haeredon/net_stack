@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <rte_mbuf.h>
+
 #define MAX_PKT_BURST 32
 
 struct interface_t {
@@ -11,7 +13,7 @@ struct interface_t {
 };
 
 struct operations_t {
-    uint16_t (*read)(struct rte_mbuf** packets, uint16_t num_packets, struct interface_t* interface, void* priv);    
+    uint16_t (*read)(struct rte_mbuf* buffer, struct interface_t* interface, void* priv);    
 };
 
 struct handler_t {

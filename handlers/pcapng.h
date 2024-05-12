@@ -12,7 +12,7 @@ void pcapng_close_handler(struct handler_t* handler);
 
 void pcapng_init_handler(struct handler_t* handler);
 
-uint16_t pcapng_read(struct rte_mbuf** packets, uint16_t num_packets, struct interface_t* interface, void* priv);
+uint16_t pcapng_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv);
 
 struct handler_t* pcapng_create_handler();
 

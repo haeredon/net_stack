@@ -67,28 +67,25 @@ void pcapng_close_handler(struct handler_t* handler) {
 }
 
 
-uint16_t pcapng_read(struct rte_mbuf** packets, uint16_t num_packets, struct interface_t* interface, void* priv) {
+uint16_t pcapng_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv) {
     struct kage_t* kage = (struct kage_t*) priv;
+
+    struct rte_mbuf* pcap_buffers[1];
     
-    struct rte_mbuf* buffers[num_packets];
+    pcap_buffers[0] = rte_pcapng_copy(interface->port, interface->queue, buffer, kage->mem_pool, 8192U, RTE_PCAPNG_DIRECTION_IN, "");
 
-    uint16_t i = 0;
-    for (; i < num_packets; i++) {
-        buffers[i] = rte_pcapng_copy(interface->port, interface->queue, packets[i], kage->mem_pool, 8192U, RTE_PCAPNG_DIRECTION_IN, "");
-
-        if(buffers[i] == NULL) {
-            RTE_LOG(ERR, USER1, "Could not copy incoming package to pcapng, rte_errno: %u\n", rte_errno);        
-        }
+    if(pcap_buffers[0] == NULL) {
+        RTE_LOG(ERR, USER1, "Could not copy incoming package to pcapng, rte_errno: %u\n", rte_errno);        
     }
 
-    int num_written = rte_pcapng_write_packets(kage->pcap_fd, buffers, i);
+    int num_written = rte_pcapng_write_packets(kage->pcap_fd, pcap_buffers, 1);
 
     if(num_written < 0) {
         RTE_LOG(ERR, USER1, "Failed to write pcapng packages to file, rte_errno: %u\n", rte_errno);        
         return -1;
     }
 
-    return i;
+    return 0;
 }
 
 struct handler_t* pcapng_create_handler() {

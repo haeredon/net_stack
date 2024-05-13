@@ -43,6 +43,8 @@
 
 #include "worker.h"
 #include "handlers/pcapng.h"
+#include "handlers/ethernet.h"
+#include "handlers/arp.h"
 
 /* MAC updating enabled by default */
 static int mac_updating = 1;
@@ -669,7 +671,7 @@ check_all_ports_link_status(uint32_t port_mask)
 				continue;
 			}
 			/* clear all_ports_up flag if any link down */
-			if (link.link_status == RTE_ETH_LINK_DOWN) {
+			if (link.link_status == RTE_ETH_LINK_DOWN && portid != 1) {
 				all_ports_up = 0;
 				break;
 			}
@@ -822,9 +824,13 @@ main(int argc, char **argv)
 	setup->interface.port = 0;
 	setup->interface.queue = 0;
 	
-	setup->handlers = (struct handler_t**) rte_zmalloc("handler array", sizeof(struct handler_t*) * 1, 0);
+	setup->handlers = (struct handler_t**) rte_zmalloc("handler array", sizeof(struct handler_t*) * 2, 0);
 	setup->handlers[0] = pcapng_create_handler();
-	setup->num_handlers = 1;
+	setup->handlers[1] = ethernet_create_handler();
+	setup->num_handlers = 2;
+
+	struct handler_t* arp_handler = arp_create_handler();
+	
 	
 	nb_mbufs = RTE_MAX(nb_ports * (nb_rxd + nb_txd + MAX_PKT_BURST +
 		nb_lcores * MEMPOOL_CACHE_SIZE), 8192U);

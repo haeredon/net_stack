@@ -64,6 +64,7 @@ void pcapng_init_handler(struct handler_t* handler) {
 void pcapng_close_handler(struct handler_t* handler) {
     struct kage_t* kage = (struct kage_t*) handler->priv;
     rte_pcapng_close(kage->pcap_fd);
+    rte_free(kage);
 }
 
 

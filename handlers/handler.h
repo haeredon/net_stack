@@ -16,7 +16,7 @@ int add_value(struct key_val_t* key_vals, uint64_t key, void* value);
 
 
 #define ADD_TO_PRIORITY(KEYS_TO_VALS, KEY, VALUE) ( \
-    add_value(KEY, (void*) VALUE) \
+    add_value(KEYS_TO_VALS, KEY, (void*) VALUE) \
 )
 
 #define GET_FROM_PRIORITY(KEYS_TO_VALS, KEY, TYPE) ( \

@@ -9,11 +9,11 @@ struct key_val_t ethernet_type_to_handler[ETHERNET_NUM_ETH_TYPE_ENTRIES];
 void ethernet_init_handler(struct handler_t* handler) {
     struct ethernet_priv_t* ethernet_priv = (struct ethernet_priv_t*) rte_zmalloc("pcap handler private data", sizeof(struct ethernet_priv_t), 0); 
     handler->priv = (void*) ethernet_priv;
-
 }
 
 void ethernet_close_handler(struct handler_t* handler) {
-    // nothing to do
+    struct ethernet_priv_t* private = (struct ethernet_priv_t*) handler->priv;    
+    rte_free(private);
 }
 
 uint16_t ethernet_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv) {   

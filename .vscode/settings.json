@@ -13,6 +13,7 @@
         "stdint-gcc.h": "c",
         "algorithm": "c",
         "functional": "c",
-        "rte_malloc.h": "c"
+        "rte_malloc.h": "c",
+        "worker.h": "c"
     }
 }

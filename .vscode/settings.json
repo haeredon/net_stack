@@ -14,6 +14,12 @@
         "algorithm": "c",
         "functional": "c",
         "rte_malloc.h": "c",
-        "worker.h": "c"
+        "worker.h": "c",
+        "rte_prefetch.h": "c",
+        "rte_mempool.h": "c",
+        "rte_ethdev.h": "c",
+        "rte_mbuf.h": "c",
+        "rte_mbuf_ptype.h": "c",
+        "rte_mbuf_core.h": "c"
     }
 }

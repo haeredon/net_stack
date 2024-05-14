@@ -3,8 +3,12 @@
 
 #include <rte_malloc.h>
 
+struct key_val_t key_vals[ETHERNET_NUM_ETH_TYPE_ENTRIES];
+struct priority_map_t ethernet_type_to_handler = { 
+    .max_size = ETHERNET_NUM_ETH_TYPE_ENTRIES,
+    .map = key_vals
+};
 
-struct key_val_t ethernet_type_to_handler[ETHERNET_NUM_ETH_TYPE_ENTRIES];
 
 void ethernet_init_handler(struct handler_t* handler) {
     struct ethernet_priv_t* ethernet_priv = (struct ethernet_priv_t*) rte_zmalloc("pcap handler private data", sizeof(struct ethernet_priv_t), 0); 
@@ -22,7 +26,7 @@ uint16_t ethernet_read(struct rte_mbuf* buffer, struct interface_t* interface, v
 
     if(header->ethernet_type > 0x0600) {
         struct handler_t* handler = GET_FROM_PRIORITY(
-            ethernet_type_to_handler,
+            &ethernet_type_to_handler,
             header->ethernet_type, 
             struct handler_t
         );

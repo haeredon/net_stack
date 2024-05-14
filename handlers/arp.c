@@ -30,5 +30,5 @@ struct handler_t* arp_create_handler() {
 
     handler->operations.read = arp_read;
 
-    ADD_TO_PRIORITY(ethernet_type_to_handler, htons(0x86dd), handler);
+    ADD_TO_PRIORITY(&ethernet_type_to_handler, htons(0x86dd), handler);
 }

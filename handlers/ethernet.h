@@ -18,7 +18,7 @@ struct ethernet_header_t
 };
 
 
-extern struct key_val_t ethernet_type_to_handler[ETHERNET_NUM_ETH_TYPE_ENTRIES];
+extern struct priority_map_t ethernet_type_to_handler;
 
 
 void ethernet_close_handler(struct handler_t* handler);

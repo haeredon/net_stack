@@ -3,8 +3,10 @@
 #include "handlers/handler.h"
 
 
-int add_value(struct key_val_t* key_vals, uint64_t key, void* value) {
-    for (size_t i = 0; key_vals[i].key != 0 ; i++) {
+int add_value(struct priority_map_t* map, uint64_t key, void* value) {
+    struct key_val_t* key_vals = map->map;
+
+    for (size_t i = 0; i < map->max_size ; i++) {
         struct key_val_t* key_val = &key_vals[i];
 
         if(!key_val->key) {
@@ -20,8 +22,10 @@ int add_value(struct key_val_t* key_vals, uint64_t key, void* value) {
     return -1;     
 }
 
-void* get_value(struct key_val_t* key_vals, uint16_t key) {
-    for (uint8_t i = 0 ; key_vals[i].key != 0 ; i++) {
+void* get_value(struct priority_map_t* map, uint16_t key) {
+    struct key_val_t* key_vals = map->map;
+
+    for (uint8_t i = 0 ; i < map->max_size && key_vals[i].key != 0 ; i++) {
         struct key_val_t* key_val = &key_vals[i];
 
         if(key_val->key == key) {

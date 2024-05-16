@@ -19,7 +19,7 @@ void arp_init_handler(struct handler_t* handler) {
     handler->priv = (void*) arp_priv;
 }
 
-uint16_t arp_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv) {
+uint16_t arp_read(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, void* priv) {
     RTE_LOG(INFO, USER1, "ARP read handler called.\n");   
 
     struct arp_header_t* header = rte_pktmbuf_mtod(buffer, struct arp_header_t*);

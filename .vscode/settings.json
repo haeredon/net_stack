@@ -20,6 +20,23 @@
         "rte_ethdev.h": "c",
         "rte_mbuf.h": "c",
         "rte_mbuf_ptype.h": "c",
-        "rte_mbuf_core.h": "c"
+        "rte_mbuf_core.h": "c",
+        "rte_branch_prediction.h": "c",
+        "rte_random.h": "c",
+        "rte_ether.h": "c",
+        "rte_string_fns.h": "c",
+        "rte_pcapng.h": "c",
+        "rte_debug.h": "c",
+        "rte_interrupts.h": "c",
+        "rte_lcore.h": "c",
+        "rte_cycles.h": "c",
+        "rte_eal.h": "c",
+        "rte_per_lcore.h": "c",
+        "rte_memory.h": "c",
+        "rte_log.h": "c",
+        "rte_common.h": "c",
+        "rte_memcpy.h": "c",
+        "rte_launch.h": "c",
+        "arp.h": "c"
     }
 }

@@ -184,23 +184,86 @@ static uint64_t timer_period = 10; /* default period is 10 seconds */
 // }
 
 // /* Simple forward. 8< */
-// static void
-// l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
-// {
-// 	unsigned dst_port;
-// 	int sent;
-// 	struct rte_eth_dev_tx_buffer *buffer;
+static void
+l2fwd_simple_forward(struct rte_mbuf *m) {
+	unsigned portid = 1; // hardcoded for now. we sent from id 1 to id 0
+	unsigned dst_port = 0;
+	int sent;
+	struct rte_eth_dev_tx_buffer *buffer;
 
-// 	dst_port = l2fwd_dst_ports[portid];
+	dst_port = l2fwd_dst_ports[portid];
 
-// 	if (mac_updating)
-// 		l2fwd_mac_updating(m, dst_port);
+ 	buffer = tx_buffer[dst_port];
+ 	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
+ }
 
-// 	buffer = tx_buffer[dst_port];
-// 	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
-// 	if (sent)
-// 		port_statistics[dst_port].tx += sent;
-// }
+ void pcapng_to_mbuf() {
+
+ }
+
+ struct packet_block_t {
+	uint32_t block_type;
+	uint32_t block_length;
+	uint32_t interface_id;
+	uint32_t timestamp_upper;
+	uint32_t timestamp_lower;
+	uint32_t captured_package_length;
+	uint32_t original_packet_length;
+	uint8_t packet_data;
+ };
+
+
+#define PACKET_BLOCK 6
+
+ void read_pcapng() {
+	/* Create the mbuf pool. 8< */
+	struct rte_mempool* pool = rte_pktmbuf_pool_create("mbuf_pool_2", 8192U,
+		MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
+		rte_socket_id());
+	if (pool == NULL)
+		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
+
+
+	FILE* fd = fopen("kage.pcap", "rb");
+
+	if(!fd) {
+		printf("Could not open pcapng file. errno: %d\n", errno);
+	}
+// 65535
+	
+	fpos_t position;
+	uint32_t buffer[2];
+
+
+	while(!feof(fd)) {
+		fread(buffer, sizeof(buffer), 1, fd);
+
+		if(ferror(fd)) {
+			printf("Failed to read pcapng file. errno %d\n", errno);			
+			exit(1);
+		}
+
+		struct packet_block_t* packet_block = (struct packet_block_t*) buffer;
+
+		if(packet_block->block_type == PACKET_BLOCK) {
+			uint32_t packet_length = packet_block->captured_package_length;
+
+			struct rte_mbuf* packet = rte_pktmbuf_alloc(pool);
+			uint8_t* new_packet_block = rte_pktmbuf_mtod(packet, uint8_t*);
+
+			packet->data_len = packet_length;
+			packet->pkt_len = packet_length;
+
+
+
+			memcpy(new_packet_block, &packet_block->packet_data, packet_length);
+		}
+
+		printf("Do something\n");
+	}
+
+
+ }
 // /* >8 End of simple forward. */
 
 // /* main processing loop */
@@ -726,6 +789,8 @@ main(int argc, char **argv)
 	force_quit = false;
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
+
+	read_pcapng();
 
 	/* parse application arguments (after the EAL ones) */
 	ret = l2fwd_parse_args(argc, argv);

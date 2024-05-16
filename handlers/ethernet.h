@@ -21,12 +21,6 @@ struct ethernet_header_t
 extern struct priority_map_t ethernet_type_to_handler;
 
 
-void ethernet_close_handler(struct handler_t* handler);
-
-void ethernet_init_handler(struct handler_t* handler);
-
-uint16_t ethernet_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv);
-
 struct handler_t* ethernet_create_handler();
 
 

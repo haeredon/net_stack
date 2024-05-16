@@ -13,7 +13,7 @@ struct interface_t {
 };
 
 struct operations_t {
-    uint16_t (*read)(struct rte_mbuf* buffer, struct interface_t* interface, void* priv);    
+    uint16_t (*read)(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, void* priv);    
 };
 
 struct handler_t {

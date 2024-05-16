@@ -20,7 +20,7 @@ void ethernet_close_handler(struct handler_t* handler) {
     rte_free(private);
 }
 
-uint16_t ethernet_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv) {   
+uint16_t ethernet_read(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, void* priv) {   
 
     struct ethernet_header_t* header = rte_pktmbuf_mtod(buffer, struct ethernet_header_t*);
 
@@ -32,7 +32,7 @@ uint16_t ethernet_read(struct rte_mbuf* buffer, struct interface_t* interface, v
         );
 
         if(handler) {
-            handler->operations.read(buffer, interface, priv);            
+            handler->operations.read(buffer, sizeof(struct ethernet_header_t), interface, priv);            
         } else {
             RTE_LOG(WARNING, USER1, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
         }        

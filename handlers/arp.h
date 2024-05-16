@@ -25,11 +25,6 @@ struct ipv4_arp_t {
     uint32_t target_protocol_addr[4];
 };
 
-void arp_close_handler(struct handler_t* handler);
-
-void arp_init_handler(struct handler_t* handler);
-
-uint16_t arp_read(struct rte_mbuf* buffer, struct interface_t* interface, void* priv);
 
 struct handler_t* arp_create_handler();
 

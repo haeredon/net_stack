@@ -212,10 +212,46 @@ l2fwd_simple_forward(struct rte_mbuf *m) {
 	uint8_t packet_data;
  };
 
+ struct pcapng_reader_t {
+	uint8_t (*init)(struct pcapng_reader_t* reader);
+	uint8_t (*read)(struct pcapng_reader_t* reader, void* buffer, uint32_t num_read);
+	uint8_t (*has_more_headers)(struct pcapng_reader_t* reader);
+	FILE* file;
+ };
+
+ uint8_t pcapng_init(struct pcapng_reader_t* reader) {
+	reader->file = fopen("test.pcapng", "rb");
+
+	if(!reader->file) {
+		printf("Could not open pcapng file. errno: %d\n", errno);
+		return 1;
+	}
+	return 0;
+ }
+
+ uint8_t pcapng_read2(struct pcapng_reader_t* reader, void* buffer, uint32_t num_read) {
+	uint32_t header_bytes_read = 0;
+	while(!feof(reader->file) && header_bytes_read != num_read) {
+		header_bytes_read += fread(buffer + header_bytes_read, 1, num_read - header_bytes_read, reader->file);
+
+		if(ferror(reader->file)) {
+			printf("Failed to read pcapng file. errno %d\n", errno);			
+			return 1;
+		}
+	}
+	return 0;
+ }
+
+ uint8_t pcapng_has_more_headers(struct pcapng_reader_t* reader) {
+	return !feof(reader->file);
+ }
+
 
 #define PACKET_BLOCK 6
 
- void read_pcapng() {
+ void send_test_data(struct pcapng_reader_t* reader) {
+	uint8_t block_buffer[0xFFFF]; // 65535 bytes
+
 	/* Create the mbuf pool. 8< */
 	struct rte_mempool* pool = rte_pktmbuf_pool_create("mbuf_pool_2", 8192U,
 		MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
@@ -223,46 +259,47 @@ l2fwd_simple_forward(struct rte_mbuf *m) {
 	if (pool == NULL)
 		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
 
-
-	FILE* fd = fopen("kage.pcap", "rb");
-
-	if(!fd) {
-		printf("Could not open pcapng file. errno: %d\n", errno);
+	if(reader->init(reader)) {
+			exit(1);
 	}
-// 65535
-	
-	fpos_t position;
-	uint32_t buffer[2];
 
+	int i = 0;
 
-	while(!feof(fd)) {
-		fread(buffer, sizeof(buffer), 1, fd);
+	while(reader->has_more_headers(reader)) {
+		const static uint8_t HEADER_SIZE = 32;
 
-		if(ferror(fd)) {
-			printf("Failed to read pcapng file. errno %d\n", errno);			
+		memset(block_buffer, 0, 0xFFFF);
+				
+		if(reader->read(reader, block_buffer, HEADER_SIZE)) {
 			exit(1);
 		}
 
-		struct packet_block_t* packet_block = (struct packet_block_t*) buffer;
+		struct packet_block_t* packet_block = (struct packet_block_t*) block_buffer;
 
+		if(reader->read(reader, block_buffer + HEADER_SIZE, packet_block->block_length - HEADER_SIZE)) {
+			exit(1);
+		}
+		
 		if(packet_block->block_type == PACKET_BLOCK) {
 			uint32_t packet_length = packet_block->captured_package_length;
 
 			struct rte_mbuf* packet = rte_pktmbuf_alloc(pool);
-			uint8_t* new_packet_block = rte_pktmbuf_mtod(packet, uint8_t*);
 
 			packet->data_len = packet_length;
 			packet->pkt_len = packet_length;
 
-
+			uint8_t* new_packet_block = rte_pktmbuf_mtod(packet, uint8_t*);
 
 			memcpy(new_packet_block, &packet_block->packet_data, packet_length);
+
+			printf("DONE: %d\n", ++i);
+
+			// go on to put it on the trasnmission queue
 		}
 
-		printf("Do something\n");
+		int kage = reader->has_more_headers(reader);
+		int e = 3;
 	}
-
-
  }
 // /* >8 End of simple forward. */
 
@@ -790,7 +827,13 @@ main(int argc, char **argv)
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
 
-	read_pcapng();
+	struct pcapng_reader_t pcapng_reader = {
+		.init = pcapng_init,
+		.read = pcapng_read2,
+		.has_more_headers = pcapng_has_more_headers
+	};
+
+	send_test_data(&pcapng_reader);
 
 	/* parse application arguments (after the EAL ones) */
 	ret = l2fwd_parse_args(argc, argv);

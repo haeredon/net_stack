@@ -50,7 +50,6 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 	unsigned lcore_id;
 	uint64_t prev_tsc, diff_tsc, cur_tsc, timer_tsc;
 	unsigned i, j, portid, nb_rx;
-	struct lcore_queue_conf *qconf;
 
 	prev_tsc = 0;
 	timer_tsc = 0;

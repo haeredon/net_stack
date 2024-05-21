@@ -168,7 +168,7 @@ static uint64_t timer_period = 10; /* default period is 10 seconds */
 // }
 
 // static void
-// l2fwd_mac_updating(struct rte_mbuf *m, unsigned dest_portid)
+// l2fwd_mac_updating(struct rte_mbuf *m)
 // {
 // 	struct rte_ether_hdr *eth;
 // 	void *tmp;
@@ -177,130 +177,179 @@ static uint64_t timer_period = 10; /* default period is 10 seconds */
 
 // 	/* 02:00:00:00:00:xx */
 // 	tmp = &eth->dst_addr.addr_bytes[0];
-// 	*((uint64_t *)tmp) = 0x000000000002 + ((uint64_t)dest_portid << 40);
+// 	*((uint64_t *)tmp) = 0x000000000002 + ((uint64_t)0 << 40);
 
-// 	/* src addr */
-// 	rte_ether_addr_copy(&l2fwd_ports_eth_addr[dest_portid], &eth->src_addr);
+// 	rte_ether_addr_copy(&l2fwd_ports_eth_addr[1], &eth->src_addr);
 // }
 
-// /* Simple forward. 8< */
+// // /* Simple forward. 8< */
+
+/* Frame (60 bytes) */
+static const unsigned char pkt47[60] = {
+0x04, 0xd4, 0xc4, 0x52, 0x7d, 0x67, 0x6c, 0xb3, /* ...R}gl. */
+0x11, 0x57, 0x84, 0xbb, 0x08, 0x06, 0x00, 0x01, /* ...\.... */
+0x08, 0x00, 0x06, 0x04, 0x00, 0x01, 0x6c, 0xba, /* ......l. */
+0xb8, 0xec, 0xd0, 0x5c, 0xc0, 0xa8, 0x00, 0x01, /* ...\.... */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0xa8, /* ........ */
+0x00, 0x75, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* .u...... */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* ........ */
+0x00, 0x00, 0x00, 0x00                          /* .... */
+};
+
+
+// static void
+// l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
+// {
+// 	unsigned dst_port;
+// 	int sent;
+// 	struct rte_eth_dev_tx_buffer *buffer;
+
+// 	dst_port = l2fwd_dst_ports[portid];
+
+// 	if (mac_updating)
+// 		l2fwd_mac_updating(m, dst_port);
+
+// 	buffer = tx_buffer[dst_port];
+// 	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
+// 	if (sent)
+// 		port_statistics[dst_port].tx += sent;
+// }
+
 static void
-l2fwd_simple_forward(struct rte_mbuf *m) {
-	unsigned portid = 1; // hardcoded for now. we sent from id 1 to id 0
-	unsigned dst_port = 0;
-	int sent;
-	struct rte_eth_dev_tx_buffer *buffer;
+l2fwd_simple_forward(struct rte_mempool * pool) {
+int i = 0;
 
-	dst_port = l2fwd_dst_ports[portid];
+	rte_delay_ms(6000);
 
- 	buffer = tx_buffer[dst_port];
- 	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
- }
+	while(i++ != 35){
 
- void pcapng_to_mbuf() {
+		struct rte_mbuf* packet = rte_pktmbuf_alloc(pool);
 
- }
+		packet->data_len = 60;
+		packet->pkt_len = 60;
 
- struct packet_block_t {
-	uint32_t block_type;
-	uint32_t block_length;
-	uint32_t interface_id;
-	uint32_t timestamp_upper;
-	uint32_t timestamp_lower;
-	uint32_t captured_package_length;
-	uint32_t original_packet_length;
-	uint8_t packet_data;
- };
+		uint8_t* new_packet_block = rte_pktmbuf_mtod(packet, uint8_t*);
 
- struct pcapng_reader_t {
-	uint8_t (*init)(struct pcapng_reader_t* reader);
-	uint8_t (*read)(struct pcapng_reader_t* reader, void* buffer, uint32_t num_read);
-	uint8_t (*has_more_headers)(struct pcapng_reader_t* reader);
-	FILE* file;
- };
-
- uint8_t pcapng_init(struct pcapng_reader_t* reader) {
-	reader->file = fopen("test.pcapng", "rb");
-
-	if(!reader->file) {
-		printf("Could not open pcapng file. errno: %d\n", errno);
-		return 1;
-	}
-	return 0;
- }
-
- uint8_t pcapng_read2(struct pcapng_reader_t* reader, void* buffer, uint32_t num_read) {
-	uint32_t header_bytes_read = 0;
-	while(!feof(reader->file) && header_bytes_read != num_read) {
-		header_bytes_read += fread(buffer + header_bytes_read, 1, num_read - header_bytes_read, reader->file);
-
-		if(ferror(reader->file)) {
-			printf("Failed to read pcapng file. errno %d\n", errno);			
-			return 1;
-		}
-	}
-	return 0;
- }
-
- uint8_t pcapng_has_more_headers(struct pcapng_reader_t* reader) {
-	return !feof(reader->file);
- }
+		memcpy(new_packet_block, &pkt47, 60);
 
 
-#define PACKET_BLOCK 6
+		struct rte_eth_dev_tx_buffer *buffer = tx_buffer[0];
 
- void send_test_data(struct pcapng_reader_t* reader) {
-	uint8_t block_buffer[0xFFFF]; // 65535 bytes
+		int sent = rte_eth_tx_buffer(0, 0, buffer, packet);
 
-	/* Create the mbuf pool. 8< */
-	struct rte_mempool* pool = rte_pktmbuf_pool_create("mbuf_pool_2", 8192U,
-		MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
-		rte_socket_id());
-	if (pool == NULL)
-		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
-
-	if(reader->init(reader)) {
-			exit(1);
+		if(sent) {
+			printf("Sent %d packet\n", sent);		
+			printf("Dropped: %d, %d\n", port_statistics[0].dropped, port_statistics[1].dropped);
+		}	
 	}
 
-	int i = 0;
 
-	while(reader->has_more_headers(reader)) {
-		const static uint8_t HEADER_SIZE = 32;
 
-		memset(block_buffer, 0, 0xFFFF);
+ }
+
+
+//  struct packet_block_t {
+// 	uint32_t block_type;
+// 	uint32_t block_length;
+// 	uint32_t interface_id;
+// 	uint32_t timestamp_upper;
+// 	uint32_t timestamp_lower;
+// 	uint32_t captured_package_length;
+// 	uint32_t original_packet_length;
+// 	uint8_t packet_data;
+//  };
+
+//  struct pcapng_reader_t {
+// 	uint8_t (*init)(struct pcapng_reader_t* reader);
+// 	uint8_t (*read)(struct pcapng_reader_t* reader, void* buffer, uint32_t num_read);
+// 	uint8_t (*has_more_headers)(struct pcapng_reader_t* reader);
+// 	FILE* file;
+//  };
+
+//  uint8_t pcapng_init(struct pcapng_reader_t* reader) {
+// 	reader->file = fopen("kage.pcap", "rb");
+
+// 	if(!reader->file) {
+// 		printf("Could not open pcapng file. errno: %d\n", errno);
+// 		return 1;
+// 	}
+// 	return 0;
+//  }
+
+//  uint8_t pcapng_read2(struct pcapng_reader_t* reader, void* buffer, uint32_t num_read) {
+// 	uint32_t header_bytes_read = 0;
+// 	while(!feof(reader->file) && header_bytes_read != num_read) {
+// 		header_bytes_read += fread(buffer + header_bytes_read, 1, num_read - header_bytes_read, reader->file);
+
+// 		if(ferror(reader->file)) {
+// 			printf("Failed to read pcapng file. errno %d\n", errno);			
+// 			return 1;
+// 		}
+// 	}
+// 	return 0;
+//  }
+
+//  uint8_t pcapng_has_more_headers(struct pcapng_reader_t* reader) {
+// 	return !feof(reader->file);
+//  }
+
+
+// #define PACKET_BLOCK 6
+
+//  void send_test_data(struct pcapng_reader_t* reader) {
+// 	uint8_t block_buffer[0xFFFF]; // 65535 bytes
+
+// 	/* Create the mbuf pool. 8< */
+// 	struct rte_mempool* pool = rte_pktmbuf_pool_create("mbuf_pool_2", 8192U,
+// 		MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
+// 		rte_socket_id());
+// 	if (pool == NULL)
+// 		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
+
+// 	if(reader->init(reader)) {
+// 			exit(1);
+// 	}
+
+// 	int i = 0;
+
+// 	while(reader->has_more_headers(reader)) {
+// 		const static uint8_t HEADER_SIZE = 32;
+
+// 		memset(block_buffer, 0, 0xFFFF);
 				
-		if(reader->read(reader, block_buffer, HEADER_SIZE)) {
-			exit(1);
-		}
+// 		if(reader->read(reader, block_buffer, HEADER_SIZE)) {
+// 			return;
+// 			//exit(1);
+// 		}
 
-		struct packet_block_t* packet_block = (struct packet_block_t*) block_buffer;
+// 		struct packet_block_t* packet_block = (struct packet_block_t*) block_buffer;
 
-		if(reader->read(reader, block_buffer + HEADER_SIZE, packet_block->block_length - HEADER_SIZE)) {
-			exit(1);
-		}
+// 		if(reader->read(reader, block_buffer + HEADER_SIZE, packet_block->block_length - HEADER_SIZE)) {
+// 			return;
+// 			//exit(1);
+// 		}
 		
-		if(packet_block->block_type == PACKET_BLOCK) {
-			uint32_t packet_length = packet_block->captured_package_length;
+// 		if(packet_block->block_type == PACKET_BLOCK) {
+// 			uint32_t packet_length = packet_block->captured_package_length;
 
-			struct rte_mbuf* packet = rte_pktmbuf_alloc(pool);
+// 			struct rte_mbuf* packet = rte_pktmbuf_alloc(pool);
 
-			packet->data_len = packet_length;
-			packet->pkt_len = packet_length;
+// 			packet->data_len = packet_length;
+// 			packet->pkt_len = packet_length;
 
-			uint8_t* new_packet_block = rte_pktmbuf_mtod(packet, uint8_t*);
+// 			uint8_t* new_packet_block = rte_pktmbuf_mtod(packet, uint8_t*);
 
-			memcpy(new_packet_block, &packet_block->packet_data, packet_length);
+// 			memcpy(new_packet_block, &packet_block->packet_data, packet_length);
 
-			printf("DONE: %d\n", ++i);
+// 			printf("DONE: %d\n", ++i);
 
-			// go on to put it on the trasnmission queue
-		}
+// 			l2fwd_simple_forward(packet);
+// 		}
 
-		int kage = reader->has_more_headers(reader);
-		int e = 3;
-	}
- }
+// 		int kage = reader->has_more_headers(reader);
+// 		int e = 3;
+// 	}
+//  }
 // /* >8 End of simple forward. */
 
 // /* main processing loop */
@@ -342,7 +391,7 @@ l2fwd_simple_forward(struct rte_mbuf *m) {
 // 	while (!force_quit) {
 
 // 		/* Drains TX queue in its main loop. 8< */
-// 		cur_tsc = rte_rdtsc();
+		// cur_tsc = rte_rdtsc();
 
 // 		/*
 // 		 * TX burst queue drain
@@ -827,14 +876,6 @@ main(int argc, char **argv)
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
 
-	struct pcapng_reader_t pcapng_reader = {
-		.init = pcapng_init,
-		.read = pcapng_read2,
-		.has_more_headers = pcapng_has_more_headers
-	};
-
-	send_test_data(&pcapng_reader);
-
 	/* parse application arguments (after the EAL ones) */
 	ret = l2fwd_parse_args(argc, argv);
 	if (ret < 0)
@@ -1077,6 +1118,18 @@ main(int argc, char **argv)
 	}
 
 	check_all_ports_link_status(l2fwd_enabled_port_mask);
+
+
+
+	l2fwd_simple_forward(l2fwd_pktmbuf_pool);
+	// struct pcapng_reader_t pcapng_reader = {
+	// 	.init = pcapng_init,
+	// 	.read = pcapng_read2,
+	// 	.has_more_headers = pcapng_has_more_headers
+	// };
+
+	// send_test_data(&pcapng_reader);
+
 
 	ret = 0;
 	/* launch per-lcore init on every lcore */

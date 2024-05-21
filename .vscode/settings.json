@@ -3,7 +3,12 @@
         {
             "cwd": "/home/skod/net_stack/build",
             "binaryPath": "/home/skod/net_stack/build/l2fwd-shared",
-            "binaryArgs": ["-l", "0", "-n", "4", "--in-memory", "--", "-q", "8", "-p", "0x3", "-P"]
+            "binaryArgs": ["-l", "0", "-n", "4", "--in-memory", "--", "-q", "1", "-p", "0x3", "-P"]
+        },
+        {
+            "cwd": "/home/skod/net_stack/test",
+            "binaryPath": "/home/skod/net_stack/test/test",
+            "binaryArgs": []
         }
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
@@ -38,6 +43,11 @@
         "rte_memcpy.h": "c",
         "rte_launch.h": "c",
         "arp.h": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "x86intrin.h": "c",
+        "rte_config.h": "c",
+        "fcntl.h": "c",
+        "cmath": "c",
+        "pcapng.h": "c"
     }
 }

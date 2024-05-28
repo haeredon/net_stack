@@ -972,10 +972,9 @@ main(int argc, char **argv)
 	struct lcore_setup_t* setup = (struct lcore_setup_t*) rte_zmalloc("Lcore setup", sizeof(struct lcore_setup_t), 0);	
 	setup->interface.port = 0;
 	setup->interface.queue = 0;
-	
+		
 	setup->handlers = (struct handler_t**) rte_zmalloc("handler array", sizeof(struct handler_t*) * 2, 0);
-	setup->handlers[0] = pcapng_create_handler();
-	setup->handlers[1] = ethernet_create_handler();
+	handler_init(setup->handlers);
 	setup->num_handlers = 2;
 
 	struct handler_t* arp_handler = arp_create_handler();

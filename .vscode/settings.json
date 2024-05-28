@@ -8,7 +8,9 @@
         {
             "cwd": "/home/skod/net_stack/test",
             "binaryPath": "/home/skod/net_stack/test/test",
-            "binaryArgs": []
+            "binaryArgs": [],
+            "miDebuggerPath": "${workspaceFolder}/tools/gdb",
+            "MIMode": "gdb"
         }
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",

@@ -1,5 +1,5 @@
 #include "handlers/ethernet.h"
-#include "handlers/handler.h"
+#include "handlers/protocol_map.h"
 
 #include <rte_malloc.h>
 

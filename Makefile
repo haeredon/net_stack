@@ -5,7 +5,7 @@
 APP = l2fwd
 
 # all source are stored in SRCS-y
-SRCS-y := main.c worker.c handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c 
+SRCS-y := main.c worker.c handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c
 INCLUDES := -I ./
 
 PKGCONF ?= pkg-config

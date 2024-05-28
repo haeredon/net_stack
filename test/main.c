@@ -42,7 +42,7 @@ int test_socket_receive(struct test_socket_t* test_socket) {
 
 int test_socket_close(struct test_socket_t* test_socket) {
     int ret = close(test_socket->fd);
-    if(!ret) {
+    if(ret) {
         printf("Failed to close socket. errno: %d\n", errno);		
     }    
     return ret;
@@ -103,12 +103,19 @@ uint8_t arp_test(struct test_t* test) {
     static const int MAX_BUFFER_SIZE = 0xFFFF;
     uint8_t* req_buffer = (uint8_t*) malloc(MAX_BUFFER_SIZE);
     uint8_t* res_buffer = (uint8_t*) malloc(MAX_BUFFER_SIZE);
-    struct pcapng_reader_t* reader;
+    struct pcapng_reader_t* reader = test->reader;
 
     do {
-        if(reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE) == -1 ||
-           reader->read_block(reader, res_buffer, MAX_BUFFER_SIZE) == -1) {
-            printf("Did not find matching request and response for test.\n");	
+        if(reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE) == -1)  {
+            printf("FAIL.\n");	
+        }
+        
+        if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
+            printf("Enhanced Block!\n");    
+
+            struct packet_enchanced_block_t* block = (struct packet_enchanced_block_t*) req_buffer;
+
+            test->socket->send(test->socket, &block->packet_data, block->captured_package_length);
         }
         printf("Do test!\n");
         // send request
@@ -123,14 +130,21 @@ uint8_t arp_test(struct test_t* test) {
 }
 
 int arp_init(struct test_t* test) {
-    struct pcapng_reader_t* reader = create_pcapng_reader("arp.pcapng");        
-    struct test_socket_t* test_socket = create_test_socket("eno1");
+    test->reader = create_pcapng_reader();        
+    test->socket = create_test_socket("eno1");
 
-    if(!test_socket) {
+    if(!test->socket) {
         printf("failed to init test.\n");
-        reader->close(reader);
+        test->reader->close(test->reader);
         return -1;
     }
+
+    if(test->reader->init(test->reader, "test.pcapng")) {
+        test->reader->close(test->reader);
+        test->socket->close(test->socket);
+        return -1;
+    };    
+
     return 0;
 }
 
@@ -157,6 +171,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    arp_test_suite->test(arp_test_suite);
 
 
     arp_test_suite->end(arp_test_suite);

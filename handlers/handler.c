@@ -1,48 +1,18 @@
-#include <stdint.h>
-#include "worker.h"
 #include "handlers/handler.h"
 
+#include <stdint.h>
+#include <rte_malloc.h>
 
-int add_value(struct priority_map_t* map, uint64_t key, void* value) {
-    struct key_val_t* key_vals = map->map;
+#include "handlers/arp.h"
+#include "handlers/ethernet.h"
+#include "handlers/pcapng.h"
 
-    for (size_t i = 0; i < map->max_size ; i++) {
-        struct key_val_t* key_val = &key_vals[i];
+uint8_t handler_init(struct handler_t** handlers) {
+	handlers = (struct handler_t**) rte_zmalloc("handler array for ethernet", sizeof(struct handler_t*) * 2, 0);
+	handlers[0] = pcapng_create_handler();
+	handlers[1] = ethernet_create_handler();
+	
+    struct handler_t* arp_handler = arp_create_handler();
 
-        if(!key_val->key) {
-            struct key_val_t temp = { 
-                .key = key,
-                .priority = 0,
-                .value = value
-            };
-            *key_val = temp;
-            return 0;
-        }
-    }   
-    return -1;     
+    return 0;
 }
-
-void* get_value(struct priority_map_t* map, uint16_t key) {
-    struct key_val_t* key_vals = map->map;
-
-    for (uint8_t i = 0 ; i < map->max_size && key_vals[i].key != 0 ; i++) {
-        struct key_val_t* key_val = &key_vals[i];
-
-        if(key_val->key == key) {
-            key_val->priority++;
-
-            struct key_val_t* previous = &key_vals[i - 1];
-
-            if(i > 0 && key_val->priority > previous->priority) {
-                struct key_val_t temp = *previous;
-                *previous = *key_val;
-                *key_val = temp;
-            }
-
-            return key_vals[i].value;
-        }
-    }
-    return 0;    
-}
-
-

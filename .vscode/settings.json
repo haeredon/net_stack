@@ -50,6 +50,8 @@
         "rte_config.h": "c",
         "fcntl.h": "c",
         "cmath": "c",
-        "pcapng.h": "c"
+        "pcapng.h": "c",
+        "handler.h": "c",
+        "ethernet.h": "c"
     }
 }

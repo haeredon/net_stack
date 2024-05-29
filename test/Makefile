@@ -1,5 +1,3 @@
-
-
 test: main.o pcapng.o
 	gcc -o test -g  main.o pcapng.o 
 

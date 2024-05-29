@@ -1,7 +1,7 @@
 #ifndef HANDLER_PROTOCOL_MAP_H
 #define HANDLER_PROTOCOL_MAP_H
 
-#include "worker.h"
+#include "handler.h"
 
 #define NUM_HANDLERS 32
 

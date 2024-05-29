@@ -1,7 +1,7 @@
 #ifndef KAGE_H
 #define KAGE_H
 
-#include "worker.h"
+#include "handler.h"
 
 struct kage_t {
     struct rte_pcapng* pcap_fd;

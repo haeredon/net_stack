@@ -42,6 +42,7 @@
 #include <rte_pcapng.h>
 
 #include "worker.h"
+#include "handlers/handler.h"
 #include "handlers/pcapng.h"
 #include "handlers/ethernet.h"
 #include "handlers/arp.h"

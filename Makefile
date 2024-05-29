@@ -5,7 +5,9 @@
 APP = l2fwd
 
 # all source are stored in SRCS-y
-SRCS-y := main.c worker.c handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c
+TEST_SRCS-y := test/
+SRCS-y := main.c worker.c 
+SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c
 INCLUDES := -I ./
 
 PKGCONF ?= pkg-config
@@ -16,32 +18,38 @@ $(error "no installation of DPDK found")
 endif
 
 all: shared
-.PHONY: shared static
+.PHONY: shared 
 shared: build/$(APP)-shared
 	ln -sf $(APP)-shared build/$(APP)
-static: build/$(APP)-static
-	ln -sf $(APP)-static build/$(APP)
 
 PC_FILE := $(shell $(PKGCONF) --path libdpdk 2>/dev/null)
 CFLAGS += -g $(shell $(PKGCONF) --cflags libdpdk)
 # Add flag to allow experimental API as l2fwd uses rte_ethdev_set_ptype API
 CFLAGS += -DALLOW_EXPERIMENTAL_API
 LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
-LDFLAGS_STATIC = $(shell $(PKGCONF) --static --libs libdpdk)
 
-ifeq ($(MAKECMDGOALS),static)
-# check for broken pkg-config
-ifeq ($(shell echo $(LDFLAGS_STATIC) | grep 'whole-archive.*l:lib.*no-whole-archive'),)
-$(warning "pkg-config output list does not contain drivers between 'whole-archive'/'no-whole-archive' flags.")
-$(error "Cannot generate statically-linked binaries with this version of pkg-config")
-endif
-endif
+build/$(APP)-shared: build/libhandler.so $(SRCS-y) Makefile $(PC_FILE) | build
+	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
-build/$(APP)-shared: $(SRCS-y) Makefile $(PC_FILE) | build
-	$(CC) $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+build/libhandler.so: $(SRCS-HANDLERS) | build
+	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(INCLUDES) -o build/libhandler.so $(LDFLAGS) $(LDFLAGS_SHARED)
 
-build/$(APP)-static: $(SRCS-y) Makefile $(PC_FILE) | build
-	$(CC) $(CFLAGS) $(SRCS-y) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_STATIC)
+
+
+
+# build/$(APP)-test: build/$(APP)-shared 
+# 	$(CC) $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+
+
+# test: main.o pcapng.o
+# 	gcc -o test -g  main.o pcapng.o 
+
+# main.o : main.c
+# 	gcc -g -c main.c  
+
+# pcapng.o : pcapng.c pcapng.h
+# 	gcc -g -c pcapng.c -g 
+
 
 build:
 	@mkdir -p $@

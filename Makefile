@@ -1,11 +1,9 @@
-# SPDX-License-Identifier: BSD-3-Clause
-# Copyright(c) 2010-2014 Intel Corporation
-
 # binary name
-APP = l2fwd
+APP = net_stack
 
 # all source are stored in SRCS-y
-TEST_SRCS-y := test/
+SRCS-TEST := test/main.c test/pcapng.c
+INCLUDES-TEST := -I ./ -I ./test
 SRCS-y := main.c worker.c 
 SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c
 INCLUDES := -I ./
@@ -31,34 +29,18 @@ LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
 build/$(APP)-shared: build/libhandler.so $(SRCS-y) Makefile $(PC_FILE) | build
 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
+build/$(APP)-test: build/libhandler.so | build
+	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-TEST) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
+
 build/libhandler.so: $(SRCS-HANDLERS) | build
-	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(INCLUDES) -o build/libhandler.so $(LDFLAGS) $(LDFLAGS_SHARED)
-
-
-
-
-# build/$(APP)-test: build/$(APP)-shared 
-# 	$(CC) $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
-
-
-# test: main.o pcapng.o
-# 	gcc -o test -g  main.o pcapng.o 
-
-# main.o : main.c
-# 	gcc -g -c main.c  
-
-# pcapng.o : pcapng.c pcapng.h
-# 	gcc -g -c pcapng.c -g 
-
+	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 build:
 	@mkdir -p $@
 
-
-
 .PHONY: clean test
 clean:
-	rm -f build/$(APP) build/$(APP)-static build/$(APP)-shared
+	rm -f build/$(APP) build/$(APP)-shared build/$(APP)-test build/libhandler.so
 	test -d build && rmdir -p build || true
 
 test: 

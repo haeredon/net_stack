@@ -24,7 +24,7 @@ struct handler_t {
     void* priv;
 };
 
-struct handler_t** handler_init(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
+struct handler_t** handler_create_stacks(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
 
 
 #endif // HANDLER_HANDLER_H

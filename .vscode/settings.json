@@ -6,8 +6,8 @@
             "binaryArgs": ["-l", "0", "-n", "4", "--in-memory", "--", "-q", "1", "-p", "0x3", "-P"]
         },
         {
-            "cwd": "/home/skod/net_stack/test",
-            "binaryPath": "/home/skod/net_stack/test/test",
+            "cwd": "/home/skod/net_stack/build",
+            "binaryPath": "/home/skod/net_stack/build/net_stack-test",
             "binaryArgs": [],
             "miDebuggerPath": "${workspaceFolder}/tools/gdb",
             "MIMode": "gdb"

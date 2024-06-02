@@ -7,12 +7,12 @@
 #include "handlers/ethernet.h"
 #include "handlers/pcapng.h"
 
-uint8_t handler_init(struct handler_t** handlers) {
-	handlers = (struct handler_t**) rte_zmalloc("handler array for ethernet", sizeof(struct handler_t*) * 2, 0);
-	handlers[0] = pcapng_create_handler();
-	handlers[1] = ethernet_create_handler();
+struct handler_t** handler_init(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
+	struct handler_t** handlers = (struct handler_t**) mem_allocate("handler array for ethernet", sizeof(struct handler_t*) * 2, 0);
+	handlers[0] = pcapng_create_handler(mem_allocate);
+	handlers[1] = ethernet_create_handler(mem_allocate);
 	
-    struct handler_t* arp_handler = arp_create_handler();
+    struct handler_t* arp_handler = arp_create_handler(mem_allocate);
 
-    return 0;
+    return handlers;
 }

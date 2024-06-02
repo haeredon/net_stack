@@ -20,9 +20,9 @@ void ethernet_close_handler(struct handler_t* handler) {
     rte_free(private);
 }
 
-uint16_t ethernet_read(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, void* priv) {   
+uint16_t ethernet_read(void* buffer, uint16_t offset, struct interface_t* interface, void* priv) {   
 
-    struct ethernet_header_t* header = rte_pktmbuf_mtod(buffer, struct ethernet_header_t*);
+    struct ethernet_header_t* header = (struct ethernet_header_t*) buffer;
 
     if(header->ethernet_type > 0x0600) {
         struct handler_t* handler = GET_FROM_PRIORITY(
@@ -42,11 +42,13 @@ uint16_t ethernet_read(struct rte_mbuf* buffer, uint16_t offset, struct interfac
     
 }
 
-struct handler_t* ethernet_create_handler() {
-    struct handler_t* handler = (struct handler_t*) rte_zmalloc("ethernet handler", sizeof(struct handler_t), 0);	
+struct handler_t* ethernet_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
+    struct handler_t* handler = (struct handler_t*) mem_allocate("ethernet handler", sizeof(struct handler_t), 0);	
 
     handler->init = ethernet_init_handler;
     handler->close = ethernet_close_handler;
 
     handler->operations.read = ethernet_read;
+
+    return handler;
 }

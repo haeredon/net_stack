@@ -13,7 +13,7 @@ struct interface_t {
 };
 
 struct operations_t {
-    uint16_t (*read)(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, void* priv);    
+    uint16_t (*read)(void* buffer, uint16_t offset, struct interface_t* interface, void* priv);    
 };
 
 struct handler_t {
@@ -24,7 +24,7 @@ struct handler_t {
     void* priv;
 };
 
-uint8_t handler_init(struct handler_t** handlers);
+struct handler_t** handler_init(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
 
 
 #endif // HANDLER_HANDLER_H

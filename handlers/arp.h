@@ -26,7 +26,7 @@ struct ipv4_arp_t {
 };
 
 
-struct handler_t* arp_create_handler();
+struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
 
 
 

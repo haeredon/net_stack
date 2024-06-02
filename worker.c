@@ -71,7 +71,9 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 
 		for (j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer = pkts_burst[j];
-			rte_prefetch0(rte_pktmbuf_mtod(buffer, void *)); // learn more about this statement!!!
+
+			void* buffer = rte_pktmbuf_mtod(buffer, void *);
+			rte_prefetch0(buffer); // learn more about this statement!!!
 
 			for (uint8_t i = 0; i < setup->num_handlers; i++) {
 				handlers[i]->operations.read(buffer, 0, interface, handlers[i]->priv);	

@@ -29,8 +29,8 @@ LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
 build/$(APP)-shared: build/libhandler.so $(SRCS-y) Makefile $(PC_FILE) | build
 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
-build/$(APP)-test: build/libhandler.so | build
-	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-TEST) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
+build/$(APP)-test: build/libhandler.so $(SRCS-TEST) | build
+	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-TEST) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
 build/libhandler.so: $(SRCS-HANDLERS) | build
 	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)

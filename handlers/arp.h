@@ -3,6 +3,7 @@
 
 #include "handler.h"
 #include "handlers/handler.h"
+#include "handlers/ethernet.h"
 
 #define ETHERNET_NUM_ETH_TYPE_ENTRIES 512
 
@@ -16,12 +17,9 @@ struct arp_header_t {
     uint8_t hdw_addr_length;
     uint8_t pro_addr_length;
     uint16_t operation;
-};
-
-struct ipv4_arp_t {
-    uint8_t sender_hardware_addr[6];
+    uint8_t sender_hardware_addr[ETHERNET_MAC_SIZE];
     uint32_t sender_protocol_addr[4];
-    uint8_t target_hardware_addr[6];
+    uint8_t target_hardware_addr[ETHERNET_MAC_SIZE];
     uint32_t target_protocol_addr[4];
 };
 

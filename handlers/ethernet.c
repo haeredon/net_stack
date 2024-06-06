@@ -3,6 +3,9 @@
 
 #include <rte_malloc.h>
 
+
+
+
 struct key_val_t key_vals[ETHERNET_NUM_ETH_TYPE_ENTRIES];
 struct priority_map_t ethernet_type_to_handler = { 
     .max_size = ETHERNET_NUM_ETH_TYPE_ENTRIES,
@@ -20,9 +23,9 @@ void ethernet_close_handler(struct handler_t* handler) {
     rte_free(private);
 }
 
-uint16_t ethernet_read(void* buffer, uint16_t offset, struct interface_t* interface, void* priv) {   
-
-    struct ethernet_header_t* header = (struct ethernet_header_t*) buffer;
+uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {   
+    uint8_t packet_idx = packet_stack->stack_depth;
+    struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
 
     if(header->ethernet_type > 0x0600) {
         struct handler_t* handler = GET_FROM_PRIORITY(
@@ -32,7 +35,9 @@ uint16_t ethernet_read(void* buffer, uint16_t offset, struct interface_t* interf
         );
 
         if(handler) {
-            handler->operations.read(buffer, sizeof(struct ethernet_header_t), interface, priv);            
+            packet_stack->packet_pointers[++packet_idx] = ((uint8_t*) header) + sizeof(struct handler_t);
+            packet_stack->stack_depth = packet_idx;
+            handler->operations.read(packet_stack, sizeof(struct ethernet_header_t), interface, priv);            
         } else {
             RTE_LOG(WARNING, USER1, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
         }        
@@ -40,6 +45,26 @@ uint16_t ethernet_read(void* buffer, uint16_t offset, struct interface_t* interf
         RTE_LOG(WARNING, USER1, "Received IEEE 802.3 ethenet packet. This standard is not supported. ether_type: %hx\n", header->ethernet_type);        
     }
     
+}
+
+void ethernet_init_header(void* buffer, uint8_t* source, uint8_t* dest, uint8_t* tag, uint8_t* type) {
+    uint16_t offset = 0;
+    
+    memcpy(buffer, dest, ETHERNET_MAC_SIZE);
+    offset += ETHERNET_MAC_SIZE;
+
+    memcpy(buffer, source, ETHERNET_MAC_SIZE);
+    offset += ETHERNET_MAC_SIZE;
+
+    if(tag) {
+        memcpy(buffer, dest, ETHERNET_TAG_SIZE);
+        offset += ETHERNET_TAG_SIZE;
+    }
+
+    memcpy(buffer, type, ETHERNET_ETH_TYPE_SIZE);
+    offset += ETHERNET_ETH_TYPE_SIZE;
+
+    return offset;
 }
 
 struct handler_t* ethernet_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {

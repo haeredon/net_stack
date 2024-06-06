@@ -7,13 +7,21 @@
 #include <rte_mbuf.h>
 
 
+
+struct packet_stack_t {
+    void (*response)(void* packet_pointer, void* response);
+    void* packet_pointers[10];
+    uint8_t stack_depth;
+};
+
+
 struct interface_t {
      uint16_t port;
      uint32_t queue;
 };
 
 struct operations_t {
-    uint16_t (*read)(void* buffer, uint16_t offset, struct interface_t* interface, void* priv);    
+    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);    
 };
 
 struct handler_t {

@@ -31,29 +31,36 @@ uint8_t test_test(struct test_t* test) {
     uint8_t* res_buffer = (uint8_t*) malloc(MAX_BUFFER_SIZE);
     struct pcapng_reader_t* reader = test->reader;
 
-    do {
+    while(reader->has_more_headers(reader)) {
         if(reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE) == -1)  {
             printf("FAIL.\n");	
+            return -1;
         }
-        
+
         if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
             printf("Enhanced Block!\n");    
 
-            struct packet_enchanced_block_t* block = (struct packet_enchanced_block_t*) req_buffer;
-
-            test->handler->operations.read(&block->packet_data, 0, 0, test->handler->priv);            
+            // if(req_buffer is a response) {
+            //   then evaluate against previous pending response
+            // } else {
+            //    if(there is already a previous reqponse in pending) {
+            //        fail test;
+            //        return:
+            //    }
+            //    struct packet_enchanced_block_t* block = (struct packet_enchanced_block_t*) req_buffer;
+            //
+            //    test->handler->operations.read(&block->packet_data, 0, 0, test->handler->priv);            
+            // }            
 
             printf("Do test!\n");
         }
-       
-
-    } while(reader->has_more_headers(reader));
+    }
 }
 
 int test_init(struct test_t* test, struct handler_t* handler) {
     test->reader = create_pcapng_reader();        
 
-    if(test->reader->init(test->reader, "test.pcapng")) {
+    if(test->reader->init(test->reader, "arp.pcapng")) {
         test->reader->close(test->reader);
         return -1;
     };    
@@ -100,3 +107,7 @@ int main(int argc, char **argv) {
 
 
 
+// AA:AA:AA:AA:AA:AA is own mac
+// BB:BB:BB:BB:BB:BB is remote mac
+// 20.20.20.20 is own ip
+// 10.10.10.10 is remote ip

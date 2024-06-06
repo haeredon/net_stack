@@ -52,6 +52,9 @@
         "cmath": "c",
         "pcapng.h": "c",
         "handler.h": "c",
-        "ethernet.h": "c"
+        "ethernet.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c"
     }
 }

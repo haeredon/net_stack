@@ -9,11 +9,11 @@
 
 
 struct packet_stack_t {
-    void (*response)(void* packet_pointer, void* response);
+    // should be called iterative as part of a response chain that is iterated over by a handler.c function
+    uint16_t (*response)()[10];
     void* packet_pointers[10];
-    uint8_t stack_depth;
+    uint8_t write_chain_length;
 };
-
 
 struct interface_t {
      uint16_t port;
@@ -21,7 +21,7 @@ struct interface_t {
 };
 
 struct operations_t {
-    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);    
+    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);        
 };
 
 struct handler_t {

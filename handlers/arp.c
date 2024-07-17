@@ -12,7 +12,7 @@
 uint16_t kage(struct packet_stack_t* packet_stack, void* response_buffer) {
     uint16_t num_written = 0;
     for (uint8_t i = 0; i < packet_stack->stack_depth; i++) {
-        packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
+        num_written += packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
     }
 
     return num_written;
@@ -38,8 +38,13 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
 
     // is it a request?
     if(!header->target_hardware_addr) {
-        void* response = get_response_buffer();                
-        written = kage(packet_stack, response);        
+        void* response = get_response_buffer(); // make the dpdk circular buffer available to this call               
+        
+        if(kage(packet_stack, response)) { // call response chain      
+            RTE_LOG(ERR, USER1, "Could not create ARP packet response.\n");       
+        } else {
+            write(packet); // finally write the response
+        }
     } 
     // is it a gratuitous ARP?
     else if(
@@ -69,3 +74,21 @@ struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, siz
     return handler;
 }
 
+
+/******************* Initialization ************************/
+// 1. register response handlers for all handlers
+    // maybe use priority queue for this?
+
+/***************** Handling (writing) *******************/
+// 1. get a buffer to write to         
+// 2. pass the response buffer to the response handler stack
+
+
+/****************** Handling (not writing) *****************************/
+// 1. add own reponse handler to packet_stack object
+// 2. increment write_chain_lenght
+
+// remember that the structure packet_stack_t at the beginning of read function always must have 
+// write_chain_length set to the index the packet_pointer which the handler should work on.
+// before leaving the read function write_chain_length must be incremented and the index in 
+// must be set to point to the next data in the incoming buffer 

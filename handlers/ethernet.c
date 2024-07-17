@@ -43,8 +43,7 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
         }        
     } else {
         RTE_LOG(WARNING, USER1, "Received IEEE 802.3 ethenet packet. This standard is not supported. ether_type: %hx\n", header->ethernet_type);        
-    }
-    
+    }    
 }
 
 void ethernet_init_header(void* buffer, uint8_t* source, uint8_t* dest, uint8_t* tag, uint8_t* type) {

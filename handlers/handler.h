@@ -22,6 +22,7 @@ struct interface_t {
 
 struct operations_t {
     uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);        
+    uint16_t (*response)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);        
 };
 
 struct handler_t {

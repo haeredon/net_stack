@@ -33,3 +33,26 @@ int add_value(struct priority_map_t* map, uint64_t key, void* value);
 
 
 #endif // HANDLER_PROTOCOL_MAP_H
+
+
+
+/******************* Initialization ************************/
+// 1. register response handlers for all handlers
+    // maybe use priority queue for this?
+
+/***************** Handling (writing) *******************/
+// 1. add own reponse handler to packet_stack object
+// 2. increment write_chain_lenght
+// 3. get a buffer to write to         
+// 4. pass the response buffer to the response handler stack
+
+
+/****************** Handling (not writing) *****************************/
+// 1. add own reponse handler to packet_stack object
+// 2. increment write_chain_lenght
+// 3. pass to next in chain
+
+// remember that the structure packet_stack_t at the beginning of read function always must have 
+// write_chain_length set to the index the packet_pointer which the handler should work on.
+// before leaving the read function write_chain_length must be incremented and the index in 
+// must be set to point to the next data in the incoming buffer 

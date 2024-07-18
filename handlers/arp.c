@@ -29,22 +29,22 @@ void arp_init_handler(struct handler_t* handler) {
     handler->priv = (void*) arp_priv;
 }
 
+
+uint16_t arp_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+    RTE_LOG(WARNING, USER1, "arp_response() called");            
+}
+
 uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
     RTE_LOG(INFO, USER1, "ARP read handler called.\n");   
 
-    uint8_t packet_idx = packet_stack->stack_depth;
+    uint8_t packet_idx = packet_stack->write_chain_length;
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->packet_pointers[packet_idx];
-    uint16_t written = 0;
-
+    
+    packet_stack->response[packet_idx] = arp_response;
+    
     // is it a request?
     if(!header->target_hardware_addr) {
-        void* response = get_response_buffer(); // make the dpdk circular buffer available to this call               
-        
-        if(kage(packet_stack, response)) { // call response chain      
-            RTE_LOG(ERR, USER1, "Could not create ARP packet response.\n");       
-        } else {
-            write(packet); // finally write the response
-        }
+        handler_response(packet_stack);        
     } 
     // is it a gratuitous ARP?
     else if(
@@ -57,9 +57,8 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     } else {
         RTE_LOG(INFO, USER1, "Received invalid ARP packet.\n");   
     }
-
-        
 }
+
 
 struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
     struct handler_t* handler = (struct handler_t*) mem_allocate("arp handler", sizeof(struct handler_t), 0);	
@@ -68,6 +67,7 @@ struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, siz
     handler->close = arp_close_handler;
 
     handler->operations.read = arp_read;
+    handler->operations.response = arp_response;
 
     ADD_TO_PRIORITY(&ethernet_type_to_handler, htons(0x0806), handler);
 
@@ -75,20 +75,3 @@ struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, siz
 }
 
 
-/******************* Initialization ************************/
-// 1. register response handlers for all handlers
-    // maybe use priority queue for this?
-
-/***************** Handling (writing) *******************/
-// 1. get a buffer to write to         
-// 2. pass the response buffer to the response handler stack
-
-
-/****************** Handling (not writing) *****************************/
-// 1. add own reponse handler to packet_stack object
-// 2. increment write_chain_lenght
-
-// remember that the structure packet_stack_t at the beginning of read function always must have 
-// write_chain_length set to the index the packet_pointer which the handler should work on.
-// before leaving the read function write_chain_length must be incremented and the index in 
-// must be set to point to the next data in the incoming buffer 

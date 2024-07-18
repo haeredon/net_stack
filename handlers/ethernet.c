@@ -23,9 +23,15 @@ void ethernet_close_handler(struct handler_t* handler) {
     rte_free(private);
 }
 
+uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+    RTE_LOG(WARNING, USER1, "ethernet_response() called");            
+}
+
 uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {   
-    uint8_t packet_idx = packet_stack->stack_depth;
+    uint8_t packet_idx = packet_stack->write_chain_length;
     struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
+
+    packet_stack->response[packet_idx] = ethernet_response;
 
     if(header->ethernet_type > 0x0600) {
         struct handler_t* handler = GET_FROM_PRIORITY(
@@ -35,9 +41,10 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
         );
 
         if(handler) {
-            packet_stack->packet_pointers[++packet_idx] = ((uint8_t*) header) + sizeof(struct handler_t);
-            packet_stack->stack_depth = packet_idx;
-            handler->operations.read(packet_stack, sizeof(struct ethernet_header_t), interface, priv);            
+            // set next buffer pointer for next protocol level     
+            packet_stack->packet_pointers[++packet_stack->write_chain_length] = ((uint64_t*) header) + sizeof(struct ethernet_header_t);
+            
+            handler->operations.read(packet_stack, interface, priv);            
         } else {
             RTE_LOG(WARNING, USER1, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
         }        
@@ -66,6 +73,7 @@ void ethernet_init_header(void* buffer, uint8_t* source, uint8_t* dest, uint8_t*
     return offset;
 }
 
+
 struct handler_t* ethernet_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
     struct handler_t* handler = (struct handler_t*) mem_allocate("ethernet handler", sizeof(struct handler_t), 0);	
 
@@ -73,6 +81,7 @@ struct handler_t* ethernet_create_handler(void* (*mem_allocate)(const char *type
     handler->close = ethernet_close_handler;
 
     handler->operations.read = ethernet_read;
+    handler->operations.response = ethernet_response;
 
     return handler;
 }

@@ -10,3 +10,7 @@
 
 - [x] Packet capturing
 - [x] Multi handler cores
+
+### Notes to self
+
+

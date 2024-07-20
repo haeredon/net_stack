@@ -37,6 +37,7 @@
 #include <rte_pcapng.h>
 
 #include "worker.h"
+#include "handlers/handler.h"
 
 #define RTE_LOGTYPE_L2FWD RTE_LOGTYPE_USER1
 
@@ -71,13 +72,14 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 
 		for (j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer = pkts_burst[j];
+			struct packet_stack_t packet_stack = { .response = 0, .packet_pointers = 0, .write_chain_length = 0 };
 
 			void* buffer_start = rte_pktmbuf_mtod(buffer, void *);
 
 			rte_prefetch0(buffer_start); // learn more about this statement!!!
-			
+
 			for (uint8_t i = 0; i < setup->num_handlers; i++) {
-				handlers[i]->operations.read(buffer_start, 0, interface, handlers[i]->priv);	
+				handlers[i]->operations.read(&packet_stack, interface, handlers[i]->priv);	
 			}
 		}
 

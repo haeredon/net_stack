@@ -10,7 +10,7 @@
 
 struct packet_stack_t {
     // should be called iterative as part of a response chain that is iterated over by a handler.c function
-    uint16_t (*response)()[10];
+    uint16_t (*response[10])();
     void* packet_pointers[10];
     uint8_t write_chain_length;
 };
@@ -32,6 +32,9 @@ struct handler_t {
 
     void* priv;
 };
+
+
+void handler_response(struct packet_stack_t*); 
 
 struct handler_t** handler_create_stacks(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
 

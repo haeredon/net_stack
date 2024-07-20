@@ -9,16 +9,6 @@
 
 
 
-uint16_t kage(struct packet_stack_t* packet_stack, void* response_buffer) {
-    uint16_t num_written = 0;
-    for (uint8_t i = 0; i < packet_stack->stack_depth; i++) {
-        num_written += packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
-    }
-
-    return num_written;
-}
-
-
 void arp_close_handler(struct handler_t* handler) {
     struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
     rte_free(private);

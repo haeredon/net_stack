@@ -1,7 +1,6 @@
 #include "handlers/handler.h"
 
 #include <stdint.h>
-#include <rte_malloc.h>
 
 #include "handlers/arp.h"
 #include "handlers/ethernet.h"
@@ -17,11 +16,15 @@
 // }
 
 
-void handler_response(struct packet_stack_t* packet_stack, void* response_buffer) {
-    for (uint8_t i = 0; i < packet_stack->stack_depth; i++) {
-        packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
-    }
+uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+
 }
+
+// void handler_response(struct packet_stack_t* packet_stack, void* response_buffer) {
+    // for (uint8_t i = 0; i < packet_stack->stack_depth; i++) {
+    //     packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
+    // }
+// }
 
 
 struct handler_t** handler_create_stacks(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {

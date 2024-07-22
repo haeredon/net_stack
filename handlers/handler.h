@@ -3,8 +3,7 @@
 
 
 #include <stdint.h>
-
-#include <rte_mbuf.h>
+ #include <stddef.h>
 
 
 
@@ -33,8 +32,6 @@ struct handler_t {
     void* priv;
 };
 
-
-void handler_response(struct packet_stack_t*); 
 
 struct handler_t** handler_create_stacks(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
 

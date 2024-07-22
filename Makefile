@@ -6,6 +6,7 @@ SRCS-TEST := test/main.c test/pcapng.c
 INCLUDES-TEST := -I ./ -I ./test
 SRCS-y := main.c worker.c 
 SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c
+SRCS-LOG := log.h
 INCLUDES := -I ./
 
 PKGCONF ?= pkg-config

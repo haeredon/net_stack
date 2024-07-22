@@ -1,12 +1,10 @@
 #include <arpa/inet.h>
 
-#include <rte_malloc.h>
-#include <rte_mbuf.h>
-
 #include "handlers/arp.h"
 #include "handlers/ethernet.h"
 #include "handlers/handler.h"
 
+#include "log.h"
 
 
 void arp_close_handler(struct handler_t* handler) {
@@ -21,11 +19,11 @@ void arp_init_handler(struct handler_t* handler) {
 
 
 uint16_t arp_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
-    RTE_LOG(WARNING, USER1, "arp_response() called");            
+    NETSTACK_LOG(NETSTACK_WARNING, "arp_response() called");            
 }
 
 uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
-    RTE_LOG(INFO, USER1, "ARP read handler called.\n");   
+    NETSTACK_LOG(NETSTACK_INFO, "ARP read handler called.\n");   
 
     uint8_t packet_idx = packet_stack->write_chain_length;
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->packet_pointers[packet_idx];
@@ -34,7 +32,7 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     
     // is it a request?
     if(!header->target_hardware_addr) {
-        handler_response(packet_stack);        
+        // handler_response(packet_stack);        
     } 
     // is it a gratuitous ARP?
     else if(
@@ -45,7 +43,7 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
         header->target_hardware_addr == header->sender_hardware_addr)) {
                         
     } else {
-        RTE_LOG(INFO, USER1, "Received invalid ARP packet.\n");   
+        NETSTACK_LOG(NETSTACK_INFO, "Received invalid ARP packet.\n");   
     }
 }
 

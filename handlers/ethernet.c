@@ -1,9 +1,8 @@
 #include "handlers/ethernet.h"
 #include "handlers/protocol_map.h"
 
-#include <rte_malloc.h>
 
-
+#include "log.h"
 
 
 struct key_val_t key_vals[ETHERNET_NUM_ETH_TYPE_ENTRIES];
@@ -24,7 +23,7 @@ void ethernet_close_handler(struct handler_t* handler) {
 }
 
 uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
-    RTE_LOG(WARNING, USER1, "ethernet_response() called");            
+    NETSTACK_LOG(NETSTACK_WARNING, "ethernet_response() called");            
 }
 
 uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {   
@@ -46,10 +45,10 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
             
             handler->operations.read(packet_stack, interface, priv);            
         } else {
-            RTE_LOG(WARNING, USER1, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
+            NETSTACK_LOG(NETSTACK_WARNING, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
         }        
     } else {
-        RTE_LOG(WARNING, USER1, "Received IEEE 802.3 ethenet packet. This standard is not supported. ether_type: %hx\n", header->ethernet_type);        
+        NETSTACK_LOG(NETSTACK_WARNING, "Received IEEE 802.3 ethenet packet. This standard is not supported. ether_type: %hx\n", header->ethernet_type);        
     }    
 }
 

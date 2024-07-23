@@ -18,9 +18,12 @@ endif
 
 all: shared
 .PHONY: shared 
+
 shared: build/$(APP)-shared
 	ln -sf $(APP)-shared build/$(APP)
 
+test: build/libhandler.so build/$(APP)-test
+	
 PC_FILE := $(shell $(PKGCONF) --path libdpdk 2>/dev/null)
 CFLAGS += -g $(shell $(PKGCONF) --cflags libdpdk)
 # Add flag to allow experimental API as l2fwd uses rte_ethdev_set_ptype API
@@ -44,5 +47,3 @@ clean:
 	rm -f build/$(APP) build/$(APP)-shared build/$(APP)-test build/libhandler.so
 	test -d build && rmdir -p build || true
 
-test: 
-	$(MAKE) -C test

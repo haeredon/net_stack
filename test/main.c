@@ -86,12 +86,16 @@ struct test_t* create_test_suite() {
 
 /**********************************************/
 
-void* test_malloc(const char *type, size_t size, unsigned align) {
+void* test_malloc(const char *type, size_t size) {
     return malloc(size);
 }
 
 int main(int argc, char **argv) {    
-    struct handler_t** handlers = handler_create_stacks(test_malloc);        
+    struct handler_config_t handler_config = { 
+        .mem_allocate = test_malloc, 
+        .mem_free = free 
+    };	
+    struct handler_t** handlers = handler_create_stacks(&handler_config);        
     
     // start testing
     struct test_t* test_suite = create_test_suite();

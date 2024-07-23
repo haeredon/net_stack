@@ -27,15 +27,16 @@ uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_
 // }
 
 
-struct handler_t** handler_create_stacks(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
+struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 	// these are root handlers which will be activated when a package arrives
-	struct handler_t** handlers = (struct handler_t**) mem_allocate("handler array for ethernet", sizeof(struct handler_t*) * 2, 0);
-	handlers[0] = pcapng_create_handler(mem_allocate);
-	handlers[1] = ethernet_create_handler(mem_allocate);
+	struct handler_t** handlers = (struct handler_t**) config->mem_allocate("handler array for ethernet", sizeof(struct handler_t*) * 2);
+	
+	handlers[0] = pcapng_create_handler(config);
+	handlers[1] = ethernet_create_handler(config);
 	
 	// these are handlers which will not be activated when a package arrives, but must still be 
 	// created because they might be called by a root handler
-    struct handler_t* arp_handler = arp_create_handler(mem_allocate); // TODO: fix memory leak
+    struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
 
     return handlers;
 }

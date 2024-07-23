@@ -26,7 +26,7 @@ extern struct priority_map_t ethernet_type_to_handler;
 
 void ethernet_init_header(void* buffer, uint8_t* source, uint8_t* dest, uint8_t* tag, uint8_t* type);
 
-struct handler_t* ethernet_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
+struct handler_t* ethernet_create_handler(struct handler_config_t *handler_config);
 
 
 

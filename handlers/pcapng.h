@@ -8,7 +8,7 @@ struct kage_t {
     struct rte_mempool* mem_pool;
 };
 
-struct handler_t* pcapng_create_handler();
+struct handler_t* pcapng_create_handler(struct handler_config_t *handler_config);
 
 
 

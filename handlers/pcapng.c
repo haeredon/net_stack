@@ -89,8 +89,9 @@ uint16_t pcapng_read(struct rte_mbuf* buffer, uint16_t offset, struct interface_
     return 0;
 }
 
-struct handler_t* pcapng_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
-    struct handler_t* handler = (struct handler_t*) mem_allocate("pcapng handler", sizeof(struct handler_t), 0);	
+struct handler_t* pcapng_create_handler(struct handler_config_t *handler_config) {
+    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("pcapng handler", sizeof(struct handler_t));	
+    handler->handler_config = handler_config;
 
     handler->init = pcapng_init_handler;
     handler->close = pcapng_close_handler;

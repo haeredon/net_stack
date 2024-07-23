@@ -24,7 +24,7 @@ struct arp_header_t {
 };
 
 
-struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
+struct handler_t* arp_create_handler(struct handler_config_t *handler_config);
 
 
 

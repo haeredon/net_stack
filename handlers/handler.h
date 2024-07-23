@@ -24,16 +24,23 @@ struct operations_t {
     uint16_t (*response)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);        
 };
 
+struct handler_config_t {
+    void* (*mem_allocate)(const char *type, size_t size);
+    void (*mem_free)(void*);
+};
+
 struct handler_t {
     void (*init)(struct handler_t*); 
     void (*close)(struct handler_t*);
     struct operations_t operations;
 
+    struct handler_config_t *handler_config;
+
     void* priv;
 };
 
 
-struct handler_t** handler_create_stacks(void* (*mem_allocate)(const char *type, size_t size, unsigned align));
+struct handler_t** handler_create_stacks(struct handler_config_t *config);
 
 
 #endif // HANDLER_HANDLER_H

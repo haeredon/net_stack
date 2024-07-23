@@ -9,11 +9,11 @@
 
 void arp_close_handler(struct handler_t* handler) {
     struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
-    rte_free(private);
+    handler->handler_config->mem_free(private);
 }
 
 void arp_init_handler(struct handler_t* handler) {
-    struct arp_priv_t* arp_priv = (struct arp_priv_t*) rte_zmalloc("pcap handler private data", sizeof(struct arp_priv_t), 0); 
+    struct arp_priv_t* arp_priv = (struct arp_priv_t*) handler->handler_config->mem_allocate("pcap handler private data", sizeof(struct arp_priv_t)); 
     handler->priv = (void*) arp_priv;
 }
 
@@ -48,8 +48,9 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
 }
 
 
-struct handler_t* arp_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
-    struct handler_t* handler = (struct handler_t*) mem_allocate("arp handler", sizeof(struct handler_t), 0);	
+struct handler_t* arp_create_handler(struct handler_config_t *handler_config) {
+    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("arp handler", sizeof(struct handler_t));	
+    handler->handler_config = handler_config;
 
     handler->init = arp_init_handler;
     handler->close = arp_close_handler;

@@ -177,6 +177,10 @@ signal_handler(int signum)
 	}
 }
 
+void* net_stack_malloc(const char *type, size_t size) {
+	return rte_malloc(type, size, 0);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -201,8 +205,13 @@ main(int argc, char **argv)
 	struct lcore_setup_t* setup = (struct lcore_setup_t*) rte_zmalloc("Lcore setup", sizeof(struct lcore_setup_t), 0);	
 	setup->interface.port = 0;
 	setup->interface.queue = 0;
+
+	// set handlers memory allocator
+	struct handler_config_t *handler_config = (struct handler_config_t*) rte_zmalloc("Handler Config", sizeof(struct handler_config_t), 0);	
+	handler_config->mem_allocate = net_stack_malloc;
+	handler_config->mem_free = rte_free;
 		
-	setup->handlers = handler_create_stacks(rte_zmalloc);
+	setup->handlers = handler_create_stacks(handler_config);
 	setup->num_handlers = 2;
 	
 

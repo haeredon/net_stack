@@ -13,13 +13,13 @@ struct priority_map_t ethernet_type_to_handler = {
 
 
 void ethernet_init_handler(struct handler_t* handler) {
-    struct ethernet_priv_t* ethernet_priv = (struct ethernet_priv_t*) rte_zmalloc("pcap handler private data", sizeof(struct ethernet_priv_t), 0); 
+    struct ethernet_priv_t* ethernet_priv = (struct ethernet_priv_t*) handler->handler_config->mem_allocate("pcap handler private data", sizeof(struct ethernet_priv_t)); 
     handler->priv = (void*) ethernet_priv;
 }
 
 void ethernet_close_handler(struct handler_t* handler) {
     struct ethernet_priv_t* private = (struct ethernet_priv_t*) handler->priv;    
-    rte_free(private);
+    handler->handler_config->mem_free(private);
 }
 
 uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
@@ -73,8 +73,9 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
 // }
 
 
-struct handler_t* ethernet_create_handler(void* (*mem_allocate)(const char *type, size_t size, unsigned align)) {
-    struct handler_t* handler = (struct handler_t*) mem_allocate("ethernet handler", sizeof(struct handler_t), 0);	
+struct handler_t* ethernet_create_handler(struct handler_config_t *handler_config) {
+    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("ethernet handler", sizeof(struct handler_t));	
+    handler->handler_config = handler_config;
 
     handler->init = ethernet_init_handler;
     handler->close = ethernet_close_handler;

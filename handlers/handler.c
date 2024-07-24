@@ -5,26 +5,32 @@
 #include "handlers/arp.h"
 #include "handlers/ethernet.h"
 #include "handlers/pcapng.h"
-
-// uint16_t kage(struct packet_stack_t* packet_stack, void* response_buffer) {
-//     uint16_t num_written = 0;
-//     for (uint8_t i = 0; i < packet_stack->stack_depth; i++) {
-//         num_written += packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
-//     }
-
-//     return num_written;
-// }
+#include "log.h"
 
 
-uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_t* interface) {
 
+	/*
+	* Just some makeshift buffer for now
+	*
+	*/
+	const uint16_t BUFFER_SIZE = 4096;
+	uint8_t buffer[BUFFER_SIZE];
+	struct response_buffer_t response_buffer = { .buffer = buffer, .offset = 0, .size = BUFFER_SIZE, .stack_idx = 0 };
+
+	// call all response handlers to build packet
+    for (uint8_t i = 0; i < packet_stack->write_chain_length; i++) {
+        packet_stack->response[i](packet_stack, &response_buffer, interface);        
+    }
+
+	// write buffer to interface
+	int64_t ret = interface->operations.write(response_buffer.buffer, response_buffer.offset);
+	if(ret < 0) {
+		NETSTACK_LOG(NETSTACK_ERROR, "Failed to write packet");        
+	}
+
+	return ret;
 }
-
-// void handler_response(struct packet_stack_t* packet_stack, void* response_buffer) {
-    // for (uint8_t i = 0; i < packet_stack->stack_depth; i++) {
-    //     packet_stack->response[i](packet_stack->packet_pointers[i], response_buffer);        
-    // }
-// }
 
 
 struct handler_t** handler_create_stacks(struct handler_config_t *config) {

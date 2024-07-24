@@ -22,7 +22,7 @@ void ethernet_close_handler(struct handler_t* handler) {
     handler->handler_config->mem_free(private);
 }
 
-uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t response_buffer, struct interface_t* interface) {
     NETSTACK_LOG(NETSTACK_WARNING, "ethernet_response() called");            
 }
 

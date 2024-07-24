@@ -18,7 +18,7 @@ void arp_init_handler(struct handler_t* handler) {
 }
 
 
-uint16_t arp_response(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+uint16_t arp_response(struct packet_stack_t* packet_stack, struct response_buffer_t response_buffer, struct interface_t* interface) {
     NETSTACK_LOG(NETSTACK_WARNING, "arp_response() called");            
 }
 

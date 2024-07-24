@@ -15,6 +15,19 @@
 #include <linux/if_packet.h>
 
 
+int64_t write_response(void* buffer, uint64_t size) {
+    printf("Write called\n");
+}
+
+struct interface_t interface = {
+    .port = 0,
+    .queue = 0,
+    .operations = {
+        .write = write_response
+    }
+};
+
+
 struct test_t {
     uint8_t (*test)(struct test_t* test);
     int (*init)(struct test_t* test, struct handler_t* handler);
@@ -40,17 +53,20 @@ uint8_t test_test(struct test_t* test) {
         if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
             printf("Enhanced Block!\n");    
 
-            // if(req_buffer is a response) {
-            //   then evaluate against previous pending response
+            // if(packet is inbound) {
+            //     then send to handler
+
+            //     if(is carrying data, then check that data is sent to upper layer by handler) {
+
+            //     }
             // } else {
-            //    if(there is already a previous reqponse in pending) {
-            //        fail test;
-            //        return:
-            //    }
-            //    struct packet_enchanced_block_t* block = (struct packet_enchanced_block_t*) req_buffer;
-            //
-            //    test->handler->operations.read(&block->packet_data, 0, 0, test->handler->priv);            
-            // }            
+            //     // must be outbound then
+            //     if(has this packet been sent returned by the handler) {
+
+            //     } else {
+            //         // FAIL!
+            //     }
+            // }
 
             printf("Do test!\n");
         }

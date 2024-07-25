@@ -15,8 +15,42 @@
 #include <linux/if_packet.h>
 
 
+
+const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
+const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
+
+const uint8_t OWN_IP[] = { 0x14, 0x14, 0x14, 0x14 };
+const uint8_t REMOTE_IP[] = { 0x0A, 0x0A, 0x0A, 0x0A };
+
+#define MAC_SIZE 6
+
+
+struct response_t {
+    void* response_buffer;
+    uint64_t size;
+    struct response_t* next;
+};
+
+struct responses_head_t {
+    struct response_t* next;
+    struct response_t* last;
+} responses;
+
 int64_t write_response(void* buffer, uint64_t size) {
     printf("Write called\n");
+
+    struct response_t* new_response = (struct response_t*) malloc(sizeof(struct response_t*));
+    new_response->response_buffer = buffer;
+    new_response->size = size;
+    
+    struct response_t* response = responses.last;    
+    
+    if(response) {
+        response->next = new_response;
+    } else {
+        responses.next = new_response;
+        responses.last = new_response;
+    }
 }
 
 struct interface_t interface = {
@@ -26,7 +60,6 @@ struct interface_t interface = {
         .write = write_response
     }
 };
-
 
 struct test_t {
     uint8_t (*test)(struct test_t* test);
@@ -44,8 +77,11 @@ uint8_t test_test(struct test_t* test) {
     uint8_t* res_buffer = (uint8_t*) malloc(MAX_BUFFER_SIZE);
     struct pcapng_reader_t* reader = test->reader;
 
+    struct packet_stack_t packet_stack = { .response = 0, .packet_pointers = 0, .write_chain_length = 0 };
+
     while(reader->has_more_headers(reader)) {
-        if(reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE) == -1)  {
+        int num_bytes_read = reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE);
+        if(num_bytes_read == -1)  {
             printf("FAIL.\n");	
             return -1;
         }
@@ -53,20 +89,39 @@ uint8_t test_test(struct test_t* test) {
         if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
             printf("Enhanced Block!\n");    
 
-            // if(packet is inbound) {
-            //     then send to handler
+            // get packet ftom req_buffer
+            struct ethernet_header_t* header = (struct ethernet_header_t*) req_buffer;
 
-            //     if(is carrying data, then check that data is sent to upper layer by handler) {
+            uint8_t destionation_is_remote = memcmp(header->destination, REMOTE_MAC, 6) == MAC_SIZE;
+            uint8_t source_is_remote = memcmp(header->source, REMOTE_MAC, 6) == MAC_SIZE;
 
-            //     }
-            // } else {
-            //     // must be outbound then
-            //     if(has this packet been sent returned by the handler) {
+            uint8_t destionation_is_own = memcmp(header->destination, OWN_MAC, 6) == MAC_SIZE;
+            uint8_t source_is_own = memcmp(header->source, OWN_MAC, 6) == MAC_SIZE;
 
-            //     } else {
-            //         // FAIL!
-            //     }
-            // }
+            // if ethernet destination is the remote mac and source is own mac 
+            // then sent it to be read by the handler
+            if(destionation_is_remote && source_is_own) {
+                test->handler->operations.read(&packet_stack, &interface, test->handler->priv);
+            } else if(destionation_is_own && source_is_remote) {
+                if(responses.next) {
+                    if(buffers are equal) { // TODO: do comparison between req_buffer and responses
+                        // fix response structure
+                        if(responses.next == responses.last) {
+                            responses.last = 0;
+                        }
+                        responses.next = responses.next->next;
+                    } else {
+                        printf("FAIL!\n");
+                        return;   
+                    }
+                } else {
+                    printf("FAIL!\n");
+                    return;    
+                }
+            } else {
+                printf("FAIL!\n");
+                return;
+            }
 
             printf("Do test!\n");
         }
@@ -126,8 +181,3 @@ int main(int argc, char **argv) {
 
 
 
-
-// AA:AA:AA:AA:AA:AA is own mac
-// BB:BB:BB:BB:BB:BB is remote mac
-// 20.20.20.20 is own ip
-// 10.10.10.10 is remote ip

@@ -44,7 +44,6 @@ struct pcapng_reader_t {
     uint64_t bytes_read;
 };
 
-
 struct pcapng_reader_t* create_pcapng_reader();
 
  #endif // TEST_PCAPNG_H

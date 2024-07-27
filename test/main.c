@@ -23,7 +23,8 @@ const uint8_t OWN_IP[] = { 0x14, 0x14, 0x14, 0x14 };
 const uint8_t REMOTE_IP[] = { 0x0A, 0x0A, 0x0A, 0x0A };
 
 #define MAC_SIZE 6
-
+#define FAIL 1
+#define SUCCESS 0
 
 struct response_t {
     void* response_buffer;
@@ -89,8 +90,10 @@ uint8_t test_test(struct test_t* test) {
         if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
             printf("Enhanced Block!\n");    
 
+            struct packet_enchanced_block_t* pcapng_block = (struct packet_enchanced_block_t*) req_buffer;
+
             // get packet ftom req_buffer
-            struct ethernet_header_t* header = (struct ethernet_header_t*) req_buffer;
+            struct ethernet_header_t* header = (struct ethernet_header_t*) &pcapng_block->packet_data;
 
             uint8_t destionation_is_remote = memcmp(header->destination, REMOTE_MAC, 6) == MAC_SIZE;
             uint8_t source_is_remote = memcmp(header->source, REMOTE_MAC, 6) == MAC_SIZE;
@@ -103,24 +106,31 @@ uint8_t test_test(struct test_t* test) {
             if(destionation_is_remote && source_is_own) {
                 test->handler->operations.read(&packet_stack, &interface, test->handler->priv);
             } else if(destionation_is_own && source_is_remote) {
-                if(responses.next) {
-                    if(buffers are equal) { // TODO: do comparison between req_buffer and responses
+                struct response_t* response = responses.next;
+
+                if(response) {
+                    uint8_t is_same_size = response->size == pcapng_block->captured_package_length;
+                    
+                    if(is_same_size &&
+                       memcmp(response->response_buffer, &pcapng_block->packet_data, response->size)
+                    ) { 
                         // fix response structure
                         if(responses.next == responses.last) {
                             responses.last = 0;
                         }
                         responses.next = responses.next->next;
+                        free(response);
                     } else {
                         printf("FAIL!\n");
-                        return;   
+                        return FAIL;   
                     }
                 } else {
                     printf("FAIL!\n");
-                    return;    
+                    return FAIL;    
                 }
             } else {
                 printf("FAIL!\n");
-                return;
+                return FAIL;
             }
 
             printf("Do test!\n");

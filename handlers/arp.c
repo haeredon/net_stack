@@ -4,6 +4,8 @@
 #include "handlers/ethernet.h"
 #include "handlers/handler.h"
 
+#include "util/array.h"
+
 #include "log.h"
 
 
@@ -30,9 +32,12 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     
     packet_stack->response[packet_idx] = arp_response;
     
+    uint8_t target_hardware_addr_zero = array_is_zero(header->target_hardware_addr, ETHERNET_MAC_SIZE);
+    
     // is it a request?
-    if(!header->target_hardware_addr) {
-        // handler_response(packet_stack);        
+    if(target_hardware_addr_zero) {
+        NETSTACK_LOG(NETSTACK_INFO, "ARP Probe.\n");   
+        handler_response(packet_stack, interface);        
     } 
     // is it a gratuitous ARP?
     else if(

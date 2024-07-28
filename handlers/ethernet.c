@@ -23,7 +23,8 @@ void ethernet_close_handler(struct handler_t* handler) {
 }
 
 uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t response_buffer, struct interface_t* interface) {
-    NETSTACK_LOG(NETSTACK_WARNING, "ethernet_response() called");            
+    
+    NETSTACK_LOG(NETSTACK_WARNING, "ethernet_response() called\n");            
 }
 
 uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {   
@@ -41,7 +42,7 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
 
         if(handler) {
             // set next buffer pointer for next protocol level     
-            packet_stack->packet_pointers[++packet_stack->write_chain_length] = ((uint64_t*) header) + sizeof(struct ethernet_header_t);
+            packet_stack->packet_pointers[++packet_stack->write_chain_length] = ((uint8_t*) header) + sizeof(struct ethernet_header_t);
             
             handler->operations.read(packet_stack, interface, priv);            
         } else {

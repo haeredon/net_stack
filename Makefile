@@ -6,6 +6,7 @@ SRCS-TEST := test/main.c test/pcapng.c
 INCLUDES-TEST := -I ./ -I ./test
 SRCS-y := main.c worker.c 
 SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c
+SRCS-UTILITY := util/array.c
 SRCS-LOG := log.c
 INCLUDES := -I ./
 
@@ -36,8 +37,8 @@ build/$(APP)-shared: build/libhandler.so $(SRCS-y) Makefile $(PC_FILE) | build
 build/$(APP)-test: build/libhandler.so $(SRCS-TEST) | build
 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-TEST) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
-build/libhandler.so: $(SRCS-HANDLERS) $(SRCS-LOG) | build
-	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(SRCS-LOG) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+build/libhandler.so: $(SRCS-HANDLERS) $(SRCS-LOG) $(SRCS-UTILITY) | build
+	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(SRCS-LOG) $(SRCS-UTILITY) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 build:
 	@mkdir -p $@

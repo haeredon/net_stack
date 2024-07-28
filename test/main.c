@@ -18,9 +18,12 @@
 
 const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
 const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
+const uint8_t BROADCAST_MAC[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 const uint8_t OWN_IP[] = { 0x14, 0x14, 0x14, 0x14 };
 const uint8_t REMOTE_IP[] = { 0x0A, 0x0A, 0x0A, 0x0A };
+
+
 
 #define MAC_SIZE 6
 #define FAIL 1
@@ -78,8 +81,6 @@ uint8_t test_test(struct test_t* test) {
     uint8_t* res_buffer = (uint8_t*) malloc(MAX_BUFFER_SIZE);
     struct pcapng_reader_t* reader = test->reader;
 
-    struct packet_stack_t packet_stack = { .response = 0, .packet_pointers = 0, .write_chain_length = 0 };
-
     while(reader->has_more_headers(reader)) {
         int num_bytes_read = reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE);
         if(num_bytes_read == -1)  {
@@ -89,23 +90,27 @@ uint8_t test_test(struct test_t* test) {
 
         if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
             printf("Enhanced Block!\n");    
-
+            
             struct packet_enchanced_block_t* pcapng_block = (struct packet_enchanced_block_t*) req_buffer;
 
             // get packet ftom req_buffer
             struct ethernet_header_t* header = (struct ethernet_header_t*) &pcapng_block->packet_data;
+            struct packet_stack_t packet_stack = { .response = 0, .packet_pointers = header, .write_chain_length = 0 };
 
-            uint8_t destionation_is_remote = memcmp(header->destination, REMOTE_MAC, 6) == MAC_SIZE;
-            uint8_t source_is_remote = memcmp(header->source, REMOTE_MAC, 6) == MAC_SIZE;
 
-            uint8_t destionation_is_own = memcmp(header->destination, OWN_MAC, 6) == MAC_SIZE;
-            uint8_t source_is_own = memcmp(header->source, OWN_MAC, 6) == MAC_SIZE;
+            // TODO: support broadcast
+            
+            uint8_t destionation_is_remote = !memcmp(header->destination, REMOTE_MAC, 6);
+            uint8_t source_is_remote = !memcmp(header->source, REMOTE_MAC, 6);
+
+            uint8_t destionation_is_own = !memcmp(header->destination, OWN_MAC, 6);
+            uint8_t source_is_own = !memcmp(header->source, OWN_MAC, 6);
 
             // if ethernet destination is the remote mac and source is own mac 
             // then sent it to be read by the handler
-            if(destionation_is_remote && source_is_own) {
+            if(destionation_is_own && source_is_remote) {
                 test->handler->operations.read(&packet_stack, &interface, test->handler->priv);
-            } else if(destionation_is_own && source_is_remote) {
+            } else if(destionation_is_remote && source_is_own) {
                 struct response_t* response = responses.next;
 
                 if(response) {

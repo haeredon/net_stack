@@ -1,6 +1,8 @@
+#include <string.h>
+
 #include "handlers/ethernet.h"
 #include "handlers/protocol_map.h"
-
+ 
 
 #include "log.h"
 
@@ -22,9 +24,18 @@ void ethernet_close_handler(struct handler_t* handler) {
     handler->handler_config->mem_free(private);
 }
 
-uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t response_buffer, struct interface_t* interface) {
+uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {
+    struct ethernet_header_t* request_header = (struct ethernet_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
+    struct ethernet_header_t* response_header = (struct ethernet_header_t*) response_buffer->buffer;
+
+    memcpy(response_header->destination, request_header->source, ETHERNET_MAC_SIZE);
+    memcpy(response_header->source, request_header->destination, ETHERNET_MAC_SIZE);
+    response_header->ethernet_type = request_header->ethernet_type;
+
+    uint16_t num_bytes_written = sizeof(struct ethernet_header_t);
+    response_buffer->offset += num_bytes_written;
     
-    NETSTACK_LOG(NETSTACK_WARNING, "ethernet_response() called\n");            
+    return num_bytes_written;
 }
 
 uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {   

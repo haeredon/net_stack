@@ -19,7 +19,7 @@ uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_
 	struct response_buffer_t response_buffer = { .buffer = buffer, .offset = 0, .size = BUFFER_SIZE, .stack_idx = 0 };
 
 	// call all response handlers to build packet
-    for (uint8_t i = 0; i < packet_stack->write_chain_length; i++) {
+    for (uint8_t i = 0; i < packet_stack->write_chain_length; i++, response_buffer.stack_idx++) {
         packet_stack->response[i](packet_stack, &response_buffer, interface);        
     }
 

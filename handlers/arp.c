@@ -20,7 +20,7 @@ void arp_init_handler(struct handler_t* handler) {
 }
 
 
-uint16_t arp_response(struct packet_stack_t* packet_stack, struct response_buffer_t response_buffer, struct interface_t* interface) {
+uint16_t arp_response(struct packet_stack_t* packet_stack, struct response_buffer_t response_buffer, struct interface_t* interface) {    
     NETSTACK_LOG(NETSTACK_WARNING, "arp_response() called");            
 }
 
@@ -32,10 +32,10 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     
     packet_stack->response[packet_idx] = arp_response;
     
-    uint8_t target_hardware_addr_zero = array_is_zero(header->target_hardware_addr, ETHERNET_MAC_SIZE);
+    uint8_t target_hardware_addr_is_zero = array_is_zero(header->target_hardware_addr, ETHERNET_MAC_SIZE);
     
     // is it a request?
-    if(target_hardware_addr_zero) {
+    if(target_hardware_addr_is_zero) {
         NETSTACK_LOG(NETSTACK_INFO, "ARP Probe.\n");   
         handler_response(packet_stack, interface);        
     } 

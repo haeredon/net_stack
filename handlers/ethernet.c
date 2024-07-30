@@ -93,7 +93,6 @@ struct handler_t* ethernet_create_handler(struct handler_config_t *handler_confi
     handler->close = ethernet_close_handler;
 
     handler->operations.read = ethernet_read;
-    handler->operations.response = ethernet_response;
 
     return handler;
 }

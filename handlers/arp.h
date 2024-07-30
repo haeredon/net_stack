@@ -7,6 +7,11 @@
 
 #define ETHERNET_NUM_ETH_TYPE_ENTRIES 512
 
+#define ARP_OPERATION_REQUEST 1
+#define ARP_OPERATION_RESPOENSE 2
+
+#define ARP_HDW_TYPE_ETHERNET 1
+
 struct arp_priv_t {
     int dummy;
 };
@@ -18,9 +23,9 @@ struct arp_header_t {
     uint8_t pro_addr_length;
     uint16_t operation;
     uint8_t sender_hardware_addr[ETHERNET_MAC_SIZE];
-    uint32_t sender_protocol_addr[4];
+    uint32_t sender_protocol_addr;
     uint8_t target_hardware_addr[ETHERNET_MAC_SIZE];
-    uint32_t target_protocol_addr[4];
+    uint32_t target_protocol_addr;
 };
 
 

@@ -27,12 +27,12 @@ struct interface_operations_t {
 struct interface_t {
      uint16_t port;
      uint32_t queue;
+     uint32_t ipv4_addr;
      struct interface_operations_t operations;
 };
 
 struct operations_t {
     uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);        
-    uint16_t (*response)(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface);        
 };
 
 struct handler_config_t {

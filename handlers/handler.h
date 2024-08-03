@@ -31,8 +31,9 @@ struct interface_t {
      struct interface_operations_t operations;
 };
 
+struct handler_t;
 struct operations_t {
-    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv);        
+    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);        
 };
 
 struct handler_config_t {

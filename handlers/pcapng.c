@@ -68,8 +68,8 @@ void pcapng_close_handler(struct handler_t* handler) {
 }
 
 
-uint16_t pcapng_read(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, void* priv) {
-    struct kage_t* kage = (struct kage_t*) priv;
+uint16_t pcapng_read(struct rte_mbuf* buffer, uint16_t offset, struct interface_t* interface, struct handler_t* handler) {
+    struct kage_t* kage = (struct kage_t*) handler->priv;
 
     struct rte_mbuf* pcap_buffers[1];
     

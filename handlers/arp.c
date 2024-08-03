@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "handlers/arp.h"
 #include "handlers/ethernet.h"
@@ -30,21 +31,14 @@ const uint16_t ARP_RESOLUTION_LIST_SIZE = 256;
 struct arp_resoltion_list_t arp_resolution_list; 
 
 void arp_insert_mapping(struct arp_entry_t* entry) {
+    struct arp_entry_t* old_entry = arp_resolution_list.list[arp_resolution_list.insert_idx];
+    if(old_entry) {
+        free(old_entry);
+    }
+    
     arp_resolution_list.list[arp_resolution_list.insert_idx] = entry;
     arp_resolution_list.insert_idx = ++arp_resolution_list.insert_idx % ARP_RESOLUTION_LIST_SIZE;
 }
-
-// don't just uncomment this. It's literally the same as the arp_get_ip_mapping function. be smart ;)
-// struct arp_entry_t* arp_get_mac_mapping(uint8_t mac[ETHERNET_MAC_SIZE]) {
-//     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
-//         struct arp_entry_t* entry = arp_resolution_list.list[i];
-//         if(memcmp(mac, entry->mac, ETHERNET_MAC_SIZE) == ETHERNET_MAC_SIZE) {
-//             return entry;
-//         }        
-//     }
-
-//     return 0;    
-// }
 
 struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4) {
     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
@@ -88,7 +82,7 @@ uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct respons
     return num_bytes_written;
 }
 
-uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {
+uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
     NETSTACK_LOG(NETSTACK_INFO, "ARP read handler called.\n");   
 
     uint8_t packet_idx = packet_stack->write_chain_length;
@@ -103,12 +97,22 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
                 mapping->ipv4 = header->sender_protocol_addr;
             }
 
-            
-            
-            if(header->operation == ARP_OPERATION_REQUEST && header->target_protocol_addr == interface->ipv4_addr) {
-                packet_stack->response[packet_idx] = arp_handle_response;
-                handler_response(packet_stack, interface);                                                                                
+            if(header->sender_protocol_addr == interface->ipv4_addr) {
+                if(!mapping) {
+                    struct arp_entry_t* new_arp_entry = handler->handler_config->mem_allocate("arp entry", sizeof(struct arp_entry_t));
+                    new_arp_entry->ipv4 = header->sender_protocol_addr;
+                    memcpy(new_arp_entry->mac, header->sender_hardware_addr, ETHERNET_MAC_SIZE);
+                    arp_insert_mapping(new_arp_entry);
+                }
+
+                if(header->operation == ARP_OPERATION_REQUEST) {
+                    packet_stack->response[packet_idx] = arp_handle_response;
+                    handler_response(packet_stack, interface);                                                                                
+                }
             }
+            
+            
+
         }
     }
 }

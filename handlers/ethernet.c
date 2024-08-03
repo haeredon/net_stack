@@ -38,24 +38,24 @@ uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_
     return num_bytes_written;
 }
 
-uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, void* priv) {   
+uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
     uint8_t packet_idx = packet_stack->write_chain_length;
     struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
 
     packet_stack->response[packet_idx] = ethernet_response;
 
     if(header->ethernet_type > 0x0600) {
-        struct handler_t* handler = GET_FROM_PRIORITY(
+        struct handler_t* next_handler = GET_FROM_PRIORITY(
             &ethernet_type_to_handler,
             header->ethernet_type, 
             struct handler_t
         );
 
-        if(handler) {
+        if(next_handler) {
             // set next buffer pointer for next protocol level     
             packet_stack->packet_pointers[++packet_stack->write_chain_length] = ((uint8_t*) header) + sizeof(struct ethernet_header_t);
             
-            handler->operations.read(packet_stack, interface, priv);            
+            next_handler->operations.read(packet_stack, interface, next_handler);            
         } else {
             NETSTACK_LOG(NETSTACK_WARNING, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
         }        

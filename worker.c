@@ -79,7 +79,7 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 			rte_prefetch0(buffer_start); // learn more about this statement!!!
 
 			for (uint8_t i = 0; i < setup->num_handlers; i++) {
-				handlers[i]->operations.read(&packet_stack, interface, handlers[i]->priv);	
+				handlers[i]->operations.read(&packet_stack, interface, handlers[i]);	
 			}
 		}
 

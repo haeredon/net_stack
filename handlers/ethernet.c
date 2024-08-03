@@ -64,27 +64,6 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
     }    
 }
 
-// void ethernet_init_header(void* buffer, uint8_t* source, uint8_t* dest, uint8_t* tag, uint8_t* type) {
-//     uint16_t offset = 0;
-    
-//     memcpy(buffer, dest, ETHERNET_MAC_SIZE);
-//     offset += ETHERNET_MAC_SIZE;
-
-//     memcpy(buffer, source, ETHERNET_MAC_SIZE);
-//     offset += ETHERNET_MAC_SIZE;
-
-//     if(tag) {
-//         memcpy(buffer, dest, ETHERNET_TAG_SIZE);
-//         offset += ETHERNET_TAG_SIZE;
-//     }
-
-//     memcpy(buffer, type, ETHERNET_ETH_TYPE_SIZE);
-//     offset += ETHERNET_ETH_TYPE_SIZE;
-
-//     return offset;
-// }
-
-
 struct handler_t* ethernet_create_handler(struct handler_config_t *handler_config) {
     struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("ethernet handler", sizeof(struct handler_t));	
     handler->handler_config = handler_config;

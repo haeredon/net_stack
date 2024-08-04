@@ -43,6 +43,11 @@ void arp_insert_mapping(struct arp_entry_t* entry) {
 struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4) {
     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
         struct arp_entry_t* entry = arp_resolution_list.list[i];
+
+        if(!entry) {
+            break;
+        }
+
         if(ipv4 == entry->ipv4) {
             return entry;
         }        
@@ -59,6 +64,12 @@ void arp_close_handler(struct handler_t* handler) {
 void arp_init_handler(struct handler_t* handler) {
     struct arp_priv_t* arp_priv = (struct arp_priv_t*) handler->handler_config->mem_allocate("pcap handler private data", sizeof(struct arp_priv_t)); 
     handler->priv = (void*) arp_priv;
+
+    arp_resolution_list.list = (struct arp_entry_t**) handler->handler_config->mem_allocate("Arp resolution list", sizeof(struct arp_entry_t) * ARP_RESOLUTION_LIST_SIZE);     
+
+    for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
+        arp_resolution_list.list[i] = 0;
+    }
 }
 
 
@@ -87,9 +98,9 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
 
     uint8_t packet_idx = packet_stack->write_chain_length;
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->packet_pointers[packet_idx];
-
+ 
     if(header->hdw_type == ARP_HDW_TYPE_ETHERNET) {
-        if(header->pro_type == 0x0800) {
+        if(header->pro_type == ETHERNET_TYPE_IPV6) {
             struct arp_entry_t* mapping = 0;
 
             if(mapping = arp_get_ip_mapping(header->sender_protocol_addr)) {
@@ -97,7 +108,7 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
                 mapping->ipv4 = header->sender_protocol_addr;
             }
 
-            if(header->sender_protocol_addr == interface->ipv4_addr) {
+            if(header->target_protocol_addr == interface->ipv4_addr) {
                 if(!mapping) {
                     struct arp_entry_t* new_arp_entry = handler->handler_config->mem_allocate("arp entry", sizeof(struct arp_entry_t));
                     new_arp_entry->ipv4 = header->sender_protocol_addr;
@@ -127,7 +138,7 @@ struct handler_t* arp_create_handler(struct handler_config_t *handler_config) {
 
     handler->operations.read = arp_read;
 
-    ADD_TO_PRIORITY(&ethernet_type_to_handler, htons(0x0806), handler);
+    ADD_TO_PRIORITY(&ethernet_type_to_handler, htons(ETHERNET_TYPE_ARP), handler);
 
     return handler;
 }

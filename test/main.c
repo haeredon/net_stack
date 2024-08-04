@@ -20,8 +20,8 @@ const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
 const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
 const uint8_t BROADCAST_MAC[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
-const uint8_t OWN_IP[] = { 0x14, 0x14, 0x14, 0x14 };
-const uint8_t REMOTE_IP[] = { 0x0A, 0x0A, 0x0A, 0x0A };
+const uint32_t OWN_IP = 0x20202020;
+const uint32_t REMOTE_IP = 0x10101010;
 
 
 
@@ -62,7 +62,8 @@ struct interface_t interface = {
     .queue = 0,
     .operations = {
         .write = write_response
-    }
+    },
+    .ipv4_addr = OWN_IP
 };
 
 struct test_t {

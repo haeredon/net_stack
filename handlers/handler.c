@@ -43,6 +43,7 @@ struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 	// these are handlers which will not be activated when a package arrives, but must still be 
 	// created because they might be called by a root handler
     struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
+	arp_handler->init(arp_handler);
 
     return handlers;
 }

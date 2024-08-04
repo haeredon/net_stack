@@ -10,6 +10,9 @@
 #define ETHERNET_TAG_SIZE 6
 #define ETHERNET_ETH_TYPE_SIZE 6
 
+// big endian types
+#define ETHERNET_TYPE_ARP 0x0806
+#define ETHERNET_TYPE_IPV6 0x8
 
 struct ethernet_priv_t {
     int dummy;

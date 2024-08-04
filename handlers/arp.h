@@ -7,10 +7,10 @@
 
 #define ETHERNET_NUM_ETH_TYPE_ENTRIES 512
 
-#define ARP_OPERATION_REQUEST 1
-#define ARP_OPERATION_RESPOENSE 2
+#define ARP_OPERATION_REQUEST 256 // big_endian
+#define ARP_OPERATION_RESPOENSE 512 // big_endian
 
-#define ARP_HDW_TYPE_ETHERNET 1
+#define ARP_HDW_TYPE_ETHERNET 256 // big_endian
 
 struct arp_priv_t {
     int dummy;
@@ -26,7 +26,7 @@ struct arp_header_t {
     uint32_t sender_protocol_addr;
     uint8_t target_hardware_addr[ETHERNET_MAC_SIZE];
     uint32_t target_protocol_addr;
-};
+} __attribute__((packed));
 
 
 struct handler_t* arp_create_handler(struct handler_config_t *handler_config);

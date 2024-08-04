@@ -28,6 +28,7 @@ struct interface_t {
      uint16_t port;
      uint32_t queue;
      uint32_t ipv4_addr;
+     uint8_t mac[6];
      struct interface_operations_t operations;
 };
 

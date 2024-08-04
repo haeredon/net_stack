@@ -75,14 +75,14 @@ void arp_init_handler(struct handler_t* handler) {
 
 uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {    
     struct arp_header_t* request_header = (struct arp_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
-    struct arp_header_t* response_header = (struct arp_header_t*) response_buffer->buffer;
+    struct arp_header_t* response_header = (struct arp_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
 
     response_header->hdw_type = request_header->hdw_type;
     response_header->pro_type = request_header->pro_type;
     response_header->hdw_addr_length = request_header->hdw_addr_length;
     response_header->pro_addr_length = request_header->pro_addr_length;
     response_header->operation = request_header->operation = ARP_OPERATION_RESPOENSE;
-    memcpy(response_header->sender_hardware_addr, request_header->target_hardware_addr, ETHERNET_MAC_SIZE);
+    memcpy(response_header->sender_hardware_addr, interface->mac, ETHERNET_MAC_SIZE);
     response_header->sender_protocol_addr = request_header->target_protocol_addr;
     memcpy(response_header->target_hardware_addr, request_header->sender_hardware_addr, ETHERNET_MAC_SIZE);
     response_header->target_protocol_addr = request_header->sender_protocol_addr;
@@ -96,7 +96,7 @@ uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct respons
 uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
     NETSTACK_LOG(NETSTACK_INFO, "ARP read handler called.\n");   
 
-    uint8_t packet_idx = packet_stack->write_chain_length;
+    uint8_t packet_idx = packet_stack->write_chain_length++;
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->packet_pointers[packet_idx];
  
     if(header->hdw_type == ARP_HDW_TYPE_ETHERNET) {
@@ -121,9 +121,6 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
                     handler_response(packet_stack, interface);                                                                                
                 }
             }
-            
-            
-
         }
     }
 }

@@ -26,7 +26,7 @@ void ethernet_close_handler(struct handler_t* handler) {
 
 uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {
     struct ethernet_header_t* request_header = (struct ethernet_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
-    struct ethernet_header_t* response_header = (struct ethernet_header_t*) response_buffer->buffer;
+    struct ethernet_header_t* response_header = (struct ethernet_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
 
     memcpy(response_header->destination, request_header->source, ETHERNET_MAC_SIZE);
     memcpy(response_header->source, request_header->destination, ETHERNET_MAC_SIZE);
@@ -39,7 +39,7 @@ uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_
 }
 
 uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
-    uint8_t packet_idx = packet_stack->write_chain_length;
+    uint8_t packet_idx = packet_stack->write_chain_length++;
     struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
 
     packet_stack->response[packet_idx] = ethernet_response;
@@ -53,7 +53,7 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
 
         if(next_handler) {
             // set next buffer pointer for next protocol level     
-            packet_stack->packet_pointers[++packet_stack->write_chain_length] = ((uint8_t*) header) + sizeof(struct ethernet_header_t);
+            packet_stack->packet_pointers[packet_stack->write_chain_length] = ((uint8_t*) header) + sizeof(struct ethernet_header_t);
             
             next_handler->operations.read(packet_stack, interface, next_handler);            
         } else {

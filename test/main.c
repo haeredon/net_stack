@@ -63,7 +63,8 @@ struct interface_t interface = {
     .operations = {
         .write = write_response
     },
-    .ipv4_addr = OWN_IP
+    .ipv4_addr = OWN_IP,
+    .mac = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA }
 };
 
 struct test_t {

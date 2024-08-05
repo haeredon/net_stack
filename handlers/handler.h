@@ -20,8 +20,9 @@ struct packet_stack_t {
     uint8_t write_chain_length;
 };
 
+struct response_t;
 struct interface_operations_t {
-    int64_t (*write)(void* buffer, uint64_t size);        
+    int64_t (*write)(struct response_t response);        
 };
 
 struct interface_t {
@@ -30,6 +31,12 @@ struct interface_t {
      uint32_t ipv4_addr;
      uint8_t mac[6];
      struct interface_operations_t operations;
+};
+
+struct response_t {
+    void* buffer;
+    uint64_t size;
+    struct interface_t* interface;
 };
 
 struct handler_t;

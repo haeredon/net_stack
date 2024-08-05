@@ -24,7 +24,12 @@ uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_
     }
 
 	// write buffer to interface
-	int64_t ret = interface->operations.write(response_buffer.buffer, response_buffer.offset);
+	struct response_t response = {
+		.buffer = response_buffer.buffer,
+		.size = response_buffer.size,
+		.interface = interface
+	};
+	int64_t ret = interface->operations.write(response);
 	if(ret < 0) {
 		NETSTACK_LOG(NETSTACK_ERROR, "Failed to write packet");        
 	}

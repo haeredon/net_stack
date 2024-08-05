@@ -56,7 +56,12 @@
         "array": "c",
         "string_view": "c",
         "initializer_list": "c",
-        "protocol_map.h": "c"
+        "protocol_map.h": "c",
+        "string.h": "c",
+        "deque": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c"
     }
     
 }

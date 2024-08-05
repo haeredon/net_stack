@@ -46,11 +46,13 @@ int64_t write_response(void* buffer, uint64_t size) {
     struct response_t* new_response = (struct response_t*) malloc(sizeof(struct response_t*));
     new_response->response_buffer = buffer;
     new_response->size = size;
+    new_response->next = 0;
     
-    struct response_t* response = responses.last;    
+    struct response_t* last_response = responses.last;    
     
-    if(response) {
-        response->next = new_response;
+    if(last_response) {
+        last_response->next = new_response;
+        responses.last = new_response;
     } else {
         responses.next = new_response;
         responses.last = new_response;
@@ -119,7 +121,7 @@ uint8_t test_test(struct test_t* test) {
                     uint8_t is_same_size = response->size == pcapng_block->captured_package_length;
                     
                     if(is_same_size &&
-                       memcmp(response->response_buffer, &pcapng_block->packet_data, response->size)
+                       !memcmp(response->response_buffer, &pcapng_block->packet_data, response->size)
                     ) { 
                         // fix response structure
                         if(responses.next == responses.last) {
@@ -179,6 +181,9 @@ void* test_malloc(const char *type, size_t size) {
 }
 
 int main(int argc, char **argv) {    
+    responses.last = 0;
+    responses.next = 0;
+
     struct handler_config_t handler_config = { 
         .mem_allocate = test_malloc, 
         .mem_free = free 
@@ -191,6 +196,8 @@ int main(int argc, char **argv) {
     if(test_suite->init(test_suite, handlers[1])) { // we know ethernet is index 1. That needs to be made more stable in the future
         return -1;
     }
+
+    
 
     test_suite->test(test_suite);
     test_suite->end(test_suite);

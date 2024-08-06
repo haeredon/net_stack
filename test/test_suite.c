@@ -52,12 +52,10 @@ uint8_t test_suite_test(struct test_suite_t* test_suite) {
     while(reader->has_more_headers(reader)) {
         int num_bytes_read = reader->read_block(reader, req_buffer, MAX_BUFFER_SIZE);
         if(num_bytes_read == -1)  {
-            printf("FAIL.\n");	
-            return -1;
+            return FAIL;
         }
 
         if(packet_is_type(req_buffer, PCAPNG_ENHANCED_BLOCK)) {
-            printf("Enhanced Block!\n");    
             
             struct packet_enchanced_block_t* pcapng_block = (struct packet_enchanced_block_t*) req_buffer;
 

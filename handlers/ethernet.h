@@ -13,6 +13,7 @@
 // big endian types
 #define ETHERNET_TYPE_ARP 0x0806
 #define ETHERNET_TYPE_IPV6 0x8
+#define ETHERNET_TYPE_IPV4 0x0800
 
 struct ethernet_priv_t {
     int dummy;

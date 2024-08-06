@@ -17,16 +17,16 @@ uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_
 	const uint16_t BUFFER_SIZE = 4096;
 	uint8_t buffer[BUFFER_SIZE];
 	struct response_buffer_t response_buffer = { .buffer = buffer, .offset = 0, .size = BUFFER_SIZE, .stack_idx = 0 };
-
+	
 	// call all response handlers to build packet
     for (uint8_t i = 0; i < packet_stack->write_chain_length; i++, response_buffer.stack_idx++) {
-        packet_stack->response[i](packet_stack, &response_buffer, interface);        
+    	packet_stack->response[i](packet_stack, &response_buffer, interface);        
     }
 
 	// write buffer to interface
 	struct response_t response = {
 		.buffer = response_buffer.buffer,
-		.size = response_buffer.size,
+		.size = response_buffer.offset,
 		.interface = interface
 	};
 	int64_t ret = interface->operations.write(response);

@@ -6,6 +6,8 @@
 #include "handlers/ethernet.h"
 
 
+#define IP_NUM_PROTOCOL_TYPE_ENTRIES 64
+
 struct ipv4_priv_t {
     int dummy;
 };
@@ -24,6 +26,8 @@ struct ipv4_header_t {
     // no support for options!
 } __attribute__((packed));
 
+
+extern struct priority_map_t ip_type_to_handler;
 
 struct handler_t* ipv4_create_handler(struct handler_config_t *handler_config);
 

@@ -61,7 +61,10 @@
         "deque": "c",
         "string": "c",
         "unordered_map": "c",
-        "vector": "c"
+        "vector": "c",
+        "memory": "c",
+        "tuple": "c",
+        "utility": "c"
     }
     
 }

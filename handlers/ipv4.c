@@ -46,8 +46,20 @@ uint16_t ipv4_handle_response(struct packet_stack_t* packet_stack, struct respon
     return 0;
 }
 
-uint8_t ipv4_checksum_wrong() {
-    return 1;
+uint8_t ipv4_checksum_wrong(struct ipv4_header_t* header) {
+    uint16_t sum = 0;
+    const uint8_t length = (header->flags_1 & 0x0F) * 2;
+
+    const uint16_t* data = (const uint16_t) header;
+
+    for(uint8_t i = 0 ; i < length ; ++i) {
+        sum += data[i];
+        if(sum < data[i]) {
+            sum++;
+        }
+    }
+
+    return header->header_checksum != ~sum;
 }
 
 uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
@@ -58,12 +70,12 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
 
     packet_stack->response[packet_idx] = ipv4_handle_response;
  
-    if(ipv4_checksum_wrong()) {
+    if(ipv4_checksum_wrong(header)) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 checksum wrong: Dropping package.\n");          
         return 1;
     }
 
-    uint8_t IHL = header->flags_1 | 0x0F;
+    uint8_t IHL = header->flags_1 & 0x0F;
     if(IHL != 5) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 with options not supported: Dropping package.\n");   
         return 1;

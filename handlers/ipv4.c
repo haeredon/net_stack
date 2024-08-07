@@ -101,8 +101,8 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
         } else {
             NETSTACK_LOG(NETSTACK_WARNING, "IPv4 received non-supported protocol type: %hx\n", header->protocol);            
         }
-    } else {
-        
+    } else {        
+        handler_response(packet_stack, interface);            
     }
 }
 

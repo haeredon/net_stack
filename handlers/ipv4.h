@@ -24,7 +24,7 @@ struct ipv4_header_t {
     uint32_t source_ip;
     uint32_t destination_ip;
     // no support for options!
-} __attribute__((packed));
+} __attribute__((packed, aligned(4)));
 
 
 extern struct priority_map_t ip_type_to_handler;

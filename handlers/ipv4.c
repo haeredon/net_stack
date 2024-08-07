@@ -50,7 +50,7 @@ uint8_t ipv4_checksum_wrong(struct ipv4_header_t* header) {
     uint16_t sum = 0;
     const uint8_t length = (header->flags_1 & 0x0F) * 2;
 
-    const uint16_t* data = (const uint16_t) header;
+    uint16_t* data = (uint16_t*) header;
 
     for(uint8_t i = 0 ; i < length ; ++i) {
         sum += data[i];

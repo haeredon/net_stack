@@ -1,0 +1,24 @@
+#!/bin/bash
+
+PCAP_FILE=$1
+NEW_PCAP="./test.pcap"
+
+OWN_MAC=$2
+REMOTE_MAC=$3
+OWN_IPV4=$4
+
+TEST_OWN_MAC=AA:AA:AA:AA:AA:AA
+TEST_REMOTE_MAC=BB:BB:BB:BB:BB:BB
+
+TEST_OWN_IPV4=32.32.32.32
+
+bittwiste -I $PCAP_FILE -O $NEW_PCAP -T eth -d $OWN_MAC,$TEST_OWN_MAC
+bittwiste -I $NEW_PCAP -O $NEW_PCAP -T eth -s $OWN_MAC,$TEST_OWN_MAC
+
+bittwiste -I $NEW_PCAP -O $NEW_PCAP -T eth -d $REMOTE_MAC,$TEST_REMOTE_MAC
+bittwiste -I $NEW_PCAP -O $NEW_PCAP -T eth -s $REMOTE_MAC,$TEST_REMOTE_MAC
+
+bittwiste -I $NEW_PCAP -O $NEW_PCAP -T ip -s $OWN_IPV4,$TEST_OWN_IPV4
+bittwiste -I $NEW_PCAP -O $NEW_PCAP -T ip -d $OWN_IPV4,$TEST_OWN_IPV4
+
+

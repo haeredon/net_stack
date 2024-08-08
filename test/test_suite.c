@@ -121,6 +121,8 @@ int test_suite_init(struct test_suite_t* test_suite, struct handler_t* handler) 
 void test_suite_end(struct test_suite_t* test_suite) {
     test_suite->reader->close(test_suite->reader);
     test_suite->handler->close(test_suite->handler);
+    free(test_suite->pcapng_test_file);
+    free(test_suite);
 }
 
 struct test_suite_t* test_suite_create_test_suite(char pcapng_test_file[]) {

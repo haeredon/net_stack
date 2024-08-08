@@ -94,8 +94,6 @@ uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct respons
 }
 
 uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    NETSTACK_LOG(NETSTACK_INFO, "ARP read handler called.\n");   
-
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->packet_pointers[packet_idx];
  

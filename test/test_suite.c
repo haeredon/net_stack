@@ -5,7 +5,7 @@
 #include "pcapng.h"
 #include "handlers/handler.h"
 #include "handlers/ethernet.h"
-
+#include "handlers/id.h"
 
 const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
 const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
@@ -16,6 +16,7 @@ const uint32_t OWN_IP = 0x20202020;
 #define FAIL 1
 #define SUCCESS 0
 
+
 int64_t test_suite_write_response(struct response_t response) {
     // trick to get the responses list from the test_suite
     uint64_t interface_offset = offsetof(struct test_suite_t, interface);
@@ -23,10 +24,19 @@ int64_t test_suite_write_response(struct response_t response) {
     struct test_responses_head_t* responses = 
         (struct test_responses_head_t*) (((uint8_t*) response.interface) - interface_offset + responses_offset);
 
+    // add a new response to the reponse list
     struct test_response_t* new_response = (struct test_response_t*) malloc(sizeof(struct test_response_t*));
     new_response->response_buffer = response.buffer;
     new_response->size = response.size;
+    new_response->uses_id_header = 0;
     new_response->next = 0;
+    
+    struct id_header_t* id_header = id_get_id_header(response.buffer, response.size);
+
+    if(id_header) {    
+        new_response->size = id_header->num_bytes_before;
+        new_response->uses_id_header = 1;
+    }
     
     struct test_response_t* last_response = responses->last;    
     
@@ -78,10 +88,10 @@ uint8_t test_suite_test(struct test_suite_t* test_suite) {
             } else if(destionation_is_remote && source_is_own) {
                 struct test_response_t* response = responses->next;
 
-                if(response) {
+                if(response) {                                        
                     uint8_t is_same_size = response->size == pcapng_block->captured_package_length;
                     
-                    if(is_same_size &&
+                    if((is_same_size || response->uses_id_header) &&
                        !memcmp(response->response_buffer, &pcapng_block->packet_data, response->size)
                     ) { 
                         // fix response structure

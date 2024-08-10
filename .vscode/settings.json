@@ -64,7 +64,8 @@
         "vector": "c",
         "memory": "c",
         "tuple": "c",
-        "utility": "c"
+        "utility": "c",
+        "stdlib.h": "c"
     }
     
 }

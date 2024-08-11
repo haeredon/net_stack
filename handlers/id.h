@@ -16,21 +16,7 @@ struct id_header_t {
 };
 
 
-struct id_header_t* id_get_id_header(const uint8_t* data, const uint64_t size) {
-    const uint16_t minimum_size = sizeof(struct id_header_t);
-
-    if(size < minimum_size) {
-        return 0;
-    }
-
-    struct id_header_t* id_header = (struct id_header_t*) ((data + size) - sizeof(struct id_header_t));
-
-    if(id_header->magic_number == ID_MAGIC_NUMBER) {
-        return id_header;
-    }
-
-    return 0;
-}
+struct id_header_t* id_get_id_header(const uint8_t* data, const uint64_t size);
 
 
 struct handler_t* id_create_handler(struct handler_config_t *handler_config);

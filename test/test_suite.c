@@ -25,12 +25,13 @@ int64_t test_suite_write_response(struct response_t response) {
         (struct test_responses_head_t*) (((uint8_t*) response.interface) - interface_offset + responses_offset);
 
     // add a new response to the reponse list
-    struct test_response_t* new_response = (struct test_response_t*) malloc(sizeof(struct test_response_t*));
-    new_response->response_buffer = response.buffer;
+    struct test_response_t* new_response = (struct test_response_t*) malloc(sizeof(struct test_response_t));
+        
+    new_response->response_buffer = response.buffer;    
     new_response->size = response.size;
-    new_response->uses_id_header = 0;
+    new_response->uses_id_header = 0;    
     new_response->next = 0;
-    
+
     struct id_header_t* id_header = id_get_id_header(response.buffer, response.size);
 
     if(id_header) {    
@@ -39,7 +40,7 @@ int64_t test_suite_write_response(struct response_t response) {
     }
     
     struct test_response_t* last_response = responses->last;    
-    
+
     if(last_response) {
         last_response->next = new_response;
         responses->last = new_response;
@@ -95,7 +96,7 @@ uint8_t test_suite_test(struct test_suite_t* test_suite) {
                        !memcmp(response->response_buffer, &pcapng_block->packet_data, response->size)
                     ) { 
                         // fix response structure
-                        if(responses->next == responses->last) {
+                        if(response == responses->last) {
                             responses->last = 0;
                         }
                         responses->next = responses->next->next;

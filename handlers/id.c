@@ -16,6 +16,23 @@ void id_close_handler(struct handler_t* handler) {}
 void id_init_handler(struct handler_t* handler) {}
 
 
+struct id_header_t* id_get_id_header(const uint8_t* data, const uint64_t size) {
+    const uint16_t minimum_size = sizeof(struct id_header_t);
+
+    if(size < minimum_size) {
+        return 0;
+    }
+
+    struct id_header_t* id_header = (struct id_header_t*) ((data + size) - sizeof(struct id_header_t));
+
+    if(id_header->magic_number == ID_MAGIC_NUMBER) {
+        return id_header;
+    }
+
+    return 0;
+}
+
+
 uint16_t id_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {        
     struct id_header_t* response_header = (struct id_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
 

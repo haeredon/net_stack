@@ -5,6 +5,7 @@
 #include "handlers/arp.h"
 #include "handlers/ethernet.h"
 #include "handlers/pcapng.h"
+#include "handlers/ipv4.h"
 #include "log.h"
 
 
@@ -49,6 +50,9 @@ struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 	// created because they might be called by a root handler
     struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
 	arp_handler->init(arp_handler);
+
+	struct handler_t* ipv4_handler = ipv4_create_handler(config); // TODO: fix memory leak
+	ipv4_handler->init(ipv4_handler);
 
     return handlers;
 }

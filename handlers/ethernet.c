@@ -1,4 +1,5 @@
 #include <string.h>
+#include <arpa/inet.h>
 
 #include "handlers/ethernet.h"
 #include "handlers/protocol_map.h"
@@ -44,7 +45,7 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
 
     packet_stack->response[packet_idx] = ethernet_response;
 
-    if(header->ethernet_type > 0x0600) {
+    if(header->ethernet_type > ntohs(0x0600) /* PLEASE OPTIMIZE */) {
         struct handler_t* next_handler = GET_FROM_PRIORITY(
             &ethernet_type_to_handler,
             header->ethernet_type, 

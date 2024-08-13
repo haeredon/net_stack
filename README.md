@@ -22,5 +22,6 @@
 - [ ] Individual test naming
 
 ### Notes to self
+* Fix return value of handler read function
 
 

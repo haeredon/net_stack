@@ -32,10 +32,10 @@ int main(int argc, char **argv) {
     struct handler_t* id_handler = id_create_handler(&handler_config); // TODO: fix memory leak
 	id_handler->init(id_handler);
 
-    ADD_TO_PRIORITY(&ip_type_to_handler, htons(0x01), id_handler); // ICMP
-    ADD_TO_PRIORITY(&ip_type_to_handler, htons(0x06), id_handler); // TCP
-    ADD_TO_PRIORITY(&ip_type_to_handler, htons(0x11), id_handler); // UDP
-    ADD_TO_PRIORITY(&ip_type_to_handler, htons(0x29), id_handler); // IPv6
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x01, id_handler); // ICMP
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x06, id_handler); // TCP
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x11, id_handler); // UDP
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x29, id_handler); // IPv6
     
     // start testing
     struct test_suite_t* test_suites[] = {

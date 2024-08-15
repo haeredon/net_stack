@@ -47,7 +47,7 @@ uint16_t id_handle_response(struct packet_stack_t* packet_stack, struct response
 
 uint16_t id_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
     uint8_t packet_idx = packet_stack->write_chain_length++;
-    packet_stack->response[packet_idx] = id_handle_response;
+    packet_stack->pre_build_response[packet_idx] = id_handle_response;
     handler_response(packet_stack, interface);
 }
 

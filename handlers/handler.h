@@ -15,7 +15,8 @@ struct response_buffer_t {
 
 struct packet_stack_t {
     // should be called iterative as part of a response chain that is iterated over by a handler.c function
-    uint16_t (*response[10])();
+    uint16_t (*pre_build_response[10])();
+    uint16_t (*post_build_response[10])();
     void* packet_pointers[10];
     uint8_t write_chain_length;
 };

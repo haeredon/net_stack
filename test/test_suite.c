@@ -71,7 +71,9 @@ uint8_t test_suite_test(struct test_suite_t* test_suite) {
 
             // get packet ftom req_buffer
             struct ethernet_header_t* header = (struct ethernet_header_t*) &pcapng_block->packet_data;
-            struct packet_stack_t packet_stack = { .response = 0, .packet_pointers = header, .write_chain_length = 0 };
+            struct packet_stack_t packet_stack = { 
+                .pre_build_response = 0, .post_build_response = 0,
+                .packet_pointers = header, .write_chain_length = 0 };
 
 
             // TODO: support broadcast

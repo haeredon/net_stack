@@ -43,7 +43,7 @@ uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* 
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
 
-    packet_stack->response[packet_idx] = ethernet_response;
+    packet_stack->pre_build_response[packet_idx] = ethernet_response;
 
     if(header->ethernet_type > ntohs(0x0600) /* PLEASE OPTIMIZE */) {
         struct handler_t* next_handler = GET_FROM_PRIORITY(

@@ -33,7 +33,7 @@ struct id_header_t* id_get_id_header(const uint8_t* data, const uint64_t size) {
 }
 
 
-uint16_t id_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {        
+uint16_t id_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) {        
     struct id_header_t* response_header = (struct id_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
 
     response_header->magic_number = ID_MAGIC_NUMBER;

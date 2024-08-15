@@ -18,20 +18,20 @@ uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_
 	const uint16_t BUFFER_SIZE = 4096;
 	uint8_t buffer[BUFFER_SIZE];
 	struct response_buffer_t response_buffer = { .buffer = buffer, .offset = 0, .size = BUFFER_SIZE, .stack_idx = 0 };
-	uint16_t offsets[10]; // must be more dynamic when packet_stack becomes more dynamic
+	uint16_t offsets[11] = { 0 }; // must be more dynamic when packet_stack becomes more dynamic
 	
 	// call all pre response handlers to build packet
     for (uint8_t i = 0; i < packet_stack->write_chain_length; i++, response_buffer.stack_idx++) {
 		uint16_t (*pre_build_response)() = packet_stack->pre_build_response[i];
-		if(pre_build_response) {			
-			uint16_t previous_offset = i ? 0 : offsets[i - 1];
-			offsets[i] = pre_build_response(packet_stack, &response_buffer, interface) + previous_offset;			
+		if(pre_build_response) {						
+			offsets[i + 1] = pre_build_response(packet_stack, &response_buffer, interface);			
 		}    	    	
     }
 
 	// call all post response handlers to build packet
     for (uint8_t i = 0; i < packet_stack->write_chain_length; i++, response_buffer.stack_idx++) {
-		uint16_t (*post_build_response)() = packet_stack->post_build_response[i];
+		void (*post_build_response)(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, 
+                                  const struct interface_t* interface, uint16_t offset) = packet_stack->post_build_response[i];
 		if(post_build_response) {
 			post_build_response(packet_stack, &response_buffer, interface, offsets[i]);        
 		}    	    	

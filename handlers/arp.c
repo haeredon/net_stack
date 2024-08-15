@@ -73,7 +73,7 @@ void arp_init_handler(struct handler_t* handler) {
 }
 
 
-uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {    
+uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) {    
     struct arp_header_t* request_header = (struct arp_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
     struct arp_header_t* response_header = (struct arp_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
 

@@ -25,7 +25,7 @@ void ethernet_close_handler(struct handler_t* handler) {
     handler->handler_config->mem_free(private);
 }
 
-uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, struct interface_t* interface) {
+uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) {
     struct ethernet_header_t* request_header = (struct ethernet_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
     struct ethernet_header_t* response_header = (struct ethernet_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
 

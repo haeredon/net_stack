@@ -49,46 +49,47 @@ uint16_t ipv4_handle_pre_response(struct packet_stack_t* packet_stack, struct re
 
     uint16_t num_bytes_written = sizeof(struct ipv4_header_t);
 
-    response_header->flags_1 = 0x4500; // version 4 and length 20
+    response_header->flags_1 = 0x45; // version 4 and length 20
     response_header->flags_2 = 0; // type of service is not supported
     response_header->total_length = 0;
     response_header->identification = 0; // don't use
-    response_header->flags_3 = 0x2; // don't fragment, it's not supported
+    response_header->flags_3 = 64; // don't fragment, it's not supported
     response_header->time_to_live = 64; // have this as configuration
     response_header->protocol = request_header->protocol;
     response_header->header_checksum = 0; // leave 0 so that it's ready for checksum calculation further down
     response_header->source_ip = request_header->destination_ip;
     response_header->destination_ip = request_header->source_ip;
-
-    
+   
     response_buffer->offset += num_bytes_written;
     
     return num_bytes_written;
-
-    return 0;
 }
 
-void ipv4_handle_post_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, 
-                                  const struct interface_t* interface, uint16_t offset) {     
-    struct ipv4_header_t* response_header = (struct ipv4_header_t*) (((uint8_t*) (response_buffer->buffer)) + offset);
-
-    response_header->total_length = response_buffer->offset - offset;
-}
-
-bool ipv4_checksum_verify(const struct ipv4_header_t* header) {    
+uint16_t ipv4_calculate_checksum(const struct ipv4_header_t* header) {    
     uint16_t sum = 0;
     const uint8_t length = (header->flags_1 & 0x0F) * sizeof(uint16_t);
     uint16_t* data = (uint16_t*) header;
 
     for(uint8_t i = 0 ; i < length ; ++i) {
         uint16_t byte = data[i];
+        
         sum += byte;
         if(sum < byte) {
             sum++;
         }
     }
 
-    return ((uint16_t) ~sum) == 0;
+    return ((uint16_t) ~sum);
+}
+
+void ipv4_handle_post_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, 
+                                  const struct interface_t* interface, uint16_t offset) {     
+    struct ipv4_header_t* response_header = (struct ipv4_header_t*) (((uint8_t*) (response_buffer->buffer)) + offset);
+
+    response_header->total_length = htons(response_buffer->offset - offset);
+    response_header->header_checksum = htons(ipv4_calculate_checksum(response_header));
+
+
 }
 
 uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
@@ -100,7 +101,7 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
     packet_stack->pre_build_response[packet_idx] = ipv4_handle_pre_response;
     packet_stack->post_build_response[packet_idx] = ipv4_handle_post_response;
  
-    if(!ipv4_checksum_verify(header)) {
+    if(ipv4_calculate_checksum(header)) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 checksum wrong: Dropping package.\n");          
         return 1;
     }

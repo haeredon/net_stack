@@ -13,14 +13,6 @@ struct response_buffer_t {
     uint8_t stack_idx;
 };
 
-struct packet_stack_t {
-    // should be called iterative as part of a response chain that is iterated over by a handler.c function
-    uint16_t (*pre_build_response[10])();
-    uint16_t (*post_build_response[10])();
-    void* packet_pointers[10];
-    uint8_t write_chain_length;
-};
-
 struct response_t;
 struct interface_operations_t {
     int64_t (*write)(struct response_t response);        
@@ -32,6 +24,15 @@ struct interface_t {
      uint32_t ipv4_addr;
      uint8_t mac[6];
      struct interface_operations_t operations;
+};
+
+struct packet_stack_t {
+    // should be called iterative as part of a response chain that is iterated over by a handler.c function
+    uint16_t (*pre_build_response[10])(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface);
+    void (*post_build_response[10])(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, 
+                                  const struct interface_t* interface, uint16_t offset);
+    void* packet_pointers[10];
+    uint8_t write_chain_length;
 };
 
 struct response_t {

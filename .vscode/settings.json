@@ -65,7 +65,11 @@
         "memory": "c",
         "tuple": "c",
         "utility": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "stdbool.h": "c",
+        "unistd.h": "c",
+        "if_packet.h": "c",
+        "typeinfo": "c"
     }
     
 }

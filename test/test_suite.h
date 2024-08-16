@@ -8,7 +8,6 @@
 struct test_response_t {
     void* response_buffer;
     uint64_t size;
-    uint8_t uses_id_header;
     struct test_response_t* next;
 };
 

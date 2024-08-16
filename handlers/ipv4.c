@@ -87,9 +87,7 @@ void ipv4_handle_post_response(struct packet_stack_t* packet_stack, struct respo
     struct ipv4_header_t* response_header = (struct ipv4_header_t*) (((uint8_t*) (response_buffer->buffer)) + offset);
 
     response_header->total_length = htons(response_buffer->offset - offset);
-    response_header->header_checksum = htons(ipv4_calculate_checksum(response_header));
-
-
+    response_header->header_checksum = ipv4_calculate_checksum(response_header);
 }
 
 uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
@@ -132,9 +130,9 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
         } else {
             NETSTACK_LOG(NETSTACK_WARNING, "IPv4 received non-supported protocol type: %hx\n", header->protocol);            
         }
-    } else {        
-        handler_response(packet_stack, interface);            
     }
+    
+    return 0;
 }
 
 

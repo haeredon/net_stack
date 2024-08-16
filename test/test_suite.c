@@ -5,7 +5,6 @@
 #include "pcapng.h"
 #include "handlers/handler.h"
 #include "handlers/ethernet.h"
-#include "handlers/id.h"
 
 const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
 const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
@@ -29,16 +28,8 @@ int64_t test_suite_write_response(struct response_t response) {
         
     new_response->response_buffer = response.buffer;    
     new_response->size = response.size;
-    new_response->uses_id_header = 0;    
     new_response->next = 0;
 
-    struct id_header_t* id_header = id_get_id_header(response.buffer, response.size);
-
-    if(id_header) {    
-        new_response->size = id_header->num_bytes_before;
-        new_response->uses_id_header = 1;
-    }
-    
     struct test_response_t* last_response = responses->last;    
 
     if(last_response) {
@@ -94,7 +85,7 @@ uint8_t test_suite_test(struct test_suite_t* test_suite) {
                 if(response) {                                        
                     uint8_t is_same_size = response->size == pcapng_block->captured_package_length;
                     
-                    if((is_same_size || response->uses_id_header) &&
+                    if(is_same_size &&
                        !memcmp(response->response_buffer, &pcapng_block->packet_data, response->size)
                     ) { 
                         // fix response structure

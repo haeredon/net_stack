@@ -2,10 +2,10 @@
 APP = net_stack
 
 # all source are stored in SRCS-y
-SRCS-TEST := test/main.c test/pcapng.c test/test_suite.c
+SRCS-TEST := test/main.c test/pcapng.c test/ipv4/test.c test/common.c
 INCLUDES-TEST := -I ./ -I ./test
 SRCS-y := main.c worker.c 
-SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c handlers/ipv4.c handlers/id.c
+SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c handlers/ipv4.c handlers/null.c
 SRCS-UTILITY := util/array.c
 SRCS-LOG := log.c
 INCLUDES := -I ./

@@ -31,7 +31,7 @@ struct packet_stack_t {
     uint16_t (*pre_build_response[10])(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface);
     void (*post_build_response[10])(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, 
                                   const struct interface_t* interface, uint16_t offset);
-    void* packet_pointers[10];
+    const void* packet_pointers[10];
     uint8_t write_chain_length;
 };
 

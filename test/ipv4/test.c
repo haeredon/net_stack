@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Ethernet II, Src: bb:bb:bb:bb:bb:bb (bb:bb:bb:bb:bb:bb), Dst: aa:aa:aa:aa:aa:aa (aa:aa:aa:aa:aa:aa)
 // Internet Protocol Version 4, Src: 192.168.0.117, Dst: 32.32.32.32
 //     0100 .... = Version: 4
 //     .... 0101 = Header Length: 20 bytes (5)
@@ -25,30 +24,63 @@
 //     [Calculated Checksum: 0xa6ce]
 //     Source Address: 192.168.0.117
 //     Destination Address: 32.32.32.32
-static const unsigned char ipv4_1[34] = {
-    0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xbb, 0xbb, /* ........ */
-    0xbb, 0xbb, 0xbb, 0xbb, 0x08, 0x00, 0x45, 0x00, /* ......E. */
-    0x00, 0x14, 0x92, 0xb8, 0x40, 0x00, 0x40, 0x06, /* ....@.@. */
-    0xa6, 0xce, 0xc0, 0xa8, 0x00, 0x75, 0x20, 0x20, /* .....u   */
-    0x20, 0x20                                      /*    */
+static const unsigned char ipv4_1_req[20] = {
+    0x45, 0x00, 0x00, 0x14, 0x92, 0xb8, 0x40, 0x00,
+    0x40, 0x06, 0xa6, 0xce, 0xc0, 0xa8, 0x00, 0x75, 
+    0x20, 0x20, 0x20, 0x20                                      
+};
+
+// Internet Protocol Version 4, Src: 32.32.32.32, Dst: 192.168.0.117
+//     0100 .... = Version: 4
+//     .... 0101 = Header Length: 20 bytes (5)
+//     Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
+//     Total Length: 20
+//     Identification: 0x0000 (0)
+//     010. .... = Flags: 0x2, Don't fragment
+//     ...0 0000 0000 0000 = Fragment Offset: 0
+//     Time to Live: 64
+//     Protocol: TCP (6)
+//     Header Checksum: 0x3987 [correct]
+//     [Header checksum status: Good]
+//     [Calculated Checksum: 0x3987]
+//     Source Address: 32.32.32.32
+//     Destination Address: 192.168.0.117
+static const unsigned char ipv4_1_res[20] = {
+    0x45, 0x00, 0x00, 0x14, 0x00, 0x00, 0x40, 0x00, 
+    0x40, 0x06, 0x39, 0x87, 0x20, 0x20, 0x20, 0x20, 
+    0xc0, 0xa8, 0x00, 0x75                                      
 };
 
 
 
+struct response_t last_response;
+uint8_t response_buffer[4096];
+
 int64_t ipv4_test_write(struct response_t response) {
-        
+    memcpy(&last_response, &response, sizeof(struct response_t));
+    memcpy(&response_buffer, response.buffer, sizeof(response_buffer));
+    last_response.buffer = response_buffer;
 }
 
-bool ipv4_test(struct handler_t* handler, struct test_config_t* config) {
+bool send_and_check_response(const uint8_t* request, const uint8_t* response, uint16_t response_size, struct handler_t* handler, struct test_config_t* config) {
     struct packet_stack_t packet_stack = { 
         .pre_build_response = 0, .post_build_response = 0,
-        .packet_pointers = &ipv4_1, .write_chain_length = 0 };
+        .packet_pointers = request, .write_chain_length = 0 };
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;
     }
 
+    if(last_response.size != response_size ||
+       memcmp(response_buffer, response, last_response.size)) {
+        return false;
+    }
+
     return true;
+}
+
+bool ipv4_test_basic(struct handler_t* handler, struct test_config_t* config) {
+    return send_and_check_response(ipv4_1_req, ipv4_1_res, sizeof(ipv4_1_res), handler, config);
 }
 
 
@@ -61,7 +93,7 @@ bool ipv4_tests_start() {
     struct interface_t interface = {
         .port = 0,
         .port = 0,
-        .operations.write = 0,
+        .operations.write = ipv4_test_write,
         .ipv4_addr = OWN_IP,
         .mac = 0
     };
@@ -85,11 +117,11 @@ bool ipv4_tests_start() {
 
     struct test_t* test = (struct test_t*) malloc(sizeof(struct test_t));
     strncpy(test->name, "Basic Test", sizeof("Basic Test"));    
-    test->test = ipv4_test;
+    test->test = ipv4_test_basic;
 
     struct test_t* tests[2];
     tests[0] = test;
-    tests[1] = 0; // zero out last pointer
+    tests[1] = 0; // zero out last pointer to mark end of array
 
     struct test_run_t ipv4_test_run = {
         .config = &test_config,

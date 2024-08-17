@@ -91,8 +91,6 @@ void ipv4_handle_post_response(struct packet_stack_t* packet_stack, struct respo
 }
 
 uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    NETSTACK_LOG(NETSTACK_INFO, "IPv4 read handler called.\n");   
-
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct ipv4_header_t* header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_idx];
 
@@ -107,12 +105,12 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
     uint8_t IHL = header->flags_1 & 0x0F;
     if(IHL != 5) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 with options not supported: Dropping package.\n");   
-        return 1;
+        return 2;
     }
 
     if(!header->time_to_live) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 Time to Live exceded: Dropping package.\n");   
-        return 1;
+        return 3;
     }
 
     if(header->destination_ip == interface->ipv4_addr) {
@@ -129,9 +127,10 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
             next_handler->operations.read(packet_stack, interface, next_handler);  
         } else {
             NETSTACK_LOG(NETSTACK_WARNING, "IPv4 received non-supported protocol type: %hx\n", header->protocol);            
+            return 4;
         }
     }
-    
+
     return 0;
 }
 

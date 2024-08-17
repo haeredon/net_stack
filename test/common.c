@@ -16,7 +16,7 @@ bool run_tests(struct test_run_t* test_run) {
 
     struct test_t** tests = test_run->tests;
 
-    while(tests) {
+    while(*tests) {
         struct test_t* test = (*tests);
 
         printf("Testing: %s\n", test->name);

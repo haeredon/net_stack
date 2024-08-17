@@ -1,15 +1,16 @@
 # Just some fun with DPDK. Building a network stack from scratch
 
 
-### Protocols
+### Protocols (Basic Implementation)
 
 - [X] Ethernet
 - [X] ARP
 - [ ] UDP
 - [ ] QUIC
 - [ ] TCP
-- [ ] IPv4
+- [x] IPv4
 - [ ] IPv6
+- [ ] TLS
 
 ### Features
 
@@ -19,9 +20,9 @@
 ### Testing
 
 - [ ] "Got xxxxx Expected xxx" messages
-- [ ] Individual test naming
+- [x] Individual test naming
 
 ### Notes to self
-* Fix return value of handler read function
+* [x] Fix return value of handler read function
 
 

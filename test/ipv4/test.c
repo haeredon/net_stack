@@ -9,6 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/*************************************
+ *          TEST DATA                *
+**************************************/
+
 // Internet Protocol Version 4, Src: 192.168.0.117, Dst: 32.32.32.32
 //     0100 .... = Version: 4
 //     .... 0101 = Header Length: 20 bytes (5)
@@ -53,6 +57,9 @@ static const unsigned char ipv4_1_res[20] = {
 
 
 
+/*************************************
+ *          UTILITY                  *
+**************************************/
 struct response_t last_response;
 uint8_t response_buffer[4096];
 
@@ -79,11 +86,16 @@ bool send_and_check_response(const uint8_t* request, const uint8_t* response, ui
     return true;
 }
 
+/*************************************
+ *          TESTS                *
+**************************************/
 bool ipv4_test_basic(struct handler_t* handler, struct test_config_t* config) {
     return send_and_check_response(ipv4_1_req, ipv4_1_res, sizeof(ipv4_1_res), handler, config);
 }
 
-
+/*************************************
+ *          BOOTSTRAP                *
+**************************************/
 bool ipv4_tests_start() {        
     struct handler_config_t handler_config = { 
         .mem_allocate = test_malloc, 

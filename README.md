@@ -4,11 +4,14 @@
 ### Protocols (Basic Implementation)
 
 - [X] Ethernet
+    - [ ] Broadcast
 - [X] ARP
 - [ ] UDP
 - [ ] QUIC
 - [ ] TCP
 - [x] IPv4
+    - [ ] Multicast
+    - [ ] Broadcast
 - [ ] IPv6
 - [ ] TLS
 

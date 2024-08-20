@@ -6,7 +6,7 @@ SRCS-TEST := test/main.c test/pcapng.c test/ipv4/test.c test/common.c
 INCLUDES-TEST := -I ./ -I ./test
 SRCS-y := main.c worker.c 
 SRCS-HANDLERS := handlers/pcapng.c handlers/ethernet.c handlers/handler.c handlers/arp.c handlers/protocol_map.c handlers/ipv4.c handlers/null.c handlers/tcp.c
-SRCS-UTILITY := util/array.c
+SRCS-UTILITY := util/array.c util/b_tree.c
 SRCS-LOG := log.c
 INCLUDES := -I ./
 

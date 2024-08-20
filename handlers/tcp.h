@@ -3,12 +3,14 @@
 
 #include "handler.h"
 
+#include <stdbool.h>
 
 struct tcp_priv_t {
     int dummy;
 };
 
 #define TCP_SYN_FLAG 2
+#define TCP_ACK_FLAG 16
 
 
 enum TCP_STATE {
@@ -24,8 +26,28 @@ enum TCP_STATE {
     TIME_WAIT
 };
 
+struct tcp_socket_t {
+    uint16_t listening_port;
+};
+
+struct tcp_header_t {
+    uint16_t source_port;
+    uint16_t destination_port;
+    uint32_t sequence_num;
+    uint32_t acknowledgement_num;
+    uint8_t data_offset;
+    uint8_t control_bits;
+    uint16_t window;
+    uint16_t checksum;
+    uint16_t urgent_pointer;
+
+    
+} __attribute__((packed, aligned(2)));
+
 struct transmission_control_block_t {
     uint32_t id;
+
+    struct tcp_socket_t* socket;
 
     uint32_t remote_ipv4;
     uint32_t own_ipv4;
@@ -47,21 +69,15 @@ struct transmission_control_block_t {
     uint32_t receive_initial_sequence_num;
 
     enum TCP_STATE state;
+
+    uint8_t* buffer;
+
+    uint16_t (*state_function)(struct tcp_header_t* request_header, struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb);
 };
 
-struct tcp_header_t {
-    uint16_t source_port;
-    uint16_t destination_port;
-    uint32_t sequence_num;
-    uint32_t acknowledgement_num;
-    uint8_t data_offset;
-    uint8_t control_bits;
-    uint16_t window;
-    uint16_t checksum;
-    uint16_t urgent_pointer;
 
-    
-} __attribute__((packed, aligned(2)));
+bool add_listener(struct tcp_socket_t socket, struct handler_t* handler);
+
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config);
 

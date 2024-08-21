@@ -30,6 +30,14 @@ struct tcp_socket_t {
     uint16_t listening_port;
 };
 
+struct tcp_pseudo_header_t {
+    uint32_t source_ip;
+    uint32_t destination_ip;
+    uint8_t zero;
+    uint8_t ptcl;
+    uint16_t tcp_length;
+} __attribute__((packed, aligned(2)));
+
 struct tcp_header_t {
     uint16_t source_port;
     uint16_t destination_port;

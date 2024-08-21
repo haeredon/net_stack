@@ -3,6 +3,7 @@
 #include "log.h"
 
 #include <string.h>
+#include <arpa/inet.h>
 
 /*
  * Transmission Control Protocol.
@@ -36,31 +37,74 @@ void tcp_init_handler(struct handler_t* handler) {
 }
 
 
-uint16_t tcp_calculate_checksum()  {
-    // uint32_t sum = 0;
-    // uint16_t length = be16toh(ip_pseudo_header.tcp_length) / 2;
+uint16_t tcp_calculate_checksum(struct tcp_pseudo_header_t* pseudo_header, struct tcp_header_t* header)  {
+    uint32_t sum = 0;
+    uint16_t length = ntohs(pseudo_header->tcp_length) / 2;
 
-    // uint16_t* ip = (uint16_t*) &ip_pseudo_header;
-    // for(uint16_t i = 0 ; i < 6 ; ++i) {
-    //     sum += ip[i];
-    // }
+    uint16_t* ip = (uint16_t*) pseudo_header;
+    uint16_t* tcp = (uint16_t*) header;
 
-    // for(uint16_t i = 0 ; i < length ; ++i) {
-    //     sum += tcp[i];
-    // }
+    for(uint16_t i = 0 ; i < 6 ; ++i) {
+        sum += ip[i];
+    }
 
-    // while (sum>>16) {
-    //     sum = (sum & 0xffff) + (sum >> 16);
-    // }
+    for(uint16_t i = 0 ; i < length ; ++i) {
+        sum += tcp[i];
+    }
 
-    // return (uint16_t) ~sum;
+    while (sum>>16) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+
+    return (uint16_t) ~sum;
 }
 
+uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, struct transmission_control_block_t* tcb)  {
+        struct tcp_pseudo_header_t pseudo_header = {
+            .source_ip = tcb->own_ipv4,
+            .destination_ip = tcb->remote_ipv4,
+            .zero = 0,
+            .ptcl = 6,
+            .tcp_length = 0
+        };
 
+        return tcp_calculate_checksum(&pseudo_header, tcp_header);
+}    
+
+uint16_t tcp_established(struct tcp_header_t* request_header, struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
+    // do whatever
+    return 1;
+}
 
 uint16_t tcp_syn_received(struct tcp_header_t* request_header, struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
-    // respond and change state to established
-    return 1;
+    if(tcb->send_unacknowledged < request_header->acknowledgement_num
+       && tcb->send_next >= request_header->acknowledgement_num) {
+
+        tcb->receive_next = tcb->receive_next + 1;
+        tcb->receive_window = request_header->window;
+        tcb->receive_urgent_pointer = 0;
+
+        tcb->state = ESTABLISHED;
+        tcb->state_function = tcp_established;
+
+        response_buffer->source_port = request_header->destination_port;
+        response_buffer->destination_port = request_header->source_port;
+        response_buffer->sequence_num = tcb->send_next;
+        response_buffer->acknowledgement_num = tcb->receive_next;
+        response_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+        response_buffer->control_bits = TCP_ACK_FLAG;
+        response_buffer->window = tcb->send_window;
+        response_buffer->checksum = _tcp_calculate_checksum(request_header, tcb);
+        response_buffer->urgent_pointer = 0; // Not supported
+
+        tcb->send_next++;
+    } else {
+        // TODO: Must have some way of throwing an exception here so that the packet is not send!!!
+        NETSTACK_LOG(NETSTACK_INFO, "TCP ack number is wrong: Dropping packet.\n");          
+        return 1;
+    }
+    
+    return sizeof(struct tcp_header_t);
 }
 
 uint16_t tcp_listen(struct tcp_header_t* request_header, struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
@@ -79,19 +123,13 @@ uint16_t tcp_listen(struct tcp_header_t* request_header, struct tcp_header_t* re
     response_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
     response_buffer->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;
     response_buffer->window = tcb->send_window;
-    response_buffer->checksum = tcp_calculate_checksum();
+    response_buffer->checksum = _tcp_calculate_checksum(request_header, tcb);
     response_buffer->urgent_pointer = 0; // Not supported
 
     tcb->send_next++;
 
     return sizeof(struct tcp_header_t);
 }
-
-uint16_t tcp_established(struct tcp_header_t* request_header, struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
-    // do whatever
-    return 1;
-}
-
 
 uint32_t tcp_generate_sequence_number() {
     return 42;
@@ -116,7 +154,8 @@ struct transmission_control_block_t* get_transmission_control_block(uint32_t id)
 }
 
 struct transmission_control_block_t* create_transmission_control_block(uint32_t connection_id, 
-    struct tcp_socket_t* socket, struct tcp_header_t* request, struct handler_t* handler) {
+    struct tcp_socket_t* socket, struct tcp_header_t* tcp_request, 
+    struct ipv4_header_t* ipv4_request, struct handler_t* handler) {
     
     struct transmission_control_block_t* tcb = 
         (struct transmission_control_block_t*) handler->handler_config->mem_allocate("tcp: new session", 
@@ -125,6 +164,9 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     tcb->id = connection_id;    
 
     tcb->socket = socket;
+
+    tcb->own_ipv4 = ipv4_request->destination_ip;
+    tcb->remote_ipv4 = ipv4_request->source_ip;
     
     tcb->send_initial_sequence_num = tcp_generate_sequence_number();
     tcb->send_next = tcb->send_initial_sequence_num;
@@ -135,9 +177,9 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     tcb->send_last_update_sequence_num = 0;
     tcb->send_last_update_acknowledgement_num = 0;        
     
-    tcb->receive_initial_sequence_num = request->sequence_num;
-    tcb->receive_window = request->window;
-    tcb->receive_urgent_pointer = request->urgent_pointer;
+    tcb->receive_initial_sequence_num = tcp_request->sequence_num;
+    tcb->receive_window = tcp_request->window;
+    tcb->receive_urgent_pointer = tcp_request->urgent_pointer;
     tcb->receive_next = tcb->receive_initial_sequence_num + 1;
 
     tcb->state = LISTEN; 
@@ -182,7 +224,7 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
         struct tcp_socket_t* socket = tcp_get_socket(ipv4_header->destination_ip, header->destination_port);
 
         if(socket) {
-            create_transmission_control_block(connection_id, socket, header, handler);
+            create_transmission_control_block(connection_id, socket, header, ipv4_header, handler);
             handler_response(packet_stack, interface);                         
         }        
     }

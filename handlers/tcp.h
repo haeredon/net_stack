@@ -2,6 +2,7 @@
 #define HANDLERS_TCP_H
 
 #include "handler.h"
+#include "ipv4.h"
 
 #include <stdbool.h>
 
@@ -12,6 +13,9 @@ struct tcp_priv_t {
 #define TCP_SYN_FLAG 2
 #define TCP_ACK_FLAG 16
 
+#define TCP_DATA_OFFSET_MASK 0xF0
+
+#define TCP_RECEIVE_WINDOW 4098
 
 enum TCP_STATE {
     LISTEN,
@@ -28,6 +32,11 @@ enum TCP_STATE {
 
 struct tcp_socket_t {
     uint16_t listening_port;
+};
+
+struct tcp_packet_meta_info_t {
+    uint32_t sequence_num;    
+    struct tcp_packet_meta_info_t* next;
 };
 
 struct tcp_pseudo_header_t {
@@ -47,9 +56,7 @@ struct tcp_header_t {
     uint8_t control_bits;
     uint16_t window;
     uint16_t checksum;
-    uint16_t urgent_pointer;
-
-    
+    uint16_t urgent_pointer;    
 } __attribute__((packed, aligned(2)));
 
 struct transmission_control_block_t {
@@ -78,9 +85,11 @@ struct transmission_control_block_t {
 
     enum TCP_STATE state;
 
-    uint8_t* buffer;
+    void* buffer;
 
-    uint16_t (*state_function)(struct tcp_header_t* request_header, struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb);
+    uint16_t (*state_function)(
+        struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
+        struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb);
 };
 
 

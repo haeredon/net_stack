@@ -67,7 +67,7 @@ uint16_t ipv4_handle_pre_response(struct packet_stack_t* packet_stack, struct re
 
 uint16_t ipv4_calculate_checksum(const struct ipv4_header_t* header) {    
     uint16_t sum = 0;
-    const uint8_t length = (header->flags_1 & 0x0F) * sizeof(uint16_t);
+    const uint8_t length = (header->flags_1 & IPV4_IHL_MASK) * sizeof(uint16_t);
     uint16_t* data = (uint16_t*) header;
 
     for(uint8_t i = 0 ; i < length ; ++i) {
@@ -102,7 +102,7 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
         return 1;
     }
 
-    uint8_t IHL = header->flags_1 & 0x0F;
+    uint8_t IHL = header->flags_1 & IPV4_IHL_MASK;
     if(IHL != 5) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 with options not supported: Dropping package.\n");   
         return 2;

@@ -9,6 +9,8 @@
 - [ ] UDP
 - [ ] QUIC
 - [ ] TCP
+    - [ ] Overflowing Sequence Numbers
+    - [ ] Modulo windows
 - [x] IPv4
     - [ ] Multicast
     - [ ] Broadcast

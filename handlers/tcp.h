@@ -32,6 +32,7 @@ enum TCP_STATE {
 
 struct tcp_socket_t {
     uint16_t listening_port;
+    struct interface_t* interface;
 };
 
 struct tcp_packet_meta_info_t {
@@ -93,7 +94,7 @@ struct transmission_control_block_t {
 };
 
 
-bool add_listener(struct tcp_socket_t socket, struct handler_t* handler);
+bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler);
 
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config);

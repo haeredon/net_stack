@@ -19,6 +19,9 @@
  *      3. Number of listeners
  */
 
+#define SOCKET_BUFFER_SIZE 64
+struct tcp_socket_t* tcp_sockets[SOCKET_BUFFER_SIZE];
+
 // crude, crude, crude implementation of transmission block buffer
 #define TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE 64
 struct transmission_control_block_t* transmission_blocks[TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE];
@@ -34,6 +37,7 @@ void tcp_init_handler(struct handler_t* handler) {
     handler->priv = (void*) tcp_priv;
 
     memset(transmission_blocks, 0, sizeof(transmission_blocks));
+    memset(tcp_sockets, 0, sizeof(tcp_sockets));
 }
 
 
@@ -205,22 +209,14 @@ uint32_t tcp_generate_sequence_number() {
     return 42;
 }
 
+/*
+* This function assumes that destination id always is the same
+*/
 uint32_t tcb_header_to_connection_id(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header) {
     uint64_t id = ((uint64_t) ipv4_header->source_ip) << 32;
     id |= ((uint32_t) tcp_header->source_port) << 16;
     id |= tcp_header->destination_port;
     return id;
-}
-
-struct transmission_control_block_t* get_transmission_control_block(uint32_t id) {
-    for (uint8_t i = 0 ; i < TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE ; i++) {
-        struct transmission_control_block_t* tcb = transmission_blocks[i];
-        
-        if(tcb && tcb->id == id) {
-            return tcb;
-        } 
-    }   
-    return 0; 
 }
 
 struct transmission_control_block_t* create_transmission_control_block(uint32_t connection_id, 
@@ -261,9 +257,50 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     return tcb;
 }
 
-struct tcp_socket_t* tcp_get_socket() {
-    return 0;
+
+struct transmission_control_block_t* get_transmission_control_block(uint32_t id) {
+    for (uint8_t i = 0 ; i < TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE ; i++) {
+        struct transmission_control_block_t* tcb = transmission_blocks[i];
+        
+        if(tcb && tcb->id == id) {
+            return tcb;
+        } 
+    }   
+    return 0; 
 }
+
+bool tcp_add_transmission_control_block(struct transmission_control_block_t* tcb) {
+    for (uint64_t i = 0; i < TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE; i++) {
+        if(!transmission_blocks[i]) {
+            transmission_blocks[i] = tcb;
+            return true;
+        }        
+    }
+    return false;;          
+}
+
+
+struct tcp_socket_t* tcp_get_socket(uint16_t port, uint32_t ipv4) {
+    for (uint8_t i = 0 ; i < SOCKET_BUFFER_SIZE && tcp_sockets[i] ; i++) {
+        struct tcp_socket_t* socket = tcp_sockets[i];
+        
+        if(socket->listening_port == port && socket->interface->ipv4_addr == ipv4) {
+            return socket;
+        } 
+    }   
+    return 0; 
+}
+
+bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler) {
+    for (uint64_t i = 0; i < SOCKET_BUFFER_SIZE; i++) {
+        if(!tcp_sockets[i]) {
+            tcp_sockets[i] = socket;
+            return true;
+        }        
+    }
+    return false;;          
+}
+
 
 uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) { 
     struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx - 1];
@@ -293,18 +330,22 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     if(tcb) {        
         handler_response(packet_stack, interface);                         
     } else if(header->control_bits & TCP_SYN_FLAG) {
-        struct tcp_socket_t* socket = tcp_get_socket(ipv4_header->destination_ip, header->destination_port);
+        struct tcp_socket_t* socket = tcp_get_socket(header->destination_port, ipv4_header->destination_ip);
 
         if(socket) {
-            create_transmission_control_block(connection_id, socket, header, ipv4_header, handler);
-            handler_response(packet_stack, interface);                         
+            tcb = create_transmission_control_block(connection_id, socket, header, ipv4_header, handler);
+            
+            if(tcp_add_transmission_control_block(tcb)) {
+                handler_response(packet_stack, interface);
+            } else {
+                handler->handler_config->mem_free(tcb);
+            }
         }        
     }
 
     NETSTACK_LOG(NETSTACK_INFO, "Received unexpected TCP packet: Dropping packet.\n");          
     return 1;
 }
-
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config) {
     struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("tcp handler", sizeof(struct handler_t));	

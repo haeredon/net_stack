@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 
 /*************************************
@@ -64,7 +65,9 @@ int64_t tcp_test_write(struct response_t response) {
 bool tcp_send_and_check_response(const uint8_t* request, const uint8_t* response, uint16_t response_size, struct handler_t* handler, struct test_config_t* config) {
     struct packet_stack_t packet_stack = { 
         .pre_build_response = 0, .post_build_response = 0,
-        .packet_pointers = request, .write_chain_length = 0 };
+        .packet_pointers = request, .write_chain_length = 1 };
+
+    packet_stack.packet_pointers[1] = request + 20;
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;
@@ -107,8 +110,13 @@ bool tcp_tests_start() {
         .interface = &interface
     };	
 
-	struct handler_t* tcp_handler = ipv4_create_handler(&handler_config); 
+	struct handler_t* tcp_handler = tcp_create_handler(&handler_config); 
 	tcp_handler->init(tcp_handler);
+
+    struct tcp_socket_t* socket = (struct tcp_socket_t*) malloc(sizeof(struct tcp_socket_t));
+    socket->listening_port = htons(443);
+    socket->interface = &interface;
+    tcp_add_socket(socket, tcp_handler);
 
     struct test_t* test = (struct test_t*) malloc(sizeof(struct test_t));
     strncpy(test->name, "3-Way Handshake", sizeof("3-Way Handshake"));    

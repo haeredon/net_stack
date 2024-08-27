@@ -3,6 +3,7 @@
 #include "handlers/protocol_map.h"
 #include "handlers/ipv4.h"
 #include "ipv4/test.h"
+#include "tcp/test.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -17,8 +18,10 @@
 #include <linux/if_packet.h>
 
 
-int main(int argc, char **argv) {        
-    ipv4_tests_start();
+int main(int argc, char **argv) {            
+    // ipv4_tests_start();
+
+    tcp_tests_start();
 
 
     // struct handler_config_t handler_config = { 

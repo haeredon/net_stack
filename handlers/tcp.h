@@ -16,6 +16,7 @@ struct tcp_priv_t {
 #define TCP_DATA_OFFSET_MASK 0xF0
 
 #define TCP_RECEIVE_WINDOW 4098
+#define TCP_OUT_BUFFER_SIZE 4098
 
 enum TCP_STATE {
     LISTEN,
@@ -33,11 +34,6 @@ enum TCP_STATE {
 struct tcp_socket_t {
     uint16_t listening_port;
     struct interface_t* interface;
-};
-
-struct tcp_packet_meta_info_t {
-    uint32_t sequence_num;    
-    struct tcp_packet_meta_info_t* next;
 };
 
 struct tcp_pseudo_header_t {
@@ -59,6 +55,12 @@ struct tcp_header_t {
     uint16_t checksum;
     uint16_t urgent_pointer;    
 } __attribute__((packed, aligned(2)));
+
+struct tcp_buffer_block_t {
+    uint32_t size;
+    struct tcp_header_t* header;
+};
+
 
 struct transmission_control_block_t {
     uint32_t id;
@@ -86,7 +88,8 @@ struct transmission_control_block_t {
 
     enum TCP_STATE state;
 
-    void* buffer;
+    void* in_buffer;
+    struct tcp_buffer_block_t* out_buffer;
 
     uint16_t (*state_function)(
         struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
@@ -98,9 +101,5 @@ bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler);
 
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config);
-
-
-
-
 
 #endif // HANDLERS_TCP_H

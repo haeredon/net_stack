@@ -130,6 +130,7 @@ bool tcp_tests_start() {
      *      reacts correctly to fin and rst
      *      checksum validation
      *      close connection if outbound buffer full
+     *      out and in buffer fills up
     */
 
     struct test_t* tests[2];

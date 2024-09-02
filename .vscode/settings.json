@@ -69,7 +69,8 @@
         "stdbool.h": "c",
         "unistd.h": "c",
         "if_packet.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "stddef.h": "c"
     }
     
 }

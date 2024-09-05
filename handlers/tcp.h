@@ -3,6 +3,8 @@
 
 #include "handler.h"
 #include "ipv4.h"
+#include "tcp_out_buffer.h"
+#include "tcp_block_buffer.h"
 
 #include <stdbool.h>
 
@@ -88,8 +90,8 @@ struct transmission_control_block_t {
 
     enum TCP_STATE state;
 
-    void* in_buffer;
-    struct tcp_buffer_block_t* out_buffer;
+    struct tcp_block_buffer_t* in_buffer;
+    struct tcp_out_buffer_t* out_buffer;
 
     uint16_t (*state_function)(
         struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "handlers/null.h"
+#include "handlers/null/null.h"
 #include "handlers/handler.h"
 
 /*
@@ -40,7 +40,7 @@ uint16_t null_handle_response(struct packet_stack_t* packet_stack, struct respon
 uint16_t null_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
     uint8_t packet_idx = packet_stack->write_chain_length++;
     packet_stack->pre_build_response[packet_idx] = null_handle_response;
-    handler_response(packet_stack, interface);
+    handler_response(packet_stack, interface, 0);
 }
 
 

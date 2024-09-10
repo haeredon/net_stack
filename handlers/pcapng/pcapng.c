@@ -23,7 +23,7 @@
 #include <rte_pcapng.h>
 
 #include "pcapng.h"
-#include "handler.h"
+#include "handlers/handler.h"
 
 
 void pcapng_init_handler(struct handler_t* handler) {

@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "handlers/arp.h"
-#include "handlers/ethernet.h"
+#include "handlers/arp/arp.h"
+#include "handlers/ethernet/ethernet.h"
 #include "handlers/handler.h"
 
 #include "util/array.h"
@@ -116,7 +116,7 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
 
                 if(header->operation == ARP_OPERATION_REQUEST) {
                     packet_stack->pre_build_response[packet_idx] = arp_handle_response;
-                    handler_response(packet_stack, interface);                                                                                
+                    handler_response(packet_stack, interface, 0);                                                                                
                 }
             }
         }

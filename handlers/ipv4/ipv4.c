@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "handlers/ipv4.h"
-#include "handlers/ethernet.h"
+#include "handlers/ipv4/ipv4.h"
+#include "handlers/ethernet/ethernet.h"
 #include "handlers/handler.h"
 #include "handlers/protocol_map.h"
 

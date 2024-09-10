@@ -1,8 +1,8 @@
 #ifndef HANDLERS_TCP_H
 #define HANDLERS_TCP_H
 
-#include "handler.h"
-#include "ipv4.h"
+#include "handlers/handler.h"
+#include "handlers/ipv4/ipv4.h"
 #include "tcp_out_buffer.h"
 #include "tcp_block_buffer.h"
 
@@ -57,12 +57,6 @@ struct tcp_header_t {
     uint16_t checksum;
     uint16_t urgent_pointer;    
 } __attribute__((packed, aligned(2)));
-
-struct tcp_buffer_block_t {
-    uint32_t size;
-    struct tcp_header_t* header;
-};
-
 
 struct transmission_control_block_t {
     uint32_t id;

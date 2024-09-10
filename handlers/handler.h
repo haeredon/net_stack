@@ -35,6 +35,10 @@ struct packet_stack_t {
     uint8_t write_chain_length;
 };
 
+struct transmission_config_t {
+
+};
+
 struct response_t {
     void* buffer;
     uint64_t size;
@@ -61,7 +65,7 @@ struct handler_t {
     void* priv;
 };
 
-uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_t* interface);
+uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config);
 struct handler_t** handler_create_stacks(struct handler_config_t *config);
 
 

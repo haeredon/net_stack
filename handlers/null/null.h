@@ -1,7 +1,6 @@
 #ifndef HANDLER_NULL_H
 #define HANDLER_NULL_H
 
-#include "handler.h"
 #include "handlers/handler.h"
 
 struct id_priv_t {

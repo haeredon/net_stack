@@ -1,7 +1,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#include "handlers/ethernet.h"
+#include "handlers/ethernet/ethernet.h"
 #include "handlers/protocol_map.h"
  
 

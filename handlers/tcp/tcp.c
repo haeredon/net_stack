@@ -1,5 +1,5 @@
 #include "tcp.h"
-#include "ipv4.h"
+#include "handlers/ipv4/ipv4.h"
 #include "log.h"
 #include "tcp_out_buffer.h"
 #include "tcp_block_buffer.h"
@@ -156,7 +156,7 @@ uint16_t tcp_syn_received(struct ipv4_header_t* ipv4_header, struct tcp_header_t
             void* payload_start = ((uint8_t*) tcp_header) + tcp_header->data_offset;
             add_to_in_buffer(tcb, tcp_header, payload_start, payload_size);            
         }
-        tcp_get_payload_length(ipv4_header, )
+        // tcp_get_payload_length(ipv4_header, )
         tcb->receive_next = tcb->receive_next + tcp_get_payload_length(ipv4_header, tcp_header);
         tcb->receive_urgent_pointer = 0;
 
@@ -192,7 +192,7 @@ uint16_t tcp_listen(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_
     tcb->state = SYN_RECEIVED;
     tcb->state_function = tcp_syn_received;
     
-    tcp_out_buffer_add(tcb->out_buffer, tcb->send_next, response_buffer, sizeof(struct tcp_header_t));
+    // tcp_out_buffer_add(tcb->out_buffer, tcb->send_next, response_buffer, sizeof(struct tcp_header_t));
 
     response_buffer->source_port = tcp_header->destination_port;
     response_buffer->destination_port = tcp_header->source_port;
@@ -259,7 +259,6 @@ uint16_t create_transmission_control_block(uint32_t connection_id,
 
     return tcb;
 }
-
 
 struct transmission_control_block_t* get_transmission_control_block(uint32_t id) {
     for (uint8_t i = 0 ; i < TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE ; i++) {
@@ -328,13 +327,17 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     
     struct transmission_control_block_t* tcb = get_transmission_control_block(connection_id);
 
+    struct transmission_config_t transmission_config = {
+        
+    };
+
     packet_stack->pre_build_response[packet_idx] = tcp_handle_pre_response;
                     
     if(tcb) { 
         if(header->control_bits | TCP_ACK_FLAG == TCP_ACK_FLAG) {
             // handle pure ACK
         } else {
-            handler_response(packet_stack, interface);                         
+            handler_response(packet_stack, interface, &transmission_config);                         
         }        
     } else if(header->control_bits & TCP_SYN_FLAG) {
         struct tcp_socket_t* socket = tcp_get_socket(header->destination_port, ipv4_header->destination_ip);
@@ -343,7 +346,7 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
             tcb = create_transmission_control_block(connection_id, socket, header, ipv4_header, handler);
             
             if(tcp_add_transmission_control_block(tcb)) {
-                handler_response(packet_stack, interface); 
+                handler_response(packet_stack, interface, &transmission_config); 
             } else {
                 handler->handler_config->mem_free(tcb);
             }

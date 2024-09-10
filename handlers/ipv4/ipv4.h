@@ -1,9 +1,8 @@
 #ifndef HANDLER_IPV4_H
 #define HANDLER_IPV4_H
 
-#include "handler.h"
 #include "handlers/handler.h"
-#include "handlers/ethernet.h"
+#include "handlers/ethernet/ethernet.h"
 
 
 #define IP_NUM_PROTOCOL_TYPE_ENTRIES 64

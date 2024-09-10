@@ -1,9 +1,8 @@
 #ifndef HANDLER_ARP_H
 #define HANDLER_ARP_H
 
-#include "handler.h"
 #include "handlers/handler.h"
-#include "handlers/ethernet.h"
+#include "handlers/ethernet/ethernet.h"
 
 #define ETHERNET_NUM_ETH_TYPE_ENTRIES 512
 

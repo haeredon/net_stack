@@ -111,54 +111,67 @@ bool is_segment_in_window(struct transmission_control_block_t* tcb, struct tcp_h
 
 uint16_t tcp_established(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
                          struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
+
     uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
 
-    if(tcp_header->control_bits & TCP_ACK_FLAG && 
-       is_acknowledgement_valid(tcb, tcp_header) &&
-       is_segment_in_window(tcb, tcp_header, payload_size)) {
+    if(is_segment_in_window(tcb, tcp_header, payload_size)) {
 
-        if(payload_size) {
-            void* payload_start = ((uint8_t*) tcp_header) + tcp_header->data_offset;
-            add_to_in_buffer(tcb, tcp_header, payload_start, payload_size);            
+        if(ACK is set) {
+            if(is_acknowledgement_valid(tcb, tcp_header)) {
+                tcb->send_unacknowledged = tcp_header->acknowledgement_num;
+
+                // send to input queue
+                // flush input queue to user if needed
+                // send acknowledgement
+            } 
+
+            // if it is not an old packet, then update the window
+            if(tcb->send_last_update_sequence_num < tcp_header->sequence_num ||
+               (tcb->send_last_update_sequence_num == tcp_header->sequence_num && 
+                tcb->send_last_update_acknowledgement_num <= tcp_header->acknowledgement_num)
+            ) {
+                tcb->send_window = tcp_header->window;
+
+                tcb->send_last_update_sequence_num = tcp_header->sequence_num;
+                tcb->send_last_update_acknowledgement_num = tcp_header->acknowledgement_num;            
+            }
+
+            if(FIN is set) {
+                tcb->state = CLOSE_WAIT;
+            }
+        } else {
+            // drop segment and return
         }
-        
-        tcb->receive_next = tcb->receive_next + tcp_get_payload_length(ipv4_header, tcp_header);
-        tcb->receive_urgent_pointer = 0;
 
-        response_buffer->source_port = tcp_header->destination_port;
-        response_buffer->destination_port = tcp_header->source_port;
-        response_buffer->sequence_num = tcb->send_next;
-        response_buffer->acknowledgement_num = tcb->receive_next;
-        response_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
-        response_buffer->control_bits = TCP_ACK_FLAG;
-        response_buffer->window = tcb->send_window;
-        response_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
-        response_buffer->urgent_pointer = 0; // Not supported
-
-        tcb->send_next++;
     } else {
-        // clean up and connection reset 
-        NETSTACK_LOG(NETSTACK_INFO, "TCP ack number or sequence number is wrong: Dropping packet.\n");          
+        // send <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+        // drop packet and return
     }
-    
-    return sizeof(struct tcp_header_t);
 }
 
 uint16_t tcp_syn_received(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
                           struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
-       uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
-
-    if(tcp_header->control_bits & TCP_ACK_FLAG && 
-       is_acknowledgement_valid(tcb, tcp_header) &&
+    uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
+    
+    if((tcp_header->control_bits | TCP_ACK_FLAG == TCP_ACK_FLAG) && 
        is_segment_in_window(tcb, tcp_header, payload_size)) {
+
+        if(!is_acknowledgement_valid(tcb, tcp_header)) {
+            // clean up
+            // send reset <SEQ=SEG.ACK><CTL=RST>
+        }
 
         if(payload_size) {
             void* payload_start = ((uint8_t*) tcp_header) + tcp_header->data_offset;
             add_to_in_buffer(tcb, tcp_header, payload_start, payload_size);            
         }
-        // tcp_get_payload_length(ipv4_header, )
+
         tcb->receive_next = tcb->receive_next + tcp_get_payload_length(ipv4_header, tcp_header);
         tcb->receive_urgent_pointer = 0;
+
+        tcb->send_window = tcp_header->window;
+        tcb->send_last_update_sequence_num = tcp_header->sequence_num;
+        tcb->send_last_update_acknowledgement_num = tcp_header->acknowledgement_num;
 
         tcb->state = ESTABLISHED;
         tcb->state_function = tcp_established;
@@ -174,9 +187,11 @@ uint16_t tcp_syn_received(struct ipv4_header_t* ipv4_header, struct tcp_header_t
         response_buffer->urgent_pointer = 0; // Not supported
 
         tcb->send_next++;
+
+        // send response
     } else {
         // clean up and connection reset 
-        NETSTACK_LOG(NETSTACK_INFO, "TCP ack number or sequence number is wrong: Dropping packet.\n");                 
+        NETSTACK_LOG(NETSTACK_INFO, "TCP unexpected data: Dropping packet.\n");                 
     }
     
     return sizeof(struct tcp_header_t);
@@ -192,8 +207,6 @@ uint16_t tcp_listen(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_
     tcb->state = SYN_RECEIVED;
     tcb->state_function = tcp_syn_received;
     
-    // tcp_out_buffer_add(tcb->out_buffer, tcb->send_next, response_buffer, sizeof(struct tcp_header_t));
-
     response_buffer->source_port = tcp_header->destination_port;
     response_buffer->destination_port = tcp_header->source_port;
     response_buffer->sequence_num = tcb->send_next;
@@ -205,6 +218,9 @@ uint16_t tcp_listen(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_
     response_buffer->urgent_pointer = 0; // Not supported
 
     tcb->send_next++;
+    tcb->send_unacknowledged = tcb->receive_initial_sequence_num;
+
+    // send response
 }
 
 uint32_t tcp_generate_sequence_number() {
@@ -318,6 +334,7 @@ uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct res
     return num_bytes_written;
 }
 
+
 uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct tcp_header_t* header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_idx];
@@ -325,36 +342,30 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_idx - 1];
     uint32_t connection_id = tcb_header_to_connection_id(ipv4_header, header);
     
-    struct transmission_control_block_t* tcb = get_transmission_control_block(connection_id);
+    struct tcp_socket_t* socket = tcp_get_socket(header->destination_port, ipv4_header->destination_ip);
 
-    struct transmission_config_t transmission_config = {
-        
-    };
+    if(socket) {
+        struct transmission_control_block_t* tcb = get_transmission_control_block(connection_id);
 
-    packet_stack->pre_build_response[packet_idx] = tcp_handle_pre_response;
-                    
-    if(tcb) { 
-        if(header->control_bits | TCP_ACK_FLAG == TCP_ACK_FLAG) {
-            // handle pure ACK
-        } else {
-            handler_response(packet_stack, interface, &transmission_config);                         
-        }        
-    } else if(header->control_bits & TCP_SYN_FLAG) {
-        struct tcp_socket_t* socket = tcp_get_socket(header->destination_port, ipv4_header->destination_ip);
-
-        if(socket) {
+        if(!tcb) {
             tcb = create_transmission_control_block(connection_id, socket, header, ipv4_header, handler);
             
-            if(tcp_add_transmission_control_block(tcb)) {
-                handler_response(packet_stack, interface, &transmission_config); 
-            } else {
+            if(!tcp_add_transmission_control_block(tcb)) {
                 handler->handler_config->mem_free(tcb);
-            }
-        }        
-    }
+                NETSTACK_LOG(NETSTACK_INFO, "Could not allocate transmission control block.\n");          
+                return 1;
+            } 
+        } 
 
-    NETSTACK_LOG(NETSTACK_INFO, "Received unexpected TCP packet: Dropping packet.\n");          
-    return 1;
+        uint16_t payload_size = tcp_get_payload_length(ipv4_header, header);
+        tcp_block_buffer_add(tcb->in_buffer, header->sequence_num, header, payload_size);
+        
+        uint16_t num_ready = tcp_block_buffer_num_ready(tcb->in_buffer);
+        
+        if(num_ready) {
+            tcb->state_function(tcb, num_ready);
+        }
+    }
 }
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config) {

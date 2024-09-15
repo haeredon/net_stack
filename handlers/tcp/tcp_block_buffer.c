@@ -19,6 +19,7 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
 
     // initialize new block
     new_block->size = size;
+    new_block->data = data;
     new_block->sequence_num = sequence_num;
     new_block->next = 0;
 
@@ -44,6 +45,14 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
 
     return new_block;
 } 
+
+bool tcp_block_buffer_remove_first(struct tcp_block_buffer_t* block_buffer, uint16_t num_to_remove) {
+}
+
+uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer) {
+}
+
+
 
 struct tcp_data_block_t* tcp_block_buffer_flush(struct tcp_block_buffer_t* block_buffer) {
     struct tcp_data_block_t* flushed = (struct tcp_data_block_t*) block_buffer->mem_allocate("tcp block buffer: flush data block", 

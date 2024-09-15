@@ -14,6 +14,7 @@ struct tcp_priv_t {
 
 #define TCP_SYN_FLAG 2
 #define TCP_ACK_FLAG 16
+#define TCP_RST_FLAG 4
 
 #define TCP_DATA_OFFSET_MASK 0xF0
 

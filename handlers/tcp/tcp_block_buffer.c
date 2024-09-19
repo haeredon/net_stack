@@ -46,7 +46,7 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
     return new_block;
 } 
 
-bool tcp_block_buffer_remove_first(struct tcp_block_buffer_t* block_buffer, uint16_t num_to_remove) {
+bool tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, uint16_t num_to_remove) {
 }
 
 uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer) {

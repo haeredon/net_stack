@@ -109,6 +109,22 @@ bool is_segment_in_window(struct transmission_control_block_t* tcb, struct tcp_h
     }
 }
 
+uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) { 
+    struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx - 1];
+    struct tcp_header_t* tcp_request_header = (struct tcp_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
+    struct tcp_header_t* tcp_response_buffer = (struct tcp_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
+
+    uint32_t connection_id = tcb_header_to_connection_id(ipv4_header, tcp_request_header);    
+    struct transmission_control_block_t* tcb = get_transmission_control_block(connection_id);
+
+    memcpy(tcp_response_buffer, tcb->out_buffer, sizeof(struct tcp_header_t));
+
+    uint16_t num_bytes_written = sizeof(struct tcp_header_t);    
+    response_buffer->offset += num_bytes_written;
+
+    return num_bytes_written;
+}
+
 uint16_t tcp_established(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
                          struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
 
@@ -197,30 +213,44 @@ uint16_t tcp_syn_received(struct ipv4_header_t* ipv4_header, struct tcp_header_t
     return sizeof(struct tcp_header_t);
 }
 
-uint16_t tcp_listen(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
-                    struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
-    tcb->receive_initial_sequence_num = tcp_header->sequence_num;
-    tcb->receive_next = tcb->receive_initial_sequence_num + 1;
-    tcb->receive_window = tcp_header->window;
-    tcb->receive_urgent_pointer = 0;
+uint16_t tcp_listen(struct transmission_control_block_t* tcb, uint16_t num_ready, 
+                    struct packet_stack_t* packet_stack, struct interface_t* interface) {
+    if(num_ready) {
+        struct tcp_in_buffer_packet packet = tcp_block_buffer_get(0);
 
-    tcb->state = SYN_RECEIVED;
-    tcb->state_function = tcp_syn_received;
-    
-    response_buffer->source_port = tcp_header->destination_port;
-    response_buffer->destination_port = tcp_header->source_port;
-    response_buffer->sequence_num = tcb->send_next;
-    response_buffer->acknowledgement_num = tcb->receive_next;
-    response_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
-    response_buffer->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;
-    response_buffer->window = tcb->send_window;
-    response_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
-    response_buffer->urgent_pointer = 0; // Not supported
+        struct ipv4_header_t* ipv4_header = packet->ipv4_header;
+        struct tcp_header_t* tcp_header = packet->tcp_header;
 
-    tcb->send_next++;
-    tcb->send_unacknowledged = tcb->receive_initial_sequence_num;
+        if(tcp_header->control_bits & TCP_RST_FLAG) {
+            // send <SEQ=SEG.ACK><CTL=RST>
+        } else if(tcp_header->control_bits | TCP_SYN_FLAG == TCP_SYN_FLAG) {
+            tcb->receive_initial_sequence_num = tcp_header->sequence_num;
+            tcb->receive_next = tcb->receive_initial_sequence_num + 1;
+            tcb->receive_window = tcp_header->window;
+            tcb->receive_urgent_pointer = 0;
 
-    // send response
+            tcb->state = SYN_RECEIVED;
+            tcb->state_function = tcp_syn_received;
+            
+            tcb->out_buffer->source_port = tcp_header->destination_port;
+            tcb->out_buffer->destination_port = tcp_header->source_port;
+            tcb->out_buffer->sequence_num = tcb->send_next;
+            tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+            tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+            tcb->out_buffer->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;
+            tcb->out_buffer->window = tcb->send_window;
+            tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
+            tcb->out_buffer->urgent_pointer = 0; // Not supported
+
+            tcb->send_next++;
+            tcb->send_unacknowledged = tcb->receive_initial_sequence_num;
+
+            packet_stack->pre_build_response[packet_stack->write_chain_length] = tcp_handle_pre_response;
+            packet_stack->write_chain_length++;
+            
+            handler_response(packet_stack, interface, 0);
+        }
+    }
 }
 
 uint32_t tcp_generate_sequence_number() {
@@ -267,7 +297,7 @@ uint16_t create_transmission_control_block(uint32_t connection_id,
     tcb->receive_next = tcb->receive_initial_sequence_num + 1;
 
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
-    tcb->out_buffer = create_tcp_out_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
+    tcb->out_buffer = (struct tcp_header_t*) mem_allocate("tcp(tcb) output buffer", sizeof(struct tcp_header_t));
 
     tcb->state = LISTEN; 
     
@@ -319,27 +349,10 @@ bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler) {
     return false;     
 }
 
-
-uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) { 
-    struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx - 1];
-    struct tcp_header_t* tcp_request_header = (struct tcp_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
-    struct tcp_header_t* tcp_response_buffer = (struct tcp_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
-
-    uint32_t connection_id = tcb_header_to_connection_id(ipv4_header, tcp_request_header);    
-    struct transmission_control_block_t* tcb = get_transmission_control_block(connection_id);
-
-    uint16_t num_bytes_written = tcb->state_function(ipv4_header, tcp_request_header, tcp_response_buffer, tcb);;    
-    response_buffer->offset = num_bytes_written;
-
-    return num_bytes_written;
-}
-
-
 uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
-    uint8_t packet_idx = packet_stack->write_chain_length++;
-    struct tcp_header_t* header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_idx];
+    struct tcp_header_t* header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
     
-    struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_idx - 1];
+    struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
     uint32_t connection_id = tcb_header_to_connection_id(ipv4_header, header);
     
     struct tcp_socket_t* socket = tcp_get_socket(header->destination_port, ipv4_header->destination_ip);
@@ -363,7 +376,7 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
         uint16_t num_ready = tcp_block_buffer_num_ready(tcb->in_buffer);
         
         if(num_ready) {
-            tcb->state_function(tcb, num_ready);
+            tcb->state_function(tcb, num_ready, packet_stack, interface);
         }
     }
 }

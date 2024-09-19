@@ -86,7 +86,7 @@ struct transmission_control_block_t {
     enum TCP_STATE state;
 
     struct tcp_block_buffer_t* in_buffer;
-    struct tcp_out_buffer_t* out_buffer;
+    struct tcp_header_t* out_buffer;
 
     uint16_t (*state_function)(
         struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 

@@ -89,8 +89,7 @@ struct transmission_control_block_t {
     struct tcp_header_t* out_buffer;
 
     uint16_t (*state_function)(
-        struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
-        struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb);
+        struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
 

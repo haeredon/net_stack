@@ -125,102 +125,100 @@ uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct res
     return num_bytes_written;
 }
 
-uint16_t tcp_established(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header, 
-                         struct tcp_header_t* response_buffer, struct transmission_control_block_t* tcb) {
+uint16_t tcp_established(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
 
-    // uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
-
-    // if(is_segment_in_window(tcb, tcp_header, payload_size)) {
-
-    //     if(ACK is set) {
-    //         if(is_acknowledgement_valid(tcb, tcp_header)) {
-    //             tcb->send_unacknowledged = tcp_header->acknowledgement_num;
-
-    //             // send to input queue
-    //             // flush input queue to user if needed
-    //             // send acknowledgement
-    //         } 
-
-    //         // if it is not an old packet, then update the window
-    //         if(tcb->send_last_update_sequence_num < tcp_header->sequence_num ||
-    //            (tcb->send_last_update_sequence_num == tcp_header->sequence_num && 
-    //             tcb->send_last_update_acknowledgement_num <= tcp_header->acknowledgement_num)
-    //         ) {
-    //             tcb->send_window = tcp_header->window;
-
-    //             tcb->send_last_update_sequence_num = tcp_header->sequence_num;
-    //             tcb->send_last_update_acknowledgement_num = tcp_header->acknowledgement_num;            
-    //         }
-
-    //         if(FIN is set) {
-    //             tcb->state = CLOSE_WAIT;
-    //         }
-    //     } else {
-    //         // drop segment and return
-    //     }
-
-    // } else {
-    //     // send <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
-    //     // drop packet and return
-    // }
 }
 
-uint16_t tcp_syn_received(struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    // uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
+uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
+    if(num_ready) {
+        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_front(tcb->in_buffer, 1)->data;
+
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
+
+        uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
+
+        tcb->out_buffer->source_port = tcp_header->destination_port;
+        tcb->out_buffer->destination_port = tcp_header->source_port;
+        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->window = tcb->send_window;
+        tcb->out_buffer->urgent_pointer = 0; // Not supported
+
+        packet_stack->pre_build_response[packet_stack->write_chain_length] = tcp_handle_pre_response;
+        packet_stack->write_chain_length++;
     
-    // if((tcp_header->control_bits | TCP_ACK_FLAG == TCP_ACK_FLAG) && 
-    //    is_segment_in_window(tcb, tcp_header, payload_size)) {
+        if(is_segment_in_window(tcb, tcp_header, payload_size)) {
+            
+            if(tcp_header->control_bits & TCP_RST_FLAG) {
+                handler->handler_config->mem_free(tcb);
+            } else if(tcp_header->control_bits & TCP_SYN_FLAG) {
+                tcb->state_function = tcp_listen;
+                tcb->state = LISTEN;
+            } else if(tcp_header->control_bits & TCP_ACK_FLAG) {
+                tcb->send_window = tcp_header->window;
+                tcb->send_last_update_sequence_num = tcp_header->sequence_num;
+                tcb->send_last_update_acknowledgement_num = tcp_header->acknowledgement_num;
 
-    //     if(!is_acknowledgement_valid(tcb, tcp_header)) {
-    //         // clean up
-    //         // send reset <SEQ=SEG.ACK><CTL=RST>
-    //     }
+                if(!is_acknowledgement_valid(tcb, tcp_header)) {
+                    tcb->out_buffer->sequence_num = tcp_header->acknowledgement_num;
+                    tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+                    tcb->out_buffer->control_bits = TCP_RST_FLAG;
+                    tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
 
-    //     if(payload_size) {
-    //         void* payload_start = ((uint8_t*) tcp_header) + tcp_header->data_offset;
-    //         add_to_in_buffer(tcb, tcp_header, payload_start, payload_size);            
-    //     }
+                    handler_response(packet_stack, interface, 0);
+                } else {
+                    // if no payload is given the remove the packet from the input buffer
+                    if(!payload_size) {
+                        tcp_block_buffer_remove_front(tcb->in_buffer, 1);
+                    }
 
-    //     tcb->receive_next = tcb->receive_next + tcp_get_payload_length(ipv4_header, tcp_header);
-    //     tcb->receive_urgent_pointer = 0;
+                    tcb->state = ESTABLISHED;
+                    tcb->state_function = tcp_established;
+                }
+            }
+        } else {
+            if(tcp_header->control_bits & TCP_RST_FLAG) {
+                handler->handler_config->mem_free(tcb);
+            } else {
+                // <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                tcb->out_buffer->sequence_num = tcb->send_next;
+                tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+                tcb->out_buffer->control_bits = TCP_ACK_FLAG;
+                tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
 
-    //     tcb->send_window = tcp_header->window;
-    //     tcb->send_last_update_sequence_num = tcp_header->sequence_num;
-    //     tcb->send_last_update_acknowledgement_num = tcp_header->acknowledgement_num;
+                handler_response(packet_stack, interface, 0);
+            }                
+        }
 
-    //     tcb->state = ESTABLISHED;
-    //     tcb->state_function = tcp_established;
-
-        // response_buffer->source_port = tcp_header->destination_port;
-        // response_buffer->destination_port = tcp_header->source_port;
-        // response_buffer->sequence_num = tcb->send_next;
-        // response_buffer->acknowledgement_num = tcb->receive_next;
-        // response_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
-        // response_buffer->control_bits = TCP_ACK_FLAG;
-        // response_buffer->window = tcb->send_window;
-        // response_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
-        // response_buffer->urgent_pointer = 0; // Not supported
-
-    //     tcb->send_next++;
-
-    //     // send response
-    // } else {
-    //     // clean up and connection reset 
-    //     NETSTACK_LOG(NETSTACK_INFO, "TCP unexpected data: Dropping packet.\n");                 
-    // }
-    
-    return sizeof(struct tcp_header_t);
+    }
 }
 
-uint16_t tcp_listen(struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
+uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
     if(num_ready) {
         struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_remove_front(tcb->in_buffer, 1)->data;
 
         struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
         struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
         
-        if(tcp_header->control_bits & TCP_RST_FLAG) {
-            // send <SEQ=SEG.ACK><CTL=RST>
+        tcb->out_buffer->source_port = tcp_header->destination_port;
+        tcb->out_buffer->destination_port = tcp_header->source_port;
+        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->window = tcb->send_window;
+        tcb->out_buffer->urgent_pointer = 0; // Not supported
+
+        packet_stack->pre_build_response[packet_stack->write_chain_length] = tcp_handle_pre_response;
+        packet_stack->write_chain_length++;
+
+        if(tcp_header->control_bits & TCP_RST_FLAG) {            
+            handler->handler_config->mem_free(tcb);
+        }
+        else if(tcp_header->control_bits & TCP_ACK_FLAG) {            
+            tcb->out_buffer->sequence_num = tcp_header->acknowledgement_num;
+            tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+            tcb->out_buffer->control_bits = TCP_RST_FLAG;
+            tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
+
+            handler_response(packet_stack, interface, 0);
         } else if(tcp_header->control_bits | TCP_SYN_FLAG == TCP_SYN_FLAG) {
             tcb->receive_initial_sequence_num = tcp_header->sequence_num;
             tcb->receive_next = tcb->receive_initial_sequence_num + 1;
@@ -230,24 +228,16 @@ uint16_t tcp_listen(struct transmission_control_block_t* tcb, uint16_t num_ready
             tcb->state = SYN_RECEIVED;
             tcb->state_function = tcp_syn_received;
             
-            tcb->out_buffer->source_port = tcp_header->destination_port;
-            tcb->out_buffer->destination_port = tcp_header->source_port;
             tcb->out_buffer->sequence_num = tcb->send_next;
             tcb->out_buffer->acknowledgement_num = tcb->receive_next;
-            tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
-            tcb->out_buffer->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;
-            tcb->out_buffer->window = tcb->send_window;
+            tcb->out_buffer->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;            
             tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
-            tcb->out_buffer->urgent_pointer = 0; // Not supported
-
+            
             tcb->send_next++;
             tcb->send_unacknowledged = tcb->receive_initial_sequence_num;
 
-            packet_stack->pre_build_response[packet_stack->write_chain_length] = tcp_handle_pre_response;
-            packet_stack->write_chain_length++;
-            
             handler_response(packet_stack, interface, 0);
-        }
+        }         
     }
 }
 

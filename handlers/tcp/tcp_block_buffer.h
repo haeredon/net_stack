@@ -31,6 +31,8 @@ struct tcp_block_buffer_t {
 
 struct tcp_block_t* tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove);
 
+struct tcp_block_t* tcp_block_buffer_get_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove);
+
 uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer);
 
 struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer, const uint32_t sequence_num, 

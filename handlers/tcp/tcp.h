@@ -79,7 +79,7 @@ struct transmission_control_block_t {
     uint32_t send_last_update_acknowledgement_num;
 
     uint32_t receive_next;
-    uint16_t receive_window;
+    uint16_t receive_window; // the window of the remote entity
     uint16_t receive_urgent_pointer;
     uint32_t receive_initial_sequence_num;
 

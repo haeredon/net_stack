@@ -15,6 +15,7 @@ struct tcp_priv_t {
 #define TCP_SYN_FLAG 2
 #define TCP_ACK_FLAG 16
 #define TCP_RST_FLAG 4
+#define TCP_FIN_FLAG 1
 
 #define TCP_DATA_OFFSET_MASK 0xF0
 
@@ -75,8 +76,8 @@ struct transmission_control_block_t {
     uint16_t send_window;
     uint16_t send_urgent_pointer;
     uint32_t send_initial_sequence_num;
-    uint32_t send_last_update_sequence_num;
-    uint32_t send_last_update_acknowledgement_num;
+    uint32_t send_last_update_sequence_num; // called WL1 in RFC
+    uint32_t send_last_update_acknowledgement_num; // called WL2 in RFC
 
     uint32_t receive_next;
     uint16_t receive_window; // the window of the remote entity

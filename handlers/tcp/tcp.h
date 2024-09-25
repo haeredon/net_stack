@@ -17,6 +17,9 @@ struct tcp_priv_t {
 struct tcp_socket_t {
     uint16_t listening_port;
     struct interface_t* interface;
+
+    uint8_t* receive_buffer;
+    void (*notify_receive)();
 };
 
 bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler);

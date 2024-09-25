@@ -198,7 +198,9 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     }
 
                     if(payload_size > 0) {
-                        // deliver to next layer                        
+                        memcpy()
+                        tcb->socket->notify_receive();
+
                         tcb->receive_next = tcp_header->sequence_num + 1;
                         tcb->receive_window -= payload_size;
 

@@ -74,7 +74,8 @@
         "array.h": "c",
         "log.h": "c",
         "tcp_block_buffer.h": "c",
-        "tcp_out_buffer.h": "c"
+        "tcp_out_buffer.h": "c",
+        "compare": "cpp"
     }
     
 }

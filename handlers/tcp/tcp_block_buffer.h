@@ -27,7 +27,8 @@ struct tcp_block_buffer_t {
     uint32_t max_size;
 };
 
-// struct tcp_data_block_t* tcp_block_buffer_flush(struct tcp_block_buffer_t* block_buffer);
+
+struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer, void (*mem_free)(void*));
 
 struct tcp_block_t* tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove);
 

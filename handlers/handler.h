@@ -6,6 +6,12 @@
 #include <stddef.h>
 
 
+struct request_t {
+    void* buffer;
+    uint64_t size;
+};
+
+
 struct response_buffer_t {
     void* buffer;
     uint64_t size;

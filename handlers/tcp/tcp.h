@@ -19,7 +19,7 @@ struct tcp_socket_t {
     struct interface_t* interface;
 
     uint8_t* receive_buffer;
-    void (*notify_receive)();
+    void (*notify_receive)(struct request_t* request);
 };
 
 bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler);

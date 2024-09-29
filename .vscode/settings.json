@@ -75,7 +75,8 @@
         "log.h": "c",
         "tcp_block_buffer.h": "c",
         "tcp_out_buffer.h": "c",
-        "compare": "cpp"
+        "compare": "cpp",
+        "ipv4.h": "c"
     }
     
 }

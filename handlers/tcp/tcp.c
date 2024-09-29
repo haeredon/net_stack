@@ -198,8 +198,16 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     }
 
                     if(payload_size > 0) {
-                        memcpy()
-                        tcb->socket->notify_receive();
+                        memcpy(tcb->socket->receive_buffer, 
+                            tcp_header + tcp_header->data_offset * 4 /* data offset is counted in 32 bit chunks */, 
+                            payload_size); 
+
+                        struct request_t request = {
+                            .buffer = tcb->socket->receive_buffer,
+                            .size = payload_size
+                        };
+
+                        tcb->socket->notify_receive(&request);
 
                         tcb->receive_next = tcp_header->sequence_num + 1;
                         tcb->receive_window -= payload_size;

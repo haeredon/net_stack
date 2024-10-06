@@ -1,9 +1,10 @@
 #include "tcp_tcb.h"
 #include "handlers/handler.h"
 #include "handlers/ipv4/ipv4.h"
-
-#include "tcp_out_buffer.h"
+#include "tcp_shared.h"
 #include "tcp_block_buffer.h"
+
+#include <string.h>
 
 // crude, crude, crude implementation of transmission block buffer
 #define TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE 64
@@ -13,6 +14,10 @@ void tcp_tcb_destroy_transmission_control_block(struct transmission_control_bloc
     tcp_block_buffer_destroy(tcb->in_buffer, handler->handler_config->mem_free);
     handler->handler_config->mem_free(tcb->out_buffer);
     handler->handler_config->mem_free(tcb);
+}
+
+void tcp_tcb_reset_transmission_control_blocks() {
+    memset(transmission_blocks, 0, sizeof(transmission_blocks));
 }
 
 struct transmission_control_block_t* create_transmission_control_block(uint32_t connection_id, 
@@ -31,7 +36,7 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     tcb->own_ipv4 = ipv4_request->destination_ip;
     tcb->remote_ipv4 = ipv4_request->source_ip;
     
-    tcb->send_initial_sequence_num = tcp_generate_sequence_number();
+    tcb->send_initial_sequence_num = tcp_shared_generate_sequence_number();
     tcb->send_next = tcb->send_initial_sequence_num;
     tcb->send_window = 512; // hard-coded for now 
 
@@ -43,10 +48,10 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     tcb->receive_initial_sequence_num = tcp_request->sequence_num;
     tcb->receive_window = TCP_RECEIVE_WINDOW;
     tcb->receive_urgent_pointer = tcp_request->urgent_pointer;
-    tcb->receive_next = tcb->receive_initial_sequence_num + 1;
+    tcb->receive_next = tcb->receive_initial_sequence_num;
 
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
-    tcb->out_buffer = (struct tcp_header_t*) mem_allocate("tcp(tcb) output buffer", sizeof(struct tcp_header_t));
+    tcb->out_buffer = (struct tcp_header_t*) handler->handler_config->mem_allocate("tcp(tcb) output buffer", sizeof(struct tcp_header_t));
 
     tcb->state = start_state; 
     

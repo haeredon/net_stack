@@ -1,7 +1,7 @@
 #include "handlers/handler.h"
-#include "handlers/null.h"
+#include "handlers/null/null.h"
 #include "handlers/protocol_map.h"
-#include "handlers/ipv4.h"
+#include "handlers/ipv4/ipv4.h"
 #include "ipv4/test.h"
 #include "tcp/test.h"
 

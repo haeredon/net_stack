@@ -3,7 +3,6 @@
 
 #include "handlers/handler.h"
 #include "handlers/ipv4/ipv4.h"
-#include "tcp_out_buffer.h"
 #include "tcp_block_buffer.h"
 
 #include <stdbool.h>

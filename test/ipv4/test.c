@@ -1,6 +1,6 @@
-#include "handlers/ipv4.h"
-#include "handlers/null.h"
-#include "handlers/ethernet.h"
+#include "handlers/ipv4/ipv4.h"
+#include "handlers/null/null.h"
+#include "handlers/ethernet/ethernet.h"
 #include "test.h"
 #include "test/common.h"
 

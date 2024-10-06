@@ -41,4 +41,6 @@ enum TCP_STATE {
     TIME_WAIT
 };
 
+uint32_t tcp_shared_generate_sequence_number();
+
 #endif // HANDLERS_TCP_SHARED_H

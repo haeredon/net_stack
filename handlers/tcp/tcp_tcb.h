@@ -7,6 +7,7 @@
 
 #include "handlers/ipv4/ipv4.h"
 #include "tcp_shared.h"
+#include "tcp_block_buffer.h"
 
 #define TCP_RECEIVE_WINDOW 4098
 
@@ -39,7 +40,7 @@ struct transmission_control_block_t {
     struct tcp_block_buffer_t* in_buffer;
     struct tcp_header_t* out_buffer;
 
-    uint16_t (*state_function)(
+    uint16_t (*state_function)(struct handler_t* handler,
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
@@ -54,6 +55,8 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
 struct transmission_control_block_t* get_transmission_control_block(uint32_t id);
 
 bool tcp_add_transmission_control_block(struct transmission_control_block_t* tcb);
+
+void tcp_tcb_reset_transmission_control_blocks();
 
 extern struct transmission_control_block_t* transmission_blocks[];
 

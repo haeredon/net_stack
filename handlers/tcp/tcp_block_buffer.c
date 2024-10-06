@@ -4,8 +4,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer, const uint32_t sequence_num, 
-                                         const void* data) {
+struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer, void* data, 
+    const uint32_t sequence_num, uint16_t tcp_payload_size) {
+    
     struct tcp_block_t* new_block = block_buffer->free_list;
     
     // if no free blocks are available, block it
@@ -21,6 +22,7 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
     new_block->data = data;
     new_block->sequence_num = sequence_num;
     new_block->next = 0;
+    new_block->payload_size = tcp_payload_size;
 
     // Find the blocks coming right after and right after the new block 
     // in relation to sequence numbers. Place the new block between these 
@@ -48,7 +50,20 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
 struct tcp_block_t* tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove) {
 }
 
-uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer) {
+uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer, uint32_t start_sequence_num) {
+    uint16_t num_ready = 0;
+    struct tcp_block_t* block = block_buffer->blocks;
+
+    while(block && 
+        ((block->sequence_num == start_sequence_num) ||
+        (block->sequence_num == start_sequence_num + 1) /* allow for acks */)) {
+        
+        num_ready++;
+        start_sequence_num = block->sequence_num + block->payload_size;
+        block = block->next;        
+    }
+
+    return num_ready;
 }
 
 
@@ -98,6 +113,15 @@ uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer) {
 //     }
 // }
 
+
+struct tcp_block_t* tcp_block_buffer_get_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove) {
+
+}
+
+struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer, void (*mem_free)(void*)) {
+
+}
+
 struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size,  void* (*mem_allocate)(const char *type, size_t size),
                                                    void (*mem_free)(void*)) {
     struct tcp_block_buffer_t* block_buffer = (struct tcp_block_buffer_t*) mem_allocate("tcp block buffer", sizeof(struct tcp_block_buffer_t));
@@ -109,4 +133,6 @@ struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size,  void* (*m
     block_buffer->blocks = 0;
 
     block_buffer->max_size = max_size;
+
+    return block_buffer;
 }

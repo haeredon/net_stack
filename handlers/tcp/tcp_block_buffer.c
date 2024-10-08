@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <arpa/inet.h>
 
 struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer, void* data, 
     const uint32_t sequence_num, uint16_t tcp_payload_size) {
@@ -20,7 +21,7 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
 
     // initialize new block
     new_block->data = data;
-    new_block->sequence_num = sequence_num;
+    new_block->sequence_num = ntohl(sequence_num);
     new_block->next = 0;
     new_block->payload_size = tcp_payload_size;
 
@@ -53,6 +54,7 @@ struct tcp_block_t* tcp_block_buffer_remove_front(struct tcp_block_buffer_t* blo
 uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer, uint32_t start_sequence_num) {
     uint16_t num_ready = 0;
     struct tcp_block_t* block = block_buffer->blocks;
+
 
     while(block && 
         ((block->sequence_num == start_sequence_num) ||
@@ -114,8 +116,8 @@ uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer, uin
 // }
 
 
-struct tcp_block_t* tcp_block_buffer_get_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove) {
-
+struct tcp_block_t* tcp_block_buffer_get_head(struct tcp_block_buffer_t* block_buffer) {
+    return block_buffer->blocks;
 }
 
 struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer, void (*mem_free)(void*)) {

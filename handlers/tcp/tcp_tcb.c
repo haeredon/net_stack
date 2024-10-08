@@ -5,6 +5,7 @@
 #include "tcp_block_buffer.h"
 
 #include <string.h>
+#include <arpa/inet.h>
 
 // crude, crude, crude implementation of transmission block buffer
 #define TRANSMISSION_CONTROL_BLOCK_BUFFER_SIZE 64
@@ -45,7 +46,7 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     tcb->send_last_update_sequence_num = 0;
     tcb->send_last_update_acknowledgement_num = 0;        
     
-    tcb->receive_initial_sequence_num = tcp_request->sequence_num;
+    tcb->receive_initial_sequence_num = ntohl(tcp_request->sequence_num);
     tcb->receive_window = TCP_RECEIVE_WINDOW;
     tcb->receive_urgent_pointer = tcp_request->urgent_pointer;
     tcb->receive_next = tcb->receive_initial_sequence_num;

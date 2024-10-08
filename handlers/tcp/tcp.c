@@ -158,7 +158,7 @@ uint16_t tcp_close_wait(struct handler_t* handler, struct transmission_control_b
 }
 
 uint16_t tcp_fin_wait_2(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
- struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_front(tcb->in_buffer, num_ready);
+ struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
 
     while(num_ready--) {
         struct packet_stack_t* packet_stack = incoming_packets->data;
@@ -170,8 +170,8 @@ uint16_t tcp_fin_wait_2(struct handler_t* handler, struct transmission_control_b
 
         tcb->out_buffer->source_port = tcp_header->destination_port;
         tcb->out_buffer->destination_port = tcp_header->source_port;
-        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
-        tcb->out_buffer->window = tcb->receive_window;
+        tcb->out_buffer->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->window = htons(tcb->receive_window);
         tcb->out_buffer->urgent_pointer = 0; // Not supported
 
         packet_stack->pre_build_response[packet_stack->write_chain_length] = tcp_handle_pre_response;
@@ -286,7 +286,7 @@ uint16_t tcp_fin_wait_2(struct handler_t* handler, struct transmission_control_b
 }
 
 uint16_t tcp_fin_wait_1(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
- struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_front(tcb->in_buffer, num_ready);
+ struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
 
     while(num_ready--) {
         struct packet_stack_t* packet_stack = incoming_packets->data;
@@ -298,7 +298,7 @@ uint16_t tcp_fin_wait_1(struct handler_t* handler, struct transmission_control_b
 
         tcb->out_buffer->source_port = tcp_header->destination_port;
         tcb->out_buffer->destination_port = tcp_header->source_port;
-        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
         tcb->out_buffer->window = tcb->receive_window;
         tcb->out_buffer->urgent_pointer = 0; // Not supported
 
@@ -420,7 +420,7 @@ uint16_t tcp_fin_wait_1(struct handler_t* handler, struct transmission_control_b
 }
 
 uint16_t tcp_established(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_front(tcb->in_buffer, num_ready);
+    struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
 
     while(num_ready--) {
         struct packet_stack_t* packet_stack = incoming_packets->data;
@@ -432,7 +432,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
 
         tcb->out_buffer->source_port = tcp_header->destination_port;
         tcb->out_buffer->destination_port = tcp_header->source_port;
-        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
         tcb->out_buffer->window = tcb->receive_window;
         tcb->out_buffer->urgent_pointer = 0; // Not supported
 
@@ -543,7 +543,7 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
 
 uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
     if(num_ready) {
-        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_front(tcb->in_buffer, 1)->data;
+        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
         struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
         struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
@@ -552,7 +552,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
 
         tcb->out_buffer->source_port = tcp_header->destination_port;
         tcb->out_buffer->destination_port = tcp_header->source_port;
-        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
         tcb->out_buffer->window = tcb->receive_window;
         tcb->out_buffer->urgent_pointer = 0; // Not supported
 
@@ -606,15 +606,15 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
 
 uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
     if(num_ready) {
-        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_front(tcb->in_buffer, 1)->data;
+        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
         struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
         struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
         
         tcb->out_buffer->source_port = tcp_header->destination_port;
         tcb->out_buffer->destination_port = tcp_header->source_port;
-        tcb->out_buffer->data_offset = sizeof(struct tcp_header_t) / 32; // data offset is counted in 32 bit chunks 
-        tcb->out_buffer->window = tcb->receive_window;
+        tcb->out_buffer->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
+        tcb->out_buffer->window = htons(tcb->receive_window);
         tcb->out_buffer->urgent_pointer = 0; // Not supported
 
         packet_stack->pre_build_response[packet_stack->write_chain_length] = tcp_handle_pre_response;
@@ -624,33 +624,35 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
             handler->handler_config->mem_free(tcb);
         }
         else if(tcp_header->control_bits & TCP_ACK_FLAG) {            
-            tcb->out_buffer->sequence_num = tcp_header->acknowledgement_num;
-            tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+            tcb->out_buffer->sequence_num = tcp_header->acknowledgement_num;        
+            tcb->out_buffer->acknowledgement_num = htonl(tcb->receive_next);               
             tcb->out_buffer->control_bits = TCP_RST_FLAG;
-            tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
+            tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);   
 
             handler_response(packet_stack, interface, 0);
         } else if(tcp_header->control_bits | TCP_SYN_FLAG == TCP_SYN_FLAG) {
-            tcb->receive_initial_sequence_num = tcp_header->sequence_num;
-            tcb->receive_next = tcb->receive_initial_sequence_num + 1;
+            tcb->receive_initial_sequence_num = ntohl(tcp_header->sequence_num);           
+            tcb->receive_next = tcb->receive_initial_sequence_num + 1; 
             tcb->receive_urgent_pointer = 0;
 
             tcb->state = SYN_RECEIVED;
             tcb->state_function = tcp_syn_received;
             
-            tcb->out_buffer->sequence_num = tcb->send_next;
-            tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+            tcb->out_buffer->sequence_num = htonl(tcb->send_next);                         
+            tcb->out_buffer->acknowledgement_num = htonl(tcb->receive_next);               
             tcb->out_buffer->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;            
-            tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
+            tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);   
             
             tcb->send_next++;
-            tcb->send_unacknowledged = tcb->receive_initial_sequence_num;
+            tcb->send_unacknowledged = tcb->send_initial_sequence_num;
 
             handler_response(packet_stack, interface, 0);
         }
 
         tcp_block_buffer_remove_front(tcb->in_buffer, 1);         
     }
+
+    return 0;
 }
 
 uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
@@ -681,9 +683,11 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
         uint16_t num_ready = tcp_block_buffer_num_ready(tcb->in_buffer, tcb->receive_next);
         
         if(num_ready) {
-            tcb->state_function(handler, tcb, num_ready, interface);
+            return tcb->state_function(handler, tcb, num_ready, interface);
         }
     }
+
+    return 0;
 }
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config) {

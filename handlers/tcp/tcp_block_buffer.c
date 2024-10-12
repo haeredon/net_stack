@@ -48,13 +48,22 @@ struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer
     return new_block;
 } 
 
-struct tcp_block_t* tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove) {
+bool tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, uint16_t num_to_remove) {
+    struct tcp_block_t* block = block_buffer->blocks;
+    
+    while(num_to_remove-- && block) {
+        block_buffer->blocks = block->next;
+        
+        block->next = block_buffer->free_list;
+        block_buffer->free_list = block;
+
+        block = block_buffer->blocks;
+    }
 }
 
 uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer, uint32_t start_sequence_num) {
     uint16_t num_ready = 0;
     struct tcp_block_t* block = block_buffer->blocks;
-
 
     while(block && 
         ((block->sequence_num == start_sequence_num) ||
@@ -133,6 +142,16 @@ struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size,  void* (*m
 
     block_buffer->free_list = block_buffer->mem_allocate("tcp block buffer: free_list", sizeof(struct tcp_block_t) * TCP_BLOCK_BUFFER_DEFAULT_SIZE); 
     block_buffer->blocks = 0;
+
+    // initialize free list
+    uint16_t block_buffer_iter = TCP_BLOCK_BUFFER_DEFAULT_SIZE;
+    struct tcp_block_t* block = &block_buffer->free_list[block_buffer_iter];
+    block->next = 0;
+    while(block_buffer_iter--) {
+        struct tcp_block_t* prev_block = &block_buffer->free_list[block_buffer_iter];
+        prev_block->next = block;
+        block = prev_block;
+    }
 
     block_buffer->max_size = max_size;
 

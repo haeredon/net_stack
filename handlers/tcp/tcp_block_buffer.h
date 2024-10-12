@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #define TCP_BLOCK_BUFFER_DEFAULT_SIZE 10
 
@@ -15,6 +16,7 @@ struct tcp_block_t {
 
 struct tcp_block_buffer_t {
     struct tcp_block_t* free_list;
+    struct tcp_block_t* last_free;
     struct tcp_block_t* blocks;
 
     void* (*mem_allocate)(const char *type, size_t size);
@@ -26,7 +28,7 @@ struct tcp_block_buffer_t {
 
 struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer, void (*mem_free)(void*));
 
-struct tcp_block_t* tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove);
+bool tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove);
 
 struct tcp_block_t* tcp_block_buffer_get_head(struct tcp_block_buffer_t* block_buffer);
 

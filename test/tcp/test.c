@@ -202,7 +202,7 @@ bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
 
     second_stack.packet_pointers[1] = tcp_3_way_handshake_3 + 20;
 
-    if(handler->operations.read(&first_stack, config->interface, handler)) {
+    if(handler->operations.read(&second_stack, config->interface, handler)) {
         return false;
     }
 
@@ -215,7 +215,7 @@ bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
 
     third_stack.packet_pointers[1] = tcp_3_way_handshake_4 + 20;
 
-    if(handler->operations.read(&first_stack, config->interface, handler)) {
+    if(handler->operations.read(&third_stack, config->interface, handler)) {
         return false;
     }
 

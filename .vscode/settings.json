@@ -10,7 +10,7 @@
             "binaryPath": "/home/skod/net_stack/build/net_stack-test",
             "binaryArgs": [],
             "miDebuggerPath": "${workspaceFolder}/tools/gdb",
-            "MIMode": "gdb"
+            "MIMode": "gdb",
         }
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",

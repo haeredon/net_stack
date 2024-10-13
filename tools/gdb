@@ -1,2 +1,3 @@
 export LD_LIBRARY_PATH=/home/skod/net_stack/build
-pkexec env LD_LIBRARY_PATH=/home/skod/net_stack/build /usr/bin/gdb "$@"
+export LD_PRELOAD=/home/skod/net_stack/build/overwrite.so
+pkexec env LD_LIBRARY_PATH=/home/skod/net_stack/build LD_PRELOAD=/home/skod/net_stack/build/overwrite.so /usr/bin/gdb "$@"

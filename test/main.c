@@ -18,9 +18,12 @@
 #include <linux/if_packet.h>
 
 
-int main(int argc, char **argv) {            
-    // ipv4_tests_start();
+#include "handlers/tcp/tcp_shared.h"
 
+int main(int argc, char **argv) {     
+    printf("Starting tests\n\n");     
+    
+    // ipv4_tests_start();
     tcp_tests_start();
 
 

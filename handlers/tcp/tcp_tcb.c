@@ -48,7 +48,7 @@ struct transmission_control_block_t* create_transmission_control_block(uint32_t 
     tcb->send_last_update_acknowledgement_num = 0;        
     
     tcb->receive_initial_sequence_num = ntohl(tcp_request->sequence_num);
-    tcb->receive_window = TCP_RECEIVE_WINDOW;
+    tcb->receive_window = ((struct tcp_priv_t*) handler->priv)->receive_window;
     tcb->receive_urgent_pointer = tcp_request->urgent_pointer;
     tcb->receive_next = tcb->receive_initial_sequence_num;
 

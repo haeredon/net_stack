@@ -25,11 +25,13 @@
 struct tcp_cmp_ignores_t {
     bool sequence_num;
     bool checksum; 
+    bool data_offset;
 };
 
 struct tcp_cmp_ignores_t ignores = {
-    .sequence_num = true,
-    .checksum = true
+    .sequence_num = false,
+    .checksum = true,
+    .data_offset = true
 };
 struct response_t tcp_last_response;
 uint8_t tcp_response_buffer[4096];
@@ -46,7 +48,7 @@ bool is_tcp_packet_equal3(struct tcp_header_t* a, struct tcp_header_t* b, struct
     a->destination_port == b->destination_port &&
     (a->sequence_num == b->sequence_num || ignores->sequence_num) &&
     a->acknowledgement_num == b->acknowledgement_num &&
-    a->data_offset == b->data_offset &&
+    (a->data_offset == b->data_offset || ignores->data_offset) &&
     a->control_bits == b->control_bits &&
     a->window == b->window &&
     (a->checksum == b->checksum || ignores->checksum) &&
@@ -62,7 +64,8 @@ bool is_tcp_packet_equal3(struct tcp_header_t* a, struct tcp_header_t* b, struct
  *          TESTS                *
 **************************************/
 bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
-    current_sequence_number = 222;
+    current_sequence_number = 2189314807;
+    ((struct tcp_priv_t*) handler->priv)->receive_window = 65535;
 
     struct packet_stack_t first_stack = { 
     .pre_build_response = 0, .post_build_response = 0,

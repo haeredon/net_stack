@@ -8,6 +8,10 @@
 #define TCP_RST_FLAG 4
 #define TCP_FIN_FLAG 1
 
+struct tcp_priv_t {
+    int receive_window;
+};
+
 struct tcp_pseudo_header_t {
     uint32_t source_ip;
     uint32_t destination_ip;

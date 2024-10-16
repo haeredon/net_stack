@@ -9,9 +9,6 @@
 
 #define TCP_DATA_OFFSET_MASK 0xF0
 
-struct tcp_priv_t {
-    int dummy;
-};
 
 struct tcp_socket_t {
     uint16_t listening_port;

@@ -9,8 +9,6 @@
 #include "tcp_shared.h"
 #include "tcp_block_buffer.h"
 
-#define TCP_RECEIVE_WINDOW 4098
-
 struct transmission_control_block_t {
     uint32_t id;
 

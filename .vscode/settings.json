@@ -76,7 +76,9 @@
         "tcp_block_buffer.h": "c",
         "tcp_out_buffer.h": "c",
         "compare": "cpp",
-        "ipv4.h": "c"
+        "ipv4.h": "c",
+        "tcp_shared.h": "c",
+        "overrides.h": "c"
     }
     
 }

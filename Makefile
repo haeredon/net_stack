@@ -2,6 +2,7 @@
 APP = net_stack
 
 # all source are stored in SRCS-y
+SRCS-OVERRIDES-TEST := test/tcp/overrides.c
 SRCS-TEST := test/main.c test/pcapng.c test/ipv4/test.c test/common.c test/tcp/test.c
 INCLUDES-TEST := -I ./ -I ./test
 SRCS-y := main.c worker.c 
@@ -34,8 +35,11 @@ LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
 build/$(APP)-shared: build/libhandler.so $(SRCS-y) Makefile $(PC_FILE) | build
 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
-build/$(APP)-test: build/libhandler.so $(SRCS-TEST) | build
-	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-TEST) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
+build/$(APP)-test: build/libtestoverrides.so build/libhandler.so $(SRCS-TEST) | build	
+	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-TEST) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler -ltestoverrides
+
+build/libtestoverrides.so: $(SRCS-OVERRIDES-TEST) | build
+	$(CC) $(CFLAGS) -fpic -shared $(SRCS-OVERRIDES-TEST) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 build/libhandler.so: $(SRCS-HANDLERS) $(SRCS-LOG) $(SRCS-UTILITY) | build
 	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(SRCS-LOG) $(SRCS-UTILITY) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)

@@ -3,6 +3,7 @@
 #include "handlers/ipv4/ipv4.h"
 #include "tcp_shared.h"
 #include "tcp_block_buffer.h"
+#include "log.h"
 
 #include <string.h>
 #include <arpa/inet.h>

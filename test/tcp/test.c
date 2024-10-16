@@ -9,6 +9,8 @@
 #include "test.h"
 #include "test_data.h"
 #include "test/common.h"
+#include "overrides.h"
+
 
 #include <stdbool.h>
 #include <string.h>
@@ -51,6 +53,7 @@ bool is_tcp_packet_equal3(struct tcp_header_t* a, struct tcp_header_t* b, struct
     a->urgent_pointer == b->urgent_pointer;
 }
 
+
 // bool is_tcp_packet_equal2(struct tcp_header_t* a, struct tcp_header_t* b) {
 //     return is_tcp_packet_equal3(a, b, false);
 // }
@@ -59,6 +62,8 @@ bool is_tcp_packet_equal3(struct tcp_header_t* a, struct tcp_header_t* b, struct
  *          TESTS                *
 **************************************/
 bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
+    current_sequence_number = 222;
+
     struct packet_stack_t first_stack = { 
     .pre_build_response = 0, .post_build_response = 0,
     .packet_pointers = tcp_3_way_handshake_1 + tcp_3_way_handshake_ip_offset, .write_chain_length = 1 };

@@ -82,15 +82,17 @@ bool is_acknowledgement_valid(struct transmission_control_block_t* tcb, struct t
 }
 
 bool is_segment_in_window(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header, uint32_t payload_size) {
+    uint32_t sequence_num = ntohl(tcp_header->sequence_num);
+
     if(payload_size) {
-        uint32_t sequence_end = tcp_header->sequence_num + payload_size - 1 /* -1 because it says in RFC, maybe think it through */;
-        return tcb->receive_window && (tcp_header->sequence_num >= tcb->receive_next &&
-               tcp_header->sequence_num < tcb->receive_next + tcb->receive_window && 
+        uint32_t sequence_end = sequence_num + payload_size - 1 /* -1 because it says in RFC, maybe think it through */;
+        return tcb->receive_window && (sequence_num >= tcb->receive_next &&
+               sequence_num < tcb->receive_next + tcb->receive_window && 
                sequence_end < tcb->receive_next + tcb->receive_window);
     } else {
-        return ((tcb->receive_window) && (tcp_header->sequence_num >= tcb->receive_next &&
-               tcp_header->sequence_num < tcb->receive_next + tcb->receive_window)) || 
-               (!tcb->receive_window && tcb->receive_next == tcp_header->sequence_num);
+        return ((tcb->receive_window) && (sequence_num >= tcb->receive_next &&
+               sequence_num < tcb->receive_next + tcb->receive_window)) || 
+               (!tcb->receive_window && tcb->receive_next == sequence_num);
     }
 }
 
@@ -567,13 +569,13 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                 tcb->state_function = tcp_listen;
                 tcb->state = LISTEN;
             } else if(tcp_header->control_bits & TCP_ACK_FLAG) {
-                tcb->send_window = tcp_header->window;
-                tcb->send_last_update_sequence_num = tcp_header->sequence_num;
-                tcb->send_last_update_acknowledgement_num = tcp_header->acknowledgement_num;
+                tcb->send_window = ntohs(tcp_header->window);
+                tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
+                tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
 
                 if(!is_acknowledgement_valid(tcb, tcp_header)) {
                     tcb->out_buffer->sequence_num = tcp_header->acknowledgement_num;
-                    tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+                    tcb->out_buffer->acknowledgement_num = htonl(tcb->receive_next);
                     tcb->out_buffer->control_bits = TCP_RST_FLAG;
                     tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
 
@@ -588,8 +590,8 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                 handler->handler_config->mem_free(tcb);
             } else {
                 // <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
-                tcb->out_buffer->sequence_num = tcb->send_next;
-                tcb->out_buffer->acknowledgement_num = tcb->receive_next;
+                tcb->out_buffer->sequence_num = htonl(tcb->send_next);
+                tcb->out_buffer->acknowledgement_num = htonl(tcb->receive_next);
                 tcb->out_buffer->control_bits = TCP_ACK_FLAG;
                 tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
 

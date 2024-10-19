@@ -67,9 +67,11 @@ bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
     current_sequence_number = 2189314807;
     ((struct tcp_priv_t*) handler->priv)->receive_window = 65535;
 
+    // FIRST
     struct packet_stack_t first_stack = { 
     .pre_build_response = 0, .post_build_response = 0,
-    .packet_pointers = tcp_3_way_handshake_1 + tcp_3_way_handshake_ip_offset, .write_chain_length = 1 };
+    .packet_pointers = tcp_3_way_handshake_1 + tcp_3_way_handshake_ip_offset, 
+    .write_chain_length = 1 };
 
     first_stack.packet_pointers[1] = tcp_3_way_handshake_1 + tcp_3_way_handshake_tcp_offset;
     
@@ -82,31 +84,44 @@ bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
         return false;
     }
 
-    // struct packet_stack_t second_stack = { 
-    //     .pre_build_response = 0, .post_build_response = 0,
-    //     .packet_pointers = tcp_3_way_handshake_3, .write_chain_length = 1 
-    // };
+    // SECOND
+    struct packet_stack_t second_stack = { 
+        .pre_build_response = 0, .post_build_response = 0,
+        .packet_pointers = tcp_3_way_handshake_3 + tcp_3_way_handshake_ip_offset, 
+        .write_chain_length = 1 
+    };
 
-    // second_stack.packet_pointers[1] = tcp_3_way_handshake_3 + 20;
+    second_stack.packet_pointers[1] = tcp_3_way_handshake_3 + tcp_3_way_handshake_tcp_offset;
 
-    // if(handler->operations.read(&second_stack, config->interface, handler)) {
-    //     return false;
-    // }
+    if(handler->operations.read(&second_stack, config->interface, handler)) {
+        return false;
+    }
 
-    // // check that no response was send
+    // check that no response was send. 
+    // We confirm this by checking that the last reponce buffer is the same is the previous one
+    if(is_tcp_packet_equal3((struct tcp_header_t*) tcp_response_buffer, 
+        (struct tcp_header_t*) (tcp_3_way_handshake_2 + tcp_3_way_handshake_tcp_offset), &ignores)) {
+        return false;
+    }
 
-    // struct packet_stack_t third_stack = { 
-    //     .pre_build_response = 0, .post_build_response = 0,
-    //     .packet_pointers = tcp_3_way_handshake_4, .write_chain_length = 1 
-    // };
+    // THIRD
+    struct packet_stack_t third_stack = { 
+        .pre_build_response = 0, .post_build_response = 0,
+        .packet_pointers = tcp_3_way_handshake_4 + tcp_3_way_handshake_ip_offset,  
+        .write_chain_length = 1 
+    };
 
-    // third_stack.packet_pointers[1] = tcp_3_way_handshake_4 + 20;
+    third_stack.packet_pointers[1] = tcp_3_way_handshake_4 + tcp_3_way_handshake_tcp_offset;
 
-    // if(handler->operations.read(&third_stack, config->interface, handler)) {
-    //     return false;
-    // }
+    if(handler->operations.read(&third_stack, config->interface, handler)) {
+        return false;
+    }
 
     // check that the correct reponse was send and that it is equal to tcp_3_way_handshake_5
+    if(!is_tcp_packet_equal3((struct tcp_header_t*) tcp_response_buffer, 
+        (struct tcp_header_t*) (tcp_3_way_handshake_5 + tcp_3_way_handshake_tcp_offset), &ignores)) {
+        return false;
+    }
 
     return true;
 }

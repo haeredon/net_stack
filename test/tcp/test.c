@@ -99,7 +99,7 @@ bool tcp_test_basic(struct handler_t* handler, struct test_config_t* config) {
 
     // check that no response was send. 
     // We confirm this by checking that the last reponce buffer is the same is the previous one
-    if(is_tcp_packet_equal3((struct tcp_header_t*) tcp_response_buffer, 
+    if(!is_tcp_packet_equal3((struct tcp_header_t*) tcp_response_buffer, 
         (struct tcp_header_t*) (tcp_3_way_handshake_2 + tcp_3_way_handshake_tcp_offset), &ignores)) {
         return false;
     }

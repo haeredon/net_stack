@@ -72,7 +72,7 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 
 		for (j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer = pkts_burst[j];
-			struct packet_stack_t packet_stack = { .response = 0, .packet_pointers = 0, .write_chain_length = 0 };
+			struct packet_stack_t packet_stack = { .packet_pointers = 0, .write_chain_length = 0 };
 
 			void* buffer_start = rte_pktmbuf_mtod(buffer, void *);
 

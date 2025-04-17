@@ -501,7 +501,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                         tcb->receive_window -= payload_size;
 
                         tcb->out_buffer->sequence_num = htonl(tcb->send_next);
-                        tcb->out_buffer->acknowledgement_num = htons(tcb->receive_next);
+                        tcb->out_buffer->acknowledgement_num = htonl(tcb->receive_next);
                         tcb->out_buffer->control_bits = TCP_ACK_FLAG;
                         tcb->out_buffer->checksum = _tcp_calculate_checksum(tcp_header, tcb);
 
@@ -704,7 +704,7 @@ struct handler_t* tcp_create_handler(struct handler_config_t *handler_config) {
     handler->init = tcp_init_handler;
     handler->close = tcp_close_handler;
 
-    handler->operations.read = tcp_read;
+    handler->operations.read = tcp_read;    
 
     ADD_TO_PRIORITY(&ip_type_to_handler, 0x06, handler); 
 

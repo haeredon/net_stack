@@ -15,6 +15,9 @@
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
     "files.associations": {
+        "*.sqlbook": "sql",
+        "*.ndjson": "jsonl",
+        "*.dbclient-js": "javascript",
         "stdint.h": "c",
         "cstdint": "c",
         "stdint-gcc.h": "c",
@@ -78,7 +81,9 @@
         "compare": "cpp",
         "ipv4.h": "c",
         "tcp_shared.h": "c",
-        "overrides.h": "c"
+        "overrides.h": "c",
+        "tcp.h": "c",
+        "tcp_tcb.h": "c"
     }
     
 }

@@ -7,10 +7,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-extern const uint8_t OWN_MAC[];
-extern const uint8_t REMOTE_MAC[];
-extern const uint8_t BROADCAST_MAC[];
-extern const uint32_t OWN_IP;
+#define IP_HEADER_SIZE 14
+#define ETHERNET_HEADER_SIZE 18
+
 
 struct test_config_t {
     struct interface_t* interface;

@@ -21,7 +21,7 @@ struct response_buffer_t {
 
 struct response_t;
 struct interface_operations_t {
-    int64_t (*write)(struct response_t response);        
+    int64_t (*write)(struct response_t response); // write to hardware level
 };
 
 struct interface_t {
@@ -52,13 +52,15 @@ struct response_t {
 };
 
 struct handler_t;
+
 struct operations_t {
-    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);        
+    uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);            
 };
 
 struct handler_config_t {
     void* (*mem_allocate)(const char *type, size_t size);
     void (*mem_free)(void*);
+    uint16_t (*write)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config); // write callback for handler
 };
 
 struct handler_t {

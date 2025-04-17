@@ -43,9 +43,9 @@
 
 #include "worker.h"
 #include "handlers/handler.h"
-#include "handlers/pcapng.h"
-#include "handlers/ethernet.h"
-#include "handlers/arp.h"
+// #include "handlers/pcapng.h"
+// #include "handlers/ethernet.h"
+// #include "handlers/arp.h"
 
 /* MAC updating enabled by default */
 static int mac_updating = 1;

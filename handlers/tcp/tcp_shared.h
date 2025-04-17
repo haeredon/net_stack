@@ -8,8 +8,12 @@
 #define TCP_RST_FLAG 4
 #define TCP_FIN_FLAG 1
 
+#define SOCKET_BUFFER_SIZE 64
+
+
 struct tcp_priv_t {
     int receive_window;
+    struct tcp_socket_t tcp_sockets[SOCKET_BUFFER_SIZE];
 };
 
 struct tcp_pseudo_header_t {

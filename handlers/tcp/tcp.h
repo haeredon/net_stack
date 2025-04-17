@@ -12,10 +12,12 @@
 
 struct tcp_socket_t {
     uint16_t listening_port;
-    struct interface_t* interface;
+    // struct interface_t* interface;
 
-    uint8_t* receive_buffer;
-    void (*notify_receive)(struct request_t* request);
+    // uint8_t* receive_buffer;
+    // void (*notify_receive)(struct request_t* request);
+
+    struct transmission_control_block_t trans_control_block;
 };
 
 bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler);

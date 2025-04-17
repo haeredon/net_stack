@@ -22,8 +22,6 @@
  *      3. Number of listeners
  */
 
-#define SOCKET_BUFFER_SIZE 64
-struct tcp_socket_t* tcp_sockets[SOCKET_BUFFER_SIZE];
 
 void tcp_close_handler(struct handler_t* handler) {
     struct tcp_priv_t* private = (struct tcp_priv_t*) handler->priv;    

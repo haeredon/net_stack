@@ -1,5 +1,5 @@
-#ifndef HANDLERS_TCP_TCB_H
-#define HANDLERS_TCP_TCB_H
+#ifndef HANDLERS_TCP_SOCKET_H
+#define HANDLERS_TCP_SOCKET_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -58,4 +58,4 @@ void tcp_tcb_reset_transmission_control_blocks();
 
 extern struct transmission_control_block_t* transmission_blocks[];
 
-#endif // HANDLERS_TCP_TCB_H
+#endif // HANDLERS_TCP_SOCKET_H

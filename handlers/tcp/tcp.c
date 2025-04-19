@@ -106,27 +106,6 @@ uint32_t tcb_header_to_connection_id(struct ipv4_header_t* ipv4_header, struct t
     return id;
 }
 
-struct tcp_socket_t* tcp_get_socket(uint16_t port, uint32_t ipv4) {
-    for (uint8_t i = 0 ; i < SOCKET_BUFFER_SIZE && tcp_sockets[i] ; i++) {
-        struct tcp_socket_t* socket = tcp_sockets[i];
-        
-        if(socket->listening_port == port && socket->interface->ipv4_addr == ipv4) {
-            return socket;
-        } 
-    }   
-    return 0; 
-}
-
-bool tcp_add_socket(struct tcp_socket_t* socket, struct handler_t* handler) {
-    for (uint64_t i = 0; i < SOCKET_BUFFER_SIZE; i++) {
-        if(!tcp_sockets[i]) {
-            tcp_sockets[i] = socket;
-            return true;
-        }        
-    }
-    return false;     
-}
-
 uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) { 
     struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx - 1];
     struct tcp_header_t* tcp_request_header = (struct tcp_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
@@ -669,13 +648,12 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     struct tcp_socket_t* socket = tcp_get_socket(header->destination_port, ipv4_header->destination_ip);
 
     if(socket) {
-        struct transmission_control_block_t* tcb = get_transmission_control_block(connection_id);
+        struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(socket, connection_id);
 
         if(!tcb) {
-            tcb = create_transmission_control_block(connection_id, socket, header, ipv4_header, 
-                LISTEN, tcp_listen, handler);
+            tcb = tcp_create_transmission_control_block(socket, ...);
             
-            if(!tcp_add_transmission_control_block(tcb)) {
+            if(!tcb) {
                 handler->handler_config->mem_free(tcb);
                 NETSTACK_LOG(NETSTACK_INFO, "Could not allocate transmission control block.\n");          
                 return 1;

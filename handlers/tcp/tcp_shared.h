@@ -13,7 +13,7 @@
 
 struct tcp_priv_t {
     int receive_window;
-    struct tcp_socket_t tcp_sockets[SOCKET_BUFFER_SIZE];
+    struct tcp_socket_t* tcp_sockets[SOCKET_BUFFER_SIZE];
 };
 
 struct tcp_pseudo_header_t {

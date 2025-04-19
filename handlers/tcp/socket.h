@@ -4,10 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #include "handlers/ipv4/ipv4.h"
 #include "tcp_shared.h"
 #include "tcp_block_buffer.h"
+
+#define TCP_SOCKET_NUM_TCB 32
 
 struct transmission_control_block_t {
     uint32_t id;
@@ -42,20 +43,24 @@ struct transmission_control_block_t {
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
+struct tcp_socket_t {
+    uint16_t listening_port;
+    uint32_t ipv4;
+    struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
+};
 
-void tcp_tcb_destroy_transmission_control_block(struct transmission_control_block_t* tcb, struct handler_t* handler);
+struct transmission_control_block_t* tcp_create_transmission_control_block(struct tcp_socket_t* socket, ...);
 
-struct transmission_control_block_t* create_transmission_control_block(uint32_t connection_id, 
-    struct tcp_socket_t* socket, struct tcp_header_t* tcp_request, 
-    struct ipv4_header_t* ipv4_request, enum TCP_STATE start_state, void* state_function, 
-    struct handler_t* handler);
+struct transmission_control_block_t* tcp_get_transmission_control_block(struct tcp_socket_t* socket, uint32_t connection_id);
 
-struct transmission_control_block_t* get_transmission_control_block(uint32_t id);
+void tcp_delete_socket(struct handler_t* handler, struct tcp_socket_t* socket) ;
 
-bool tcp_add_transmission_control_block(struct transmission_control_block_t* tcb);
+void tcp_delete_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t connection_id);
 
-void tcp_tcb_reset_transmission_control_blocks();
+struct transmission_control_block_t* tcp_create_transmission_control_block(struct tcp_socket_t* socket, ...);
 
-extern struct transmission_control_block_t* transmission_blocks[];
+uint8_t tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
+
+struct tcp_socket_t* tcp_get_socket(struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
 #endif // HANDLERS_TCP_SOCKET_H

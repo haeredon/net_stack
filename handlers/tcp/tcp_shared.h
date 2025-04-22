@@ -9,10 +9,10 @@
 #define TCP_FIN_FLAG 1
 
 #define SOCKET_BUFFER_SIZE 64
-
+#define TCP_WINDOW 4096
 
 struct tcp_priv_t {
-    int receive_window;
+    int window;
     struct tcp_socket_t* tcp_sockets[SOCKET_BUFFER_SIZE];
 };
 

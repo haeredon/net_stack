@@ -30,6 +30,8 @@ void tcp_close_handler(struct handler_t* handler) {
 
 void tcp_init_handler(struct handler_t* handler) {
     struct tcp_priv_t* tcp_priv = (struct tcp_priv_t*) handler->handler_config->mem_allocate("tcp handler private data", sizeof(struct tcp_priv_t)); 
+    tcp_priv->window = TCP_WINDOW;
+
     handler->priv = (void*) tcp_priv;
     tcp_tcb_reset_transmission_control_blocks();
 }
@@ -651,6 +653,7 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
         struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(socket, connection_id);
 
         if(!tcb) {
+            // todo: only create if its a sync
             tcb = tcp_create_transmission_control_block(socket, ...);
             
             if(!tcb) {

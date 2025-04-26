@@ -65,7 +65,7 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
 /**
  * Get the transmission control block associated with the given connection id on the given socket.
  */
-struct transmission_control_block_t* tcp_get_transmission_control_block(struct tcp_socket_t* socket, uint32_t connection_id) {
+struct transmission_control_block_t* tcp_get_transmission_control_block(const struct tcp_socket_t* socket, uint32_t connection_id) {
     for (uint8_t i = 0 ; i < TCP_SOCKET_NUM_TCB ; i++) {
         struct transmission_control_block_t* tcb = socket->trans_control_block[i];
         
@@ -79,7 +79,7 @@ struct transmission_control_block_t* tcp_get_transmission_control_block(struct t
 /**
  * Get an existing tcp socket. Sockets should be stored in the handler's private storage
  */
-struct tcp_socket_t* tcp_get_socket(struct handler_t* handler, uint32_t ipv4, uint16_t port) {
+struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port) {
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
 
     for (uint8_t i = 0 ; i < SOCKET_BUFFER_SIZE && priv->tcp_sockets[i] ; i++) {

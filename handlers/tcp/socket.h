@@ -36,6 +36,7 @@ struct transmission_control_block_t {
     enum TCP_STATE state;
 
     struct tcp_block_buffer_t* in_buffer;
+    struct tcp_header_t* out_header;
 
     uint16_t (*state_function)(struct handler_t* handler,
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
@@ -51,7 +52,7 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
         uint32_t source_ip, void* listen_state_function);
 
-struct transmission_control_block_t* tcp_get_transmission_control_block(struct tcp_socket_t* socket, uint32_t connection_id);
+struct transmission_control_block_t* tcp_get_transmission_control_block(const struct tcp_socket_t* socket, uint32_t connection_id);
 
 void tcp_delete_socket(struct handler_t* handler, struct tcp_socket_t* socket) ;
 
@@ -59,6 +60,6 @@ void tcp_delete_transmission_control_block(struct handler_t* handler, struct tcp
 
 uint8_t tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 
-struct tcp_socket_t* tcp_get_socket(struct handler_t* handler, uint32_t ipv4, uint16_t port);
+struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
 #endif // HANDLERS_TCP_SOCKET_H

@@ -32,12 +32,15 @@ struct interface_t {
      struct interface_operations_t operations;
 };
 
+struct handler_t;
+
 struct packet_stack_t {
     // should be called iterative as part of a response chain that is iterated over by a handler.c function
     uint16_t (*pre_build_response[10])(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface);
     void (*post_build_response[10])(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, 
                                   const struct interface_t* interface, uint16_t offset);
     const void* packet_pointers[10];
+    const struct handler_t* handlers[10];
     uint8_t write_chain_length;
 };
 
@@ -51,7 +54,7 @@ struct response_t {
     struct interface_t* interface;
 };
 
-struct handler_t;
+
 
 struct operations_t {
     uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);            

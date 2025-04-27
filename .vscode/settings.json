@@ -85,7 +85,8 @@
         "tcp.h": "c",
         "tcp_tcb.h": "c",
         "utility.h": "c",
-        "download_1_packages.h": "c"
+        "download_1_packages.h": "c",
+        "socket.h": "c"
     }
     
 }

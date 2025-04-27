@@ -39,13 +39,18 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     struct ethernet_header_t* ethernet_first_header = (struct ethernet_header_t*) pkt37;
     struct ipv4_header_t* ipv4_first_header = get_ip_header(pkt37);
-    
-    // set interface according to first header
-    config->interface->ipv4_addr = ipv4_first_header->destination_ip;    
-    memcpy(config->interface, ethernet_first_header->destination, ETHERNET_MAC_SIZE);
+    struct tcp_header_t* tcp_first_header = get_tcp_header(pkt37);
 
     // mock write callbacks
     handler->handler_config->write = write;
+
+    // add mock socket
+    struct tcp_socket_t socket = {
+        .ipv4 = ipv4_first_header->destination_ip,
+        .listening_port = tcp_first_header->destination_port,
+        .trans_control_block = 0
+    };
+    tcp_add_socket(handler, &socket);
 
     // FIRST
     struct packet_stack_t packet_stack = create_packet_stack(pkt37);

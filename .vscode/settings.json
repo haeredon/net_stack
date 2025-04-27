@@ -83,7 +83,9 @@
         "tcp_shared.h": "c",
         "overrides.h": "c",
         "tcp.h": "c",
-        "tcp_tcb.h": "c"
+        "tcp_tcb.h": "c",
+        "utility.h": "c",
+        "download_1_packages.h": "c"
     }
     
 }

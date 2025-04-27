@@ -2,8 +2,8 @@
 #include "handlers/null/null.h"
 #include "handlers/protocol_map.h"
 #include "handlers/ipv4/ipv4.h"
-#include "ipv4/test.h"
-#include "tcp/test.h"
+#include "test/ipv4/test.h"
+#include "test/tcp/test.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>

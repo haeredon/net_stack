@@ -2,14 +2,14 @@
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/tcp/tcp.h"
 #include "handlers/tcp/tcp_shared.h"
-#include "handlers/tcp/tcp_tcb.h"
+#include "handlers/tcp/socket.h"
 #include "handlers/tcp/tcp_block_buffer.h"
 #include "handlers/ethernet/ethernet.h"
 
-#include "test.h"
+#include "test/tcp/test.h"
 #include "test/common.h"
-#include "overrides.h"
-#include "tests/download_1/download_1.h"
+#include "test/tcp/overrides.h"
+#include "test/tcp/tests/download_1/download_1.h"
 
 
 #include <stdbool.h>

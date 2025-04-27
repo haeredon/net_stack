@@ -1,7 +1,7 @@
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/null/null.h"
 #include "handlers/ethernet/ethernet.h"
-#include "test.h"
+#include "test/ipv4/test.h"
 #include "test/common.h"
 
 #include <stdbool.h>
@@ -60,6 +60,12 @@ static const unsigned char ipv4_1_res[20] = {
 /*************************************
  *          UTILITY                  *
 **************************************/
+
+const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
+const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
+const uint8_t BROADCAST_MAC[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+const uint32_t OWN_IP = 0x20202020;
+
 struct response_t last_response;
 uint8_t response_buffer[4096];
 

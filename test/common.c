@@ -1,11 +1,7 @@
-#include "common.h"
+#include "test/common.h"
 
 #include <stdio.h>
-
-const uint8_t OWN_MAC[] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
-const uint8_t REMOTE_MAC[] = { 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB };
-const uint8_t BROADCAST_MAC[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-const uint32_t OWN_IP = 0x20202020;
+#include <stdbool.h>
 
 void* test_malloc(const char *type, size_t size) {
     return malloc(size);

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-void delete_transmission_control_block(struct transmission_control_block_t* tcb, struct handler_t* handler) {
+void delete_transmission_control_block(struct handler_t* handler, struct transmission_control_block_t* tcb) {
     tcp_block_buffer_destroy(tcb->in_buffer, handler->handler_config->mem_free);
     handler->handler_config->mem_free(tcb);
 }
@@ -56,10 +56,10 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
         if(!socket->trans_control_block[i]) {
             socket->trans_control_block[i] = create_transmission_control_block(handler, socket, 
                 connection_id, initial_header, source_ip, listen_state_function); 
-            return true;
+            return socket->trans_control_block[i];
         }        
     }
-    return false;
+    return 0;
 }
 
 /**

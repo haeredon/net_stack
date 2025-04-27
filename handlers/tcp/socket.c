@@ -130,7 +130,7 @@ void tcp_reset_socket(struct tcp_socket_t* socket) {
 /**
  * Called by other libraries to open a tcp connection on a specific port 
  */
-uint8_t tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
+bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
 
     for (uint64_t i = 0; i < SOCKET_BUFFER_SIZE; i++) {

@@ -25,6 +25,8 @@ struct test_run_t {
     struct handler_t* handler;
     struct test_config_t* config;
 
+    void (*before_each)(struct test_run_t* test_run);
+    void (*after_each)(struct test_run_t* test_run);
     struct test_t** tests;
 };
 

@@ -4,6 +4,7 @@
 #include "test/tcp/tests/download_1/download_1.h"
 #include "test/tcp/tests/download_1/download_1_packages.h"
 #include "handlers/tcp/tcp_shared.h"
+#include "handlers/tcp/socket.h"
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/ethernet/ethernet.h"
 #include "test/tcp/utility.h"
@@ -35,6 +36,7 @@ struct packet_stack_t create_packet_stack(const void* header) {
 }
 
 bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config) {
+
     struct ethernet_header_t* ethernet_first_header = (struct ethernet_header_t*) pkt37;
     struct ipv4_header_t* ipv4_first_header = get_ip_header(pkt37);
     

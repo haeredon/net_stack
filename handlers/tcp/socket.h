@@ -58,7 +58,7 @@ void tcp_delete_socket(struct handler_t* handler, struct tcp_socket_t* socket) ;
 
 void tcp_delete_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t connection_id);
 
-uint8_t tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
+bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 

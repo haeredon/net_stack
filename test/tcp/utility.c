@@ -20,4 +20,9 @@ void set_state_from_test_header(struct tcp_header_t* header) {
     current_sequence_number = 2189314807;
 }
 
+struct tcp_cmp_ignores_t ignores = {
+    .sequence_num = false,
+    .checksum = true,
+    .data_offset = true
+};
 

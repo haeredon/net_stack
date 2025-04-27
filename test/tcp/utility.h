@@ -12,11 +12,7 @@ struct tcp_cmp_ignores_t {
     bool data_offset;
 };
 
-struct tcp_cmp_ignores_t ignores = {
-    .sequence_num = false,
-    .checksum = true,
-    .data_offset = true
-};
+extern struct tcp_cmp_ignores_t ignores;
 
 bool is_tcp_packet_equal(struct tcp_header_t* a, struct tcp_header_t* b, struct tcp_cmp_ignores_t* ignfores);
 

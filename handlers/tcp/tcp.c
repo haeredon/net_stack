@@ -664,7 +664,7 @@ uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
     struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
     uint32_t connection_id = tcb_header_to_connection_id(ipv4_header, header);
     
-    struct tcp_socket_t* socket = tcp_get_socket(handler, header->destination_port, ipv4_header->destination_ip);
+    struct tcp_socket_t* socket = tcp_get_socket(handler, ipv4_header->destination_ip, header->destination_port);
 
     if(socket) {
         struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(socket, connection_id);

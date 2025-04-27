@@ -32,13 +32,25 @@ void before_each(struct test_run_t* test_run) {
 }
 
 void after_each(struct test_run_t* test_run) {
-    // should probably destroy handler here
+    // should probably destroy handler here 
 }
 
 /*************************************
  *          BOOTSTRAP                *
 **************************************/
 bool tcp_tests_start() {  
+    // setup test interface configurations      
+    struct interface_t interface = {
+        .port = 0,
+        .operations.write = 0, // must be set by individual tests 
+        .ipv4_addr = 0, // must be set by individual tests
+        .mac = 0
+    };
+    
+    struct test_config_t test_config = { 
+        .interface = &interface
+    };	
+
 
     // Initialize tests
     struct test_t* test = (struct test_t*) malloc(sizeof(struct test_t));
@@ -52,7 +64,7 @@ bool tcp_tests_start() {
 
     // run tests
     struct test_run_t tcp_test_run = {
-        .config = 0, // don't need it
+        .config = &test_config,
         .handler = 0, // is set by the before_each function
         .tests = tests,
         .before_each = before_each,

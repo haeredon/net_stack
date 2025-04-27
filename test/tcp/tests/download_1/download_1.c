@@ -27,10 +27,10 @@ struct tcp_header_t* get_tcp_header(const void* header) {
 struct packet_stack_t create_packet_stack(const void* header) {
     struct packet_stack_t packet_stack = { 
         .pre_build_response = 0, .post_build_response = 0,
-        .packet_pointers = get_tcp_header(header), // we need this extra layer because tcp depends on ip
+        .packet_pointers = get_ip_header(header), // we need this extra layer because tcp depends on ip
         .write_chain_length = 1 };
 
-    packet_stack.packet_pointers[1] = ((uint8_t*) header) + TCP_HEADER_OFFSET;
+    packet_stack.packet_pointers[1] = get_tcp_header(header);
     
     return packet_stack;
 }

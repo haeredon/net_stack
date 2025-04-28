@@ -13,7 +13,7 @@
 
 void null_close_handler(struct handler_t* handler) {}
 
-void null_init_handler(struct handler_t* handler) {}
+void null_init_handler(struct handler_t* handler, void* priv_config) {}
 
 
 struct null_header_t* null_get_null_header(const uint8_t* data, const uint64_t size) {

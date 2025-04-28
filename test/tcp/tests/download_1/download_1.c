@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 #include "test/tcp/tests/download_1/download_1.h"
 #include "test/tcp/tests/download_1/download_1_packages.h"
@@ -13,7 +14,13 @@
 uint8_t tcp_response_buffer[4096];
 
 uint16_t write(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config) {
-    
+    struct response_buffer_t packet_buffer = {
+        .buffer = tcp_response_buffer,
+        .offset = 0,
+        .size = 4096,
+        .stack_idx = 1
+    };
+    packet_stack->pre_build_response[1](packet_stack, &packet_buffer, interface);
 }
 
 struct ipv4_header_t* get_ip_header(const void* header) {
@@ -36,13 +43,17 @@ struct packet_stack_t create_packet_stack(const void* header) {
 }
 
 bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config) {
-
     struct ethernet_header_t* ethernet_first_header = (struct ethernet_header_t*) pkt37;
     struct ipv4_header_t* ipv4_first_header = get_ip_header(pkt37);
     struct tcp_header_t* tcp_first_header = get_tcp_header(pkt37);
+    struct tcp_header_t* tcp_second_header = get_tcp_header(pkt38);
 
     // mock write callbacks
     handler->handler_config->write = write;
+    // generated sequence number must be whatever which is in the response to the first header
+    current_sequence_number = ntohl(tcp_second_header->sequence_num); 
+    // also get window from response package
+    ((struct tcp_priv_t*) handler->priv)->window = ntohl(tcp_second_header->window); 
 
     // add mock socket
     struct tcp_socket_t socket = {

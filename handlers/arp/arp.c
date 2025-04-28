@@ -61,7 +61,7 @@ void arp_close_handler(struct handler_t* handler) {
     handler->handler_config->mem_free(private);
 }
 
-void arp_init_handler(struct handler_t* handler) {
+void arp_init_handler(struct handler_t* handler, void* priv_config) {
     struct arp_priv_t* arp_priv = (struct arp_priv_t*) handler->handler_config->mem_allocate("pcap handler private data", sizeof(struct arp_priv_t)); 
     handler->priv = (void*) arp_priv;
 

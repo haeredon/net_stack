@@ -26,7 +26,7 @@
 #include "handlers/handler.h"
 
 
-void pcapng_init_handler(struct handler_t* handler) {
+void pcapng_init_handler(struct handler_t* handler, void* priv_config) {
     struct kage_t* kage = (struct kage_t*) rte_zmalloc("pcap handler private data", sizeof(struct kage_t), 0); 
 
     // Get a file descriptor to store the pcapng data in

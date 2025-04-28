@@ -67,7 +67,7 @@ struct handler_config_t {
 };
 
 struct handler_t {
-    void (*init)(struct handler_t*); 
+    void (*init)(struct handler_t*, void* priv_config); 
     void (*close)(struct handler_t*);
     struct operations_t operations;
 

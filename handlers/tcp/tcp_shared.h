@@ -10,6 +10,11 @@
 
 #define SOCKET_BUFFER_SIZE 64
 #define TCP_WINDOW 4096
+#define TCP_HEADER_MAX_SIZE 60
+
+struct tcp_priv_config_t {
+    int window;
+};
 
 struct tcp_priv_t {
     int window;

@@ -25,8 +25,12 @@ void before_each(struct test_run_t* test_run) {
     handler_config->mem_free = free;
     handler_config->write = 0; // must be set by individual tests
 
+    struct tcp_priv_config_t priv_config = {
+        .window = 4098
+    };
+
     struct handler_t* tcp_handler = tcp_create_handler(handler_config); 
-	tcp_handler->init(tcp_handler);
+	tcp_handler->init(tcp_handler, &priv_config);
 
     test_run->handler = tcp_handler;
 }

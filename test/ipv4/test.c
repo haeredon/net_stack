@@ -123,7 +123,7 @@ bool ipv4_tests_start() {
 
     // add an extra null handler to handle unimplemented protocols
     struct handler_t* null_handler = null_create_handler(&handler_config); // TODO: fix memory leak
-	null_handler->init(null_handler);
+	null_handler->init(null_handler, 0);
 
     ADD_TO_PRIORITY(&ip_type_to_handler, 0x01, null_handler); // ICMP
     ADD_TO_PRIORITY(&ip_type_to_handler, 0x06, null_handler); // TCP
@@ -131,7 +131,7 @@ bool ipv4_tests_start() {
     ADD_TO_PRIORITY(&ip_type_to_handler, 0x29, null_handler); // IPv6
 
 	struct handler_t* ipv4_handler = ipv4_create_handler(&handler_config); 
-	ipv4_handler->init(ipv4_handler);
+	ipv4_handler->init(ipv4_handler, 0);
 
     struct test_t* test = (struct test_t*) malloc(sizeof(struct test_t));
     strncpy(test->name, "Basic Test", sizeof("Basic Test"));    

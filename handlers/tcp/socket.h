@@ -22,21 +22,21 @@ struct transmission_control_block_t {
 
     uint32_t send_unacknowledged;
     uint32_t send_next;
-    uint16_t send_window;
+    uint16_t send_window; // how much storage is left remotely
     uint16_t send_urgent_pointer;
     uint32_t send_initial_sequence_num;
     uint32_t send_last_update_sequence_num; // called WL1 in RFC
     uint32_t send_last_update_acknowledgement_num; // called WL2 in RFC
 
     uint32_t receive_next;
-    uint16_t receive_window; 
+    uint16_t receive_window; // how much storage is left locally
     uint16_t receive_urgent_pointer;
     uint32_t receive_initial_sequence_num;
 
     enum TCP_STATE state;
 
     struct tcp_block_buffer_t* in_buffer;
-    struct tcp_header_t* out_header;
+    uint8_t* out_header[TCP_HEADER_MAX_SIZE];
 
     uint16_t (*state_function)(struct handler_t* handler,
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);

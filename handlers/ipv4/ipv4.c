@@ -37,7 +37,7 @@ void ipv4_close_handler(struct handler_t* handler) {
     handler->handler_config->mem_free(private);
 }
 
-void ipv4_init_handler(struct handler_t* handler) {
+void ipv4_init_handler(struct handler_t* handler, void* priv_config) {
     struct ipv4_priv_t* ipv4_priv = (struct ipv4_priv_t*) handler->handler_config->mem_allocate("ipv4 handler private data", sizeof(struct ipv4_priv_t)); 
     handler->priv = (void*) ipv4_priv;
 }

@@ -53,7 +53,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     // generated sequence number must be whatever which is in the response to the first header
     current_sequence_number = ntohl(tcp_second_header->sequence_num); 
     // also get window from response package
-    ((struct tcp_priv_t*) handler->priv)->window = ntohl(tcp_second_header->window); 
+    ((struct tcp_priv_t*) handler->priv)->window = ntohs(tcp_second_header->window); 
 
     // add mock socket
     struct tcp_socket_t socket = {

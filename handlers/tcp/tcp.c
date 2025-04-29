@@ -141,7 +141,7 @@ uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct res
     out_header->source_port = tcp_request_header->destination_port;
     out_header->destination_port = tcp_request_header->source_port;
     out_header->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
-    out_header->window = tcb->receive_window;
+    out_header->window = htons(tcb->receive_window);
     out_header->urgent_pointer = 0; // Not supported
 
     out_header->checksum = _tcp_calculate_checksum(out_header, socket->ipv4, ipv4_request_header->source_ip);

@@ -611,7 +611,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
 
                     tcb->state = ESTABLISHED;
                     tcb->state_function = tcp_established;
-                    // start processing in established state
+                    return tcb->state_function(handler, tcb, num_ready, interface);
                 }
             } 
         } else {
@@ -630,10 +630,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
             }                
         }
 
-        // if no payload is given the remove the packet from the input buffer
-        if(!payload_size) {
-            tcp_block_buffer_remove_front(tcb->in_buffer, 1);
-        }        
+        tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
     }
     return 1;
 }

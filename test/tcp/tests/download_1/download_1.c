@@ -74,6 +74,17 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
+    // SECOND
+    packet_stack = create_packet_stack(pkt39);
+    
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
+
+    if(!is_tcp_packet_equal((struct tcp_header_t*) tcp_response_buffer, get_tcp_header(pkt40), &ignores)) {
+        return false;
+    }
+
     // // SECOND
     // struct packet_stack_t second_stack = { 
     //     .pre_build_response = 0, .post_build_response = 0,

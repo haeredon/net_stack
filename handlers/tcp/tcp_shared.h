@@ -50,6 +50,7 @@ enum TCP_STATE {
     FIN_WAIT_2,
     CLOSE_WAIT,
     CLOSING,
+    CLOSED,
     LAST_ACK,
     TIME_WAIT
 };

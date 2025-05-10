@@ -76,12 +76,13 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // SECOND (ACK)
     packet_stack = create_packet_stack(pkt39);
+    // no reponse for this one, so we empty the buffer and check if it stays empty
+    memset(tcp_response_buffer, 0 , sizeof(tcp_response_buffer));
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;
     }
 
-    memset(tcp_response_buffer, 0 , sizeof(tcp_response_buffer));
     if(!array_is_zero(tcp_response_buffer, 4096)) {
         return false;
     }

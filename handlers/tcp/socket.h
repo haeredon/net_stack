@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "handlers/handler.h"
 #include "handlers/ipv4/ipv4.h"
 #include "tcp_shared.h"
 #include "tcp_block_buffer.h"
@@ -46,6 +47,11 @@ struct tcp_socket_t {
     uint16_t listening_port;
     uint32_t ipv4;
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
+
+    // the read function of the handler is not allowed to block
+    // because it will block ACKs from the tcp protocol. It should 
+    // return fast to acknowledge that it takes ownership of the data
+    struct handler_t* next_handler;
 };
 
 struct transmission_control_block_t* tcp_create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 

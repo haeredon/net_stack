@@ -57,13 +57,16 @@ struct response_t {
 
 
 struct operations_t {
+    // reading incoming packets
     uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);            
 };
 
 struct handler_config_t {
     void* (*mem_allocate)(const char *type, size_t size);
     void (*mem_free)(void*);
-    uint16_t (*write)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config); // write callback for handler
+    
+    // write callback for handler, that's writing to some interface
+    uint16_t (*write)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config); 
 };
 
 struct handler_t {

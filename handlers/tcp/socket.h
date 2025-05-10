@@ -21,7 +21,7 @@ struct transmission_control_block_t {
     uint16_t remote_port;
     uint16_t own_port;
 
-    uint32_t send_unacknowledged;
+    uint32_t send_unacknowledged; // oldest unacknowledged sequence number
     uint32_t send_next;
     uint16_t send_window; // how much storage is left remotely
     uint16_t send_urgent_pointer;

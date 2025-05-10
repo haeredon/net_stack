@@ -87,44 +87,16 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // // SECOND
-    // struct packet_stack_t second_stack = { 
-    //     .pre_build_response = 0, .post_build_response = 0,
-    //     .packet_pointers = tcp_3_way_handshake_3 + tcp_3_way_handshake_ip_offset, 
-    //     .write_chain_length = 1 
-    // };
+    // THIRD (ACK-PSH, ACK)
+    packet_stack = create_packet_stack(pkt40);
+    
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
 
-    // second_stack.packet_pointers[1] = tcp_3_way_handshake_3 + tcp_3_way_handshake_tcp_offset;
-
-    // if(handler->operations.read(&second_stack, config->interface, handler)) {
-    //     return false;
-    // }
-
-    // // check that no response was send. 
-    // // We confirm this by checking that the last reponce buffer is the same is the previous one
-    // if(!is_tcp_packet_equal3((struct tcp_header_t*) tcp_response_buffer, 
-    //     (struct tcp_header_t*) (tcp_3_way_handshake_2 + tcp_3_way_handshake_tcp_offset), &ignores)) {
-    //     return false;
-    // }
-
-    // // THIRD
-    // struct packet_stack_t third_stack = { 
-    //     .pre_build_response = 0, .post_build_response = 0,
-    //     .packet_pointers = tcp_3_way_handshake_4 + tcp_3_way_handshake_ip_offset,  
-    //     .write_chain_length = 1 
-    // };
-
-    // third_stack.packet_pointers[1] = tcp_3_way_handshake_4 + tcp_3_way_handshake_tcp_offset;
-
-    // if(handler->operations.read(&third_stack, config->interface, handler)) {
-    //     return false;
-    // }
-
-    // // check that the correct reponse was send and that it is equal to tcp_3_way_handshake_5
-    // if(!is_tcp_packet_equal3((struct tcp_header_t*) tcp_response_buffer, 
-    //     (struct tcp_header_t*) (tcp_3_way_handshake_5 + tcp_3_way_handshake_tcp_offset), &ignores)) {
-    //     return false;
-    // }
+    if(!is_tcp_packet_equal((struct tcp_header_t*) tcp_response_buffer, get_tcp_header(pkt41), &ignores)) {
+        return false;
+    }
 
     return true;
 }

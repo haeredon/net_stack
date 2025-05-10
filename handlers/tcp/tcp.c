@@ -227,8 +227,6 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                 uint32_t sequence_num = ntohl(tcp_header->sequence_num);        
 
                 if(is_acknowledgement_valid(tcb, tcp_header) || tcb->send_unacknowledged == acknowledgement_num) {                    
-                    tcb->send_unacknowledged = acknowledgement_num;
-
                     // acknowledgement of something which has already been acknowledged
                     if(acknowledgement_num <= tcb->send_unacknowledged) {
                         return 0;
@@ -255,6 +253,8 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                         tcb->send_last_update_sequence_num = tcp_header->sequence_num;
                         tcb->send_last_update_acknowledgement_num = tcb->send_last_update_acknowledgement_num;
                     }
+
+                    tcb->send_unacknowledged = acknowledgement_num;
 
                     // if the package contains a payload, pass it to next handler
                     if(payload_size) {                        
@@ -307,8 +307,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
         tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
     }
 
-
-    return 1;
+    return 0;
 }
 
 uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);

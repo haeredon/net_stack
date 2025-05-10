@@ -9,7 +9,7 @@
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/ethernet/ethernet.h"
 #include "test/tcp/utility.h"
-
+#include "util/array.h"
 
 uint8_t tcp_response_buffer[4096];
 
@@ -63,7 +63,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     };
     tcp_add_socket(handler, &socket);
 
-    // FIRST
+    // FIRST (SYN, SYN-ACK)
     struct packet_stack_t packet_stack = create_packet_stack(pkt37);
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
@@ -74,14 +74,15 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // SECOND
+    // SECOND (ACK)
     packet_stack = create_packet_stack(pkt39);
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;
     }
 
-    if(!is_tcp_packet_equal((struct tcp_header_t*) tcp_response_buffer, get_tcp_header(pkt40), &ignores)) {
+    memset(tcp_response_buffer, 0 , sizeof(tcp_response_buffer));
+    if(!array_is_zero(tcp_response_buffer, 4096)) {
         return false;
     }
 

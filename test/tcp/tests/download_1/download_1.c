@@ -7,6 +7,7 @@
 #include "handlers/tcp/tcp_shared.h"
 #include "handlers/tcp/socket.h"
 #include "handlers/ipv4/ipv4.h"
+#include "handlers/custom/custom.h"
 #include "handlers/ethernet/ethernet.h"
 #include "test/tcp/utility.h"
 #include "util/array.h"
@@ -55,13 +56,19 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     // also get window from response package
     ((struct tcp_priv_t*) handler->priv)->window = ntohs(tcp_second_header->window); 
 
+    // next level handler to receive§ tcp packages
+    struct handler_t* custom_handler = custom_create_handler(handler->handler_config);
+    custom_handler->init(custom_handler, 0);
+
     // add mock socket
     struct tcp_socket_t socket = {
         .ipv4 = ipv4_first_header->destination_ip,
         .listening_port = tcp_first_header->destination_port,
         .trans_control_block = 0
     };
+    socket.next_handler = custom_handler;
     tcp_add_socket(handler, &socket);
+    
 
     // FIRST (SYN, SYN-ACK)
     struct packet_stack_t packet_stack = create_packet_stack(pkt37);

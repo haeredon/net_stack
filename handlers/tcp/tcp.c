@@ -255,9 +255,9 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     if(payload_size) {                        
                         struct handler_t* next_handler = socket->next_handler;
 
-                         // set next buffer pointer for next protocol level     
-                        packet_stack->packet_pointers[packet_stack->write_chain_length] = tcp_get_payload(tcp_header);
+                        // set next buffer pointer for next protocol level     
                         packet_stack->write_chain_length++;
+                        packet_stack->packet_pointers[packet_stack->write_chain_length] = tcp_get_payload(tcp_header);                        
                         
                         // call next protocol level, tls, http, app specific etc.
                         socket->next_handler->operations.read(packet_stack, interface, next_handler);          

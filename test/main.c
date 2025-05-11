@@ -1,5 +1,4 @@
 #include "handlers/handler.h"
-#include "handlers/null/null.h"
 #include "handlers/protocol_map.h"
 #include "handlers/ipv4/ipv4.h"
 #include "test/ipv4/test.h"

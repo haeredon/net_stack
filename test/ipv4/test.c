@@ -1,5 +1,5 @@
 #include "handlers/ipv4/ipv4.h"
-#include "handlers/null/null.h"
+#include "handlers/custom/custom.h"
 #include "handlers/ethernet/ethernet.h"
 #include "test/ipv4/test.h"
 #include "test/common.h"
@@ -122,13 +122,13 @@ bool ipv4_tests_start() {
     };	
 
     // add an extra null handler to handle unimplemented protocols
-    struct handler_t* null_handler = null_create_handler(&handler_config); // TODO: fix memory leak
-	null_handler->init(null_handler, 0);
+    struct handler_t* custom_handler = custom_create_handler(&handler_config); // TODO: fix memory leak
+	custom_handler->init(custom_handler, 0);
 
-    ADD_TO_PRIORITY(&ip_type_to_handler, 0x01, null_handler); // ICMP
-    ADD_TO_PRIORITY(&ip_type_to_handler, 0x06, null_handler); // TCP
-    ADD_TO_PRIORITY(&ip_type_to_handler, 0x11, null_handler); // UDP
-    ADD_TO_PRIORITY(&ip_type_to_handler, 0x29, null_handler); // IPv6
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x01, custom_handler); // ICMP
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x06, custom_handler); // TCP
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x11, custom_handler); // UDP
+    ADD_TO_PRIORITY(&ip_type_to_handler, 0x29, custom_handler); // IPv6
 
 	struct handler_t* ipv4_handler = ipv4_create_handler(&handler_config); 
 	ipv4_handler->init(ipv4_handler, 0);

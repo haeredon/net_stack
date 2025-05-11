@@ -6,6 +6,7 @@
 #include "test/tcp/tests/download_1/download_1_packages.h"
 #include "handlers/tcp/tcp_shared.h"
 #include "handlers/tcp/socket.h"
+#include "handlers/tcp/tcp.h"
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/custom/custom.h"
 #include "handlers/ethernet/ethernet.h"
@@ -14,48 +15,51 @@
 
 uint8_t tcp_response_buffer[4096];
 
+struct response_buffer_t packet_buffer;
+
 uint16_t write(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config) {
-    struct response_buffer_t packet_buffer = {
-        .buffer = tcp_response_buffer,
-        .offset = 0,
-        .size = 4096,
-        .stack_idx = 1
-    };
+    packet_buffer.buffer = tcp_response_buffer;
+    packet_buffer.offset = 0;
+    packet_buffer.size = 4096;
+    packet_buffer.stack_idx = 1;
+    
     packet_stack->pre_build_response[1](packet_stack, &packet_buffer, interface);
+
+    // if next level has been called we need to call the response handler 
+    if(packet_stack->write_chain_length == 2) {
+        packet_stack->pre_build_response[2](packet_stack, &packet_buffer, interface);
+    }
 }
 
-struct ipv4_header_t* get_ip_header(const void* header) {
+struct ipv4_header_t* get_test_ip_header(const void* header) {
     return (struct ipv4_header_t*) (((uint8_t*) header) + IP_HEADER_OFFSET);
 }
 
-struct tcp_header_t* get_tcp_header(const void* header) {
+struct tcp_header_t* get_test_tcp_header(const void* header) {
     return (struct tcp_header_t*) (((uint8_t*) header) + TCP_HEADER_OFFSET);
 }
 
-void* get_tcp_payload(const void* header) {
-    return (((uint8_t*) header) + TCP_PAYLOAD_OFFSET);
-}
-
-uint16_t get_tcp_payload_length(const unsigned char* package) {
+uint16_t get_test_tcp_payload_length(const unsigned char* package) {
     return sizeof(package) - TCP_PAYLOAD_OFFSET;
 }
 
 struct packet_stack_t create_packet_stack(const void* header) {
     struct packet_stack_t packet_stack = { 
         .pre_build_response = 0, .post_build_response = 0,
-        .packet_pointers = get_ip_header(header), // we need this extra layer because tcp depends on ip
+        .packet_pointers = get_test_ip_header(header), // we need this extra layer because tcp depends on ip
         .write_chain_length = 1 };
 
-    packet_stack.packet_pointers[1] = get_tcp_header(header);
+    packet_stack.packet_pointers[1] = get_test_tcp_header(header);
+    packet_stack.packet_pointers[2] = 0;
     
     return packet_stack;
 }
 
 bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config) {
     struct ethernet_header_t* ethernet_first_header = (struct ethernet_header_t*) pkt37;
-    struct ipv4_header_t* ipv4_first_header = get_ip_header(pkt37);
-    struct tcp_header_t* tcp_first_header = get_tcp_header(pkt37);
-    struct tcp_header_t* tcp_second_header = get_tcp_header(pkt38);
+    struct ipv4_header_t* ipv4_first_header = get_test_ip_header(pkt37);
+    struct tcp_header_t* tcp_first_header = get_test_tcp_header(pkt37);
+    struct tcp_header_t* tcp_second_header = get_test_tcp_header(pkt38);
 
     // mock write callbacks
     handler->handler_config->write = write;
@@ -80,12 +84,19 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // FIRST (SYN, SYN-ACK)
     struct packet_stack_t packet_stack = create_packet_stack(pkt37);
+    struct tcp_header_t* test_tcp_header = get_test_tcp_header(pkt41);
+    void* test_tcp_payload = get_tcp_payload(test_tcp_header);
+    uint16_t test_tcp_payload_length = get_test_tcp_payload_length(pkt41);
+    custom_set_response(custom_handler, test_tcp_payload, test_tcp_payload_length);
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;
     }
 
-    if(!is_tcp_packet_equal((struct tcp_header_t*) tcp_response_buffer, get_tcp_header(pkt38), &ignores)) {
+    uint16_t test_tcp_package_length = test_tcp_payload_length + get_tcp_header_length(test_tcp_header);
+    uint16_t tcp_package_length = packet_buffer.offset;
+
+    if(!is_tcp_package_equal((struct tcp_header_t*) tcp_response_buffer, get_test_tcp_header(pkt38), test_tcp_package_length, &ignores)) {
         return false;
     }
 
@@ -104,13 +115,20 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // THIRD (ACK-PSH, ACK)
     packet_stack = create_packet_stack(pkt40);
-    custom_set_response(custom_handler, get_tcp_payload(pkt41), get_tcp_payload_length(pkt41));
+    test_tcp_header = get_test_tcp_header(pkt41);
+    test_tcp_payload = get_tcp_payload(test_tcp_header);
+    test_tcp_payload_length = get_test_tcp_payload_length(pkt41);
+    custom_set_response(custom_handler, test_tcp_payload, test_tcp_payload_length);
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;
     }
 
-    if(!is_tcp_packet_equal((struct tcp_header_t*) tcp_response_buffer, get_tcp_header(pkt41), &ignores)) {
+    test_tcp_package_length = test_tcp_payload_length + get_tcp_header_length(test_tcp_header);
+    tcp_package_length = packet_buffer.offset;
+
+    if(test_tcp_package_length != tcp_package_length ||
+       !is_tcp_package_equal((struct tcp_header_t*) tcp_response_buffer, test_tcp_header, test_tcp_package_length, &ignores) {
         return false;
     }
 

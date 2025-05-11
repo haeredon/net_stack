@@ -31,6 +31,7 @@ uint16_t custom_handle_response(struct packet_stack_t* packet_stack, struct resp
     uint8_t* buffer = ((uint8_t*) (response_buffer->buffer)) + response_buffer->offset;
 
     memcpy(buffer, private->response_buffer, private->response_length);
+    response_buffer->offset += private->response_length;
     return private->response_length;
 }
 

@@ -3,6 +3,8 @@
 
 const int IP_HEADER_OFFSET = 14;
 const int TCP_HEADER_OFFSET = 34;
+const int TCP_PAYLOAD_OFFSET = 54;
+
 
 
 /*************************************

@@ -32,6 +32,14 @@ struct tcp_header_t* get_tcp_header(const void* header) {
     return (struct tcp_header_t*) (((uint8_t*) header) + TCP_HEADER_OFFSET);
 }
 
+void* get_tcp_payload(const void* header) {
+    return (((uint8_t*) header) + TCP_PAYLOAD_OFFSET);
+}
+
+uint16_t get_tcp_payload_length(const unsigned char* package) {
+    return sizeof(package) - TCP_PAYLOAD_OFFSET;
+}
+
 struct packet_stack_t create_packet_stack(const void* header) {
     struct packet_stack_t packet_stack = { 
         .pre_build_response = 0, .post_build_response = 0,
@@ -96,6 +104,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // THIRD (ACK-PSH, ACK)
     packet_stack = create_packet_stack(pkt40);
+    custom_set_response(custom_handler, get_tcp_payload(pkt41), get_tcp_payload_length(pkt41));
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;

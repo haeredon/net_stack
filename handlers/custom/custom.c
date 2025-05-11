@@ -17,10 +17,12 @@ void custom_close_handler(struct handler_t* handler) {
 }
 
 void custom_init_handler(struct handler_t* handler, void* priv_config) {
-    struct custom_priv_t* private = (struct custom_priv_t*) handler->priv;    
+    struct custom_priv_t* private = (struct custom_priv_t*) handler->handler_config->mem_allocate("custom handler private data", sizeof(struct custom_priv_t)); 
 
     private->response_length = 0;
     private->response_buffer = 0;
+
+    handler->priv = private;
 }
 
 

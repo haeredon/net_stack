@@ -1,11 +1,6 @@
 #ifndef TEST_TCP_TEST_DATA_DOWNLOAD_1_PACKAGES_H
 #define TEST_TCP_TEST_DATA_DOWNLOAD_1_PACKAGES_H
 
-const int IP_HEADER_OFFSET = 14;
-const int TCP_HEADER_OFFSET = 34;
-const int TCP_PAYLOAD_OFFSET = 54;
-
-
 
 /*************************************
  *          TEST DATA                *

@@ -36,6 +36,7 @@ uint16_t custom_handle_response(struct packet_stack_t* packet_stack, struct resp
 }
 
 uint16_t custom_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+    packet_stack->handlers[packet_stack->write_chain_length] = handler;  
     packet_stack->pre_build_response[packet_stack->write_chain_length] = custom_handle_response;
     handler->handler_config->write(packet_stack, interface, 0);
 }
@@ -44,7 +45,7 @@ uint16_t custom_read(struct packet_stack_t* packet_stack, struct interface_t* in
 void custom_set_response(struct handler_t* handler, void* response_buffer, uint32_t response_length) {
     struct custom_priv_t* private = (struct custom_priv_t*) handler->priv;    
     private->response_buffer = response_buffer;
-    private->response_length;
+    private->response_length = response_length;
 }
 
 struct handler_t* custom_create_handler(struct handler_config_t *handler_config) {

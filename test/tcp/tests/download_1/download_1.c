@@ -13,22 +13,33 @@
 #include "test/tcp/utility.h"
 #include "util/array.h"
 
-uint8_t tcp_response_buffer[4096];
+uint8_t tcp_header_buffer[4096];
+uint8_t tcp_payload_buffer[4096];
 
-struct response_buffer_t packet_buffer;
+struct response_buffer_t header_buffer;
+struct response_buffer_t payload_buffer;
 
-uint16_t write(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config) {
-    packet_buffer.buffer = tcp_response_buffer;
-    packet_buffer.offset = 0;
-    packet_buffer.size = 4096;
-    packet_buffer.stack_idx = 1;
+uint16_t tcp_header_write(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config) {
+    header_buffer.buffer = tcp_header_buffer;
+    header_buffer.offset = 0;
+    header_buffer.size = 4096;
+    header_buffer.stack_idx = 1;
     
-    packet_stack->pre_build_response[1](packet_stack, &packet_buffer, interface);
+    packet_stack->pre_build_response[1](packet_stack, &header_buffer, interface);
+}
 
-    // if next level has been called we need to call the response handler 
-    if(packet_stack->write_chain_length == 2) {
-        packet_stack->pre_build_response[2](packet_stack, &packet_buffer, interface);
-    }
+uint16_t tcp_payload_write(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config) {
+    payload_buffer.buffer = tcp_payload_buffer;
+    payload_buffer.offset = 0;
+    payload_buffer.size = 4096;
+    payload_buffer.stack_idx = 2;
+    
+    packet_stack->pre_build_response[2](packet_stack, &payload_buffer, interface);
+}
+
+
+uint16_t write_payload() {
+    
 }
 
 struct packet_stack_t create_packet_stack(const void* header) {
@@ -50,14 +61,20 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     struct tcp_header_t* tcp_second_header = get_tcp_header_from_package(pkt38);
 
     // mock write callbacks
-    handler->handler_config->write = write;
+    handler->handler_config->write = tcp_header_write;
     // generated sequence number must be whatever which is in the response to the first header
     current_sequence_number = ntohl(tcp_second_header->sequence_num); 
     // also get window from response package
     ((struct tcp_priv_t*) handler->priv)->window = ntohs(tcp_second_header->window); 
 
     // next level handler to receive§ tcp packages
-    struct handler_t* custom_handler = custom_create_handler(handler->handler_config);
+    struct handler_config_t handler_config = {
+        .mem_allocate = handler->handler_config->mem_allocate,
+        .mem_free = handler->handler_config->mem_free,
+        .write = tcp_payload_write 
+    };
+    struct handler_t* custom_handler = custom_create_handler(&handler_config);
+    
     custom_handler->init(custom_handler, 0);
 
     // add mock socket
@@ -81,47 +98,47 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    uint16_t actual_tcp_payload_length = packet_buffer.offset - 
-        get_tcp_header_length((struct tcp_header_t*) packet_buffer.buffer);
-    void* actual_tcp_payload = get_tcp_payload((struct tcp_header_t*) packet_buffer.buffer);
+    uint16_t actual_tcp_payload_length = payload_buffer.offset;
+    void* actual_tcp_payload = payload_buffer.buffer;
 
-    if(!is_tcp_header_equal((struct tcp_header_t*) tcp_response_buffer, expected_tcp_header, &ignores) ||
+    if(!is_tcp_header_equal((struct tcp_header_t*) tcp_header_buffer, expected_tcp_header, &ignores) ||
        (expected_tcp_payload_length == actual_tcp_payload_length && 
        memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
         return false;
     }
 
     // // SECOND (ACK)
-    // packet_stack = create_packet_stack(pkt39);
-    // // no reponse for this one, so we empty the buffer and check if it stays empty
-    // memset(tcp_response_buffer, 0 , sizeof(tcp_response_buffer));
+    packet_stack = create_packet_stack(pkt39);
+    // no reponse for this one, so we empty the buffer and check if it stays empty
+    memset(tcp_header_buffer, 0 , sizeof(tcp_header_buffer));
     
-    // if(handler->operations.read(&packet_stack, config->interface, handler)) {
-    //     return false;
-    // }
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
 
-    // if(!array_is_zero(tcp_response_buffer, 4096)) {
-    //     return false;
-    // }
+    if(!array_is_zero(tcp_header_buffer, 4096)) {
+        return false;
+    }
 
     // // THIRD (ACK-PSH, ACK)
-    // packet_stack = create_packet_stack(pkt40);
-    // test_tcp_header = get_test_tcp_header(pkt41);
-    // test_tcp_payload = get_tcp_payload(test_tcp_header);
-    // test_tcp_payload_length = sizeof(pkt41) - TCP_PAYLOAD_OFFSET;
-    // custom_set_response(custom_handler, test_tcp_payload, test_tcp_payload_length);
+    packet_stack = create_packet_stack(pkt40);
+    expected_tcp_header = get_tcp_header_from_package(pkt41);
+    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt41);
+    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt41);
+    custom_set_response(custom_handler, expected_tcp_payload, expected_tcp_payload_length);
     
-    // if(handler->operations.read(&packet_stack, config->interface, handler)) {
-    //     return false;
-    // }
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
 
-    // test_tcp_package_length = test_tcp_payload_length + get_tcp_header_length(test_tcp_header);
-    // tcp_package_length = packet_buffer.offset;
+    actual_tcp_payload_length = payload_buffer.offset;
+    actual_tcp_payload = payload_buffer.buffer;
 
-    // if(test_tcp_package_length != tcp_package_length ||
-    //    !is_tcp_package_equal((struct tcp_header_t*) tcp_response_buffer, test_tcp_header, test_tcp_package_length, &ignores)) {
-    //     return false;
-    // }
+    if(!is_tcp_header_equal((struct tcp_header_t*) tcp_header_buffer, expected_tcp_header, &ignores) ||
+       (expected_tcp_payload_length == actual_tcp_payload_length && 
+       memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
+        return false;
+    }
 
     return true;
 }

@@ -46,15 +46,15 @@ void* get_tcp_payload_payload_from_package(const void* package) {
     return ((uint8_t*) tcp_header) + tcp_header_length;
 }
 
-bool is_tcp_header_equal(struct tcp_header_t* a, struct tcp_header_t* expected, struct tcp_cmp_ignores_t* ignoares) {
+bool is_tcp_header_equal(struct tcp_header_t* a, struct tcp_header_t* expected, struct tcp_cmp_ignores_t* ignores) {
     return a->source_port == expected->source_port &&
     a->destination_port == expected->destination_port &&
-    (a->sequence_num == expected->sequence_num || ignoares->sequence_num) &&
+    (a->sequence_num == expected->sequence_num || ignores->sequence_num) &&
     a->acknowledgement_num == expected->acknowledgement_num &&
-    (a->data_offset == expected->data_offset || ignoares->data_offset) &&
+    (a->data_offset == expected->data_offset || ignores->data_offset) &&
     a->control_bits == expected->control_bits &&
     a->window == expected->window &&
-    (a->checksum == expected->checksum || ignoares->checksum) &&
+    (a->checksum == expected->checksum || ignores->checksum) &&
     a->urgent_pointer == expected->urgent_pointer;
 }
 

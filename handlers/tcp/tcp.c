@@ -167,7 +167,7 @@ uint16_t tcp_handle_pre_response(struct packet_stack_t* packet_stack, struct res
 void set_response(struct tcp_header_t* response_header, uint32_t sequence_num, uint32_t acnowledgement_num, uint8_t control_bits) {
     response_header->sequence_num = sequence_num;                         
     response_header->acknowledgement_num = acnowledgement_num;               
-    response_header->control_bits = TCP_ACK_FLAG | TCP_SYN_FLAG;            
+    response_header->control_bits = control_bits;            
 }
 
 uint16_t tcp_time_wait(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
@@ -247,7 +247,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                         && tcb->send_last_update_acknowledgement_num <= acknowledgement_num)) {
                         
                         tcb->send_window = ntohs(tcp_header->window);
-                        tcb->send_last_update_sequence_num = tcp_header->sequence_num;
+                        tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
                         tcb->send_last_update_acknowledgement_num = tcb->send_last_update_acknowledgement_num;
                     }
 
@@ -255,12 +255,24 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     if(payload_size) {                        
                         struct handler_t* next_handler = socket->next_handler;
 
+                        tcb->receive_next += payload_size;
+                        tcb->receive_window -= payload_size;
+
+                        set_response(
+                            (struct tcp_header_t*) tcb->out_header,
+                            htonl(tcb->send_next),
+                            htonl(tcb->receive_next),
+                            TCP_ACK_FLAG
+                        );        
+
+                        handler->handler_config->write(packet_stack, interface, 0);   
+
                         // set next buffer pointer for next protocol level     
                         packet_stack->write_chain_length++;
                         packet_stack->packet_pointers[packet_stack->write_chain_length] = tcp_get_payload(tcp_header);                        
-                        
+
                         // call next protocol level, tls, http, app specific etc.
-                        socket->next_handler->operations.read(packet_stack, interface, next_handler);          
+                        socket->next_handler->operations.read(packet_stack, interface, next_handler);
                     }                        
                 }
             } 

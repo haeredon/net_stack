@@ -59,11 +59,11 @@ uint16_t ipv4_calculate_checksum(const struct ipv4_header_t* header) {
     return ((uint16_t) ~sum);
 }
 
-bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, struct handler_t* handler) {
+bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
     struct ipv4_header_t* packet_stack_header = (struct ipv4_header_t*) packet_stack->packet_pointers[stack_idx];
     struct ipv4_header_t* response_header = (struct ipv4_header_t*) ((uint8_t*) buffer->buffer + buffer->data_offset - sizeof(struct ethernet_header_t));
 
-    if(buffer->data_offset < sizeof(struct ethernet_header_t)) {
+    if(buffer->data_offset < sizeof(struct ipv4_header_t)) {
         NETSTACK_LOG(NETSTACK_ERROR, "No room for ipv4 header in buffer\n");         
         return false;   
     };
@@ -87,8 +87,8 @@ bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer,
     if(!stack_idx) {
         handler->handler_config->write(buffer, interface, 0);
     } else {
-        const struct handler_t* next_handler = packet_stack->handlers[stack_idx];
-        next_handler->operations.write(packet_stack, buffer, --stack_idx, interface, next_handler);        
+        const struct handler_t* next_handler = packet_stack->handlers[--stack_idx];
+        next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler);        
     }
     
     return true;

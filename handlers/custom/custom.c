@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
+#include "log.h"
 #include "handlers/custom/custom.h"
 #include "handlers/handler.h"
 
@@ -35,12 +37,34 @@ uint16_t custom_handle_response(struct packet_stack_t* packet_stack, struct resp
     return private->response_length;
 }
 
-uint16_t custom_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    packet_stack->handlers[packet_stack->write_chain_length] = handler;  
-    packet_stack->pre_build_response[packet_stack->write_chain_length] = custom_handle_response;
-    handler->handler_config->write(packet_stack, interface, 0);
+
+bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
+    struct custom_priv_t* private = (struct custom_priv_t*) packet_stack->handlers[stack_idx]->priv;    
+    uint8_t* response_buffer = (uint8_t*) buffer->buffer + buffer->data_offset - private->response_length;
+
+    if(buffer->data_offset < private->response_length) {
+        NETSTACK_LOG(NETSTACK_ERROR, "No room for custom header in buffer\n");         
+        return false;   
+    };
+
+    memcpy(response_buffer, private->response_buffer, private->response_length);
+    buffer->data_offset -= private->response_length;
+   
+    // if this is the bottom of the packet stack, then write to the interface
+    if(!stack_idx) {
+        handler->handler_config->write(buffer, interface, 0);
+    } else {        
+        const struct handler_t* next_handler = packet_stack->handlers[--stack_idx];
+        next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler);        
+    }
+    
+    return true;
 }
 
+uint16_t read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+    packet_stack->handlers[packet_stack->write_chain_length] = handler;      
+    handler->operations->write(packet_stack, /* need to allocate buffer here */, interface);
+}
 
 void custom_set_response(struct handler_t* handler, void* response_buffer, uint32_t response_length) {
     struct custom_priv_t* private = (struct custom_priv_t*) handler->priv;    
@@ -55,7 +79,8 @@ struct handler_t* custom_create_handler(struct handler_config_t *handler_config)
     handler->init = custom_init_handler;
     handler->close = custom_close_handler;
 
-    handler->operations.read = custom_read;
+    handler->operations.read = read;
+    handler->operations.write = write;
 
     return handler;
 }

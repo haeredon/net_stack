@@ -59,7 +59,7 @@ uint16_t ipv4_calculate_checksum(const struct ipv4_header_t* header) {
     return ((uint16_t) ~sum);
 }
 
-bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
+bool ipv4_write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
     struct ipv4_header_t* packet_stack_header = (struct ipv4_header_t*) packet_stack->packet_pointers[stack_idx];
     struct ipv4_header_t* response_header = (struct ipv4_header_t*) ((uint8_t*) buffer->buffer + buffer->data_offset - sizeof(struct ethernet_header_t));
 
@@ -94,7 +94,7 @@ bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer,
     return true;
 }
 
-uint16_t read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct ipv4_header_t* header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_idx];
 
@@ -143,8 +143,8 @@ struct handler_t* ipv4_create_handler(struct handler_config_t *handler_config) {
     handler->init = ipv4_init_handler;
     handler->close = ipv4_close_handler;
 
-    handler->operations.read = read;
-    handler->operations.write = write;
+    handler->operations.read = ipv4_read;
+    handler->operations.write = ipv4_write;
 
     ADD_TO_PRIORITY(&ethernet_type_to_handler, htons(ETHERNET_TYPE_IPV4), handler);
 

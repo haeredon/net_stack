@@ -38,7 +38,7 @@ uint16_t custom_handle_response(struct packet_stack_t* packet_stack, struct resp
 }
 
 
-bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
+bool custom_write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
     struct custom_priv_t* private = (struct custom_priv_t*) packet_stack->handlers[stack_idx]->priv;    
     uint8_t* response_buffer = (uint8_t*) buffer->buffer + buffer->data_offset - private->response_length;
 
@@ -61,9 +61,19 @@ bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer,
     return true;
 }
 
-uint16_t read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    packet_stack->handlers[packet_stack->write_chain_length] = handler;      
-    handler->operations->write(packet_stack, /* need to allocate buffer here */, interface);
+uint16_t custom_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+    packet_stack->handlers[packet_stack->write_chain_length] = handler;   
+
+    struct package_buffer_t* response_buffer = 
+        (struct package_buffer_t*) handler->handler_config->
+            mem_allocate("response: custom_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct package_buffer_t)); 
+
+    response_buffer->buffer = (uint8_t*) response_buffer + sizeof(struct package_buffer_t);
+    response_buffer->size = DEFAULT_PACKAGE_BUFFER_SIZE;
+    response_buffer->data_offset = DEFAULT_PACKAGE_BUFFER_SIZE;
+
+    handler->operations.write(packet_stack, response_buffer, packet_stack->write_chain_length, 
+        interface, handler);
 }
 
 void custom_set_response(struct handler_t* handler, void* response_buffer, uint32_t response_length) {
@@ -79,8 +89,8 @@ struct handler_t* custom_create_handler(struct handler_config_t *handler_config)
     handler->init = custom_init_handler;
     handler->close = custom_close_handler;
 
-    handler->operations.read = read;
-    handler->operations.write = write;
+    handler->operations.read = custom_read;
+    handler->operations.write = custom_write;
 
     return handler;
 }

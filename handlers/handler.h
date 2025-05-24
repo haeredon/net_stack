@@ -7,6 +7,8 @@
 #include <stdbool.h>
 
 
+#define DEFAULT_PACKAGE_BUFFER_SIZE 0xFFFF
+
 struct request_t {
     void* buffer;
     uint64_t size;

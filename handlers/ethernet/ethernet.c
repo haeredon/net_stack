@@ -28,7 +28,7 @@ void ethernet_close_handler(struct handler_t* handler) {
     handler->handler_config->mem_free(private);
 }
 
-bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
+bool ethernet_write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
     struct ethernet_header_t* packet_stack_header = (struct ethernet_header_t*) packet_stack->packet_pointers[stack_idx];
     struct ethernet_header_t* response_header = (struct ethernet_header_t*) ((uint8_t*) buffer->buffer + buffer->data_offset - sizeof(struct ethernet_header_t));
 
@@ -54,7 +54,7 @@ bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer,
     return true;
 }
 
-uint16_t read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
+uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
 
@@ -85,8 +85,8 @@ struct handler_t* ethernet_create_handler(struct handler_config_t *handler_confi
     handler->init = ethernet_init_handler;
     handler->close = ethernet_close_handler;
 
-    handler->operations.write = write;
-    handler->operations.read = read;
+    handler->operations.write = ethernet_write;
+    handler->operations.read = ethernet_read;
 
     return handler;
 }

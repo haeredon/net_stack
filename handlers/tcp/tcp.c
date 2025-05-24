@@ -457,6 +457,9 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
     return 0;
 }
 
+bool tcp_write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
+}
+
 uint16_t tcp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) { 
     packet_stack->handlers[packet_stack->write_chain_length] = handler;  
     struct tcp_header_t* header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];

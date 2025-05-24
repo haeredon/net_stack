@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 
 struct request_t {
@@ -48,16 +49,23 @@ struct transmission_config_t {
 
 };
 
-struct response_t {
+struct package_buffer_t {
     void* buffer;
     uint64_t size;
+    uint64_t data_offset;
+};
+
+struct response_t {
+    void* buffer;
+    uint64_t size;    
     struct interface_t* interface;
 };
 
 
 
 struct operations_t {
-    // reading incoming packets
+    bool (*write)(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler);            
+    // reading incoming packets    
     uint16_t (*read)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);            
 };
 
@@ -66,7 +74,7 @@ struct handler_config_t {
     void (*mem_free)(void*);
     
     // write callback for handler, that's writing to some interface
-    uint16_t (*write)(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config); 
+    uint16_t (*write)(struct package_buffer_t* buffer, struct interface_t* interface, struct transmission_config_t* transmission_config); 
 };
 
 struct handler_t {

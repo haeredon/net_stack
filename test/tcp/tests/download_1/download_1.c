@@ -32,6 +32,10 @@ uint16_t tcp_payload_write(struct packet_stack_t* packet_stack, struct interface
     payload_buffer.buffer = tcp_payload_buffer;
     payload_buffer.offset = 0;
     payload_buffer.size = 4096;
+    payload_buffer.stack_idx = 1;
+
+    packet_stack->pre_build_response[1](packet_stack, &payload_buffer, interface);    
+    
     payload_buffer.stack_idx = 2;
     
     packet_stack->pre_build_response[2](packet_stack, &payload_buffer, interface);
@@ -120,7 +124,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // // THIRD (ACK-PSH, ACK)
+    // THIRD (ACK-PSH, ACK)
     packet_stack = create_packet_stack(pkt40);
     expected_tcp_header = get_tcp_header_from_package(pkt41);
     expected_tcp_payload = get_tcp_payload_payload_from_package(pkt41);

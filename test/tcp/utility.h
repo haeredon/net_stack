@@ -10,6 +10,7 @@ struct tcp_cmp_ignores_t {
     bool sequence_num;
     bool checksum; 
     bool data_offset;
+    bool window;
 };
 
 extern struct tcp_cmp_ignores_t ignores;

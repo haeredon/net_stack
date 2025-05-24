@@ -1,8 +1,11 @@
 #include <string.h>
+#include <stdbool.h>
 #include <arpa/inet.h>
 
 #include "handlers/ethernet/ethernet.h"
 #include "handlers/protocol_map.h"
+#include "handlers/handler.h"
+
  
 
 #include "log.h"
@@ -39,7 +42,32 @@ uint16_t ethernet_response(struct packet_stack_t* packet_stack, struct response_
     return num_bytes_written;
 }
 
-uint16_t ethernet_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
+bool write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, struct handler_t* handler) {
+    struct ethernet_header_t* packet_stack_header = (struct ethernet_header_t*) packet_stack->packet_pointers[stack_idx];
+    struct ethernet_header_t* response_header = (struct ethernet_header_t*) ((uint8_t*) buffer->buffer + buffer->data_offset - sizeof(struct ethernet_header_t));
+
+    if(buffer->data_offset < sizeof(struct ethernet_header_t)) {
+        NETSTACK_LOG(NETSTACK_ERROR, "No room for ethernet header in buffer\n");         
+        return false;   
+    }
+
+    memcpy(response_header->destination, packet_stack_header->source, ETHERNET_MAC_SIZE);
+    memcpy(response_header->source, packet_stack_header->destination, ETHERNET_MAC_SIZE);
+    response_header->ethernet_type = packet_stack_header->ethernet_type;
+
+    // if this is the bottom of the packet stack, then write to the interface
+    if(!stack_idx) {
+        handler->handler_config->write(buffer, interface, 0);
+    } else {
+        const struct handler_t* next_handler = packet_stack->handlers[stack_idx];
+
+        next_handler->operations.write(packet_stack, buffer, --stack_idx, interface, next_handler);        
+    }
+
+    return false;
+}
+
+uint16_t read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {   
     uint8_t packet_idx = packet_stack->write_chain_length++;
     struct ethernet_header_t* header = (struct ethernet_header_t*) packet_stack->packet_pointers[packet_idx];
 
@@ -72,7 +100,8 @@ struct handler_t* ethernet_create_handler(struct handler_config_t *handler_confi
     handler->init = ethernet_init_handler;
     handler->close = ethernet_close_handler;
 
-    handler->operations.read = ethernet_read;
+    handler->operations.write = write;
+    handler->operations.read = read;
 
     return handler;
 }

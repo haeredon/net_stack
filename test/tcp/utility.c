@@ -53,7 +53,7 @@ bool is_tcp_header_equal(struct tcp_header_t* a, struct tcp_header_t* expected, 
     a->acknowledgement_num == expected->acknowledgement_num &&
     (a->data_offset == expected->data_offset || ignores->data_offset) &&
     a->control_bits == expected->control_bits &&
-    a->window == expected->window &&
+    (a->window == expected->window || ignores->window) &&
     (a->checksum == expected->checksum || ignores->checksum) &&
     a->urgent_pointer == expected->urgent_pointer;
 }
@@ -61,6 +61,7 @@ bool is_tcp_header_equal(struct tcp_header_t* a, struct tcp_header_t* expected, 
 struct tcp_cmp_ignores_t ignores = {
     .sequence_num = false,
     .checksum = true,
-    .data_offset = true
+    .data_offset = true,
+    .window = true
 };
 

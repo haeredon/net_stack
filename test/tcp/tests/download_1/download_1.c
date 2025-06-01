@@ -13,19 +13,29 @@
 #include "test/tcp/utility.h"
 #include "util/array.h"
 
-void* tcp_buffer;
-void* payload_buffer;
-
-struct package_buffer_t* kage;
+struct package_buffer_t* tcp_response_buffer;
 
 bool nothing(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
-    kage = buffer;
-    tcp_buffer = (uint8_t*) buffer->buffer + buffer->data_offset;
+    tcp_response_buffer = buffer;
     return true;
 }
 
 uint16_t test_get_tcp_header_length(struct tcp_header_t* header) {
     return ((header->data_offset & TCP_DATA_OFFSET_MASK) >> 4) * 4;    
+}
+
+struct tcp_header_t* test_get_tcp_package(struct package_buffer_t* buffer) {
+    return (struct tcp_header_t*) ((uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->data_offset);
+}
+
+uint16_t test_get_tcp_package_payload_length(struct package_buffer_t* buffer) {
+    struct tcp_header_t* header = (struct tcp_header_t*) ((uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->data_offset);
+    return tcp_response_buffer->size - tcp_response_buffer->data_offset - get_tcp_header_length(header);
+}
+
+void* test_get_tcp_package_payload(struct package_buffer_t* buffer) {
+    struct tcp_header_t* header = (struct tcp_header_t*) ((uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->data_offset);
+    return (uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->data_offset + get_tcp_header_length(header);  
 }
 
 struct packet_stack_t create_packet_stack(const void* header, struct handler_t* ip_handler) {
@@ -91,13 +101,9 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // struct tcp_header_t* tcp_header_buffer = (struct tcp_header_t*) tcp_buffer;
-    // uint16_t actual_tcp_payload_length = get_tcp_payload_length_from_package(tcp_buffer);
-    // void* actual_tcp_payload = payload_buffer;
-
-    struct tcp_header_t* tcp_header_buffer = (struct tcp_header_t*) ((uint8_t*) kage->buffer + kage->data_offset);
-    uint16_t actual_tcp_payload_length = kage->size - kage->data_offset - test_get_tcp_header_length(tcp_header_buffer);
-    void* actual_tcp_payload = (uint8_t*) kage->buffer + kage->data_offset + test_get_tcp_header_length(tcp_header_buffer);
+    struct tcp_header_t* tcp_header_buffer = test_get_tcp_package(tcp_response_buffer);
+    uint16_t actual_tcp_payload_length = test_get_tcp_package_payload_length(tcp_response_buffer);
+    void* actual_tcp_payload = test_get_tcp_package_payload(tcp_response_buffer);
 
     if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) ||
        (expected_tcp_payload_length == actual_tcp_payload_length && 
@@ -105,38 +111,40 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // // SECOND (ACK)
-    // packet_stack = create_packet_stack(pkt39);
-    // // no reponse for this one, so we empty the buffer and check if it stays empty
-    // memset(tcp_header_buffer, 0 , sizeof(tcp_header_buffer));
+    // SECOND (ACK)
+    packet_stack = create_packet_stack(pkt39, ip_handler);
+    // no reponse for this one, so we empty the buffer and check if it stays empty
+
+    memset(tcp_response_buffer->buffer, 0 , tcp_response_buffer->size);
     
-    // if(handler->operations.read(&packet_stack, config->interface, handler)) {
-    //     return false;
-    // }
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
 
-    // if(!array_is_zero(tcp_header_buffer, 4096)) {
-    //     return false;
-    // }
+    if(!array_is_zero(tcp_response_buffer->buffer, tcp_response_buffer->size)) {
+        return false;
+    }
 
-    // // THIRD (ACK-PSH, ACK)
-    // packet_stack = create_packet_stack(pkt40);
-    // expected_tcp_header = get_tcp_header_from_package(pkt41);
-    // expected_tcp_payload = get_tcp_payload_payload_from_package(pkt41);
-    // expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt41);
-    // custom_set_response(custom_handler, expected_tcp_payload, expected_tcp_payload_length);
+    // THIRD (ACK-PSH, ACK)
+    packet_stack = create_packet_stack(pkt40, ip_handler);
+    expected_tcp_header = get_tcp_header_from_package(pkt41);
+    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt41);
+    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt41);
+    custom_set_response(custom_handler, expected_tcp_payload, expected_tcp_payload_length);
     
-    // if(handler->operations.read(&packet_stack, config->interface, handler)) {
-    //     return false;
-    // }
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
 
-    // actual_tcp_payload_length = payload_buffer.offset;
-    // actual_tcp_payload = payload_buffer.buffer;
+    tcp_header_buffer = test_get_tcp_package(tcp_response_buffer);
+    actual_tcp_payload_length = test_get_tcp_package_payload_length(tcp_response_buffer);
+    actual_tcp_payload = test_get_tcp_package_payload(tcp_response_buffer);
 
-    // if(!is_tcp_header_equal((struct tcp_header_t*) tcp_header_buffer, expected_tcp_header, &ignores) ||
-    //    (expected_tcp_payload_length == actual_tcp_payload_length && 
-    //    memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
-    //     return false;
-    // }
+    if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) ||
+       (expected_tcp_payload_length == actual_tcp_payload_length && 
+       memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
+        return false;
+    }
 
     return true;
 }

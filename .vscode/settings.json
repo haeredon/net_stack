@@ -15,9 +15,9 @@
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
     "files.associations": {
+        "*.dbclient-js": "javascript",
         "*.sqlbook": "sql",
         "*.ndjson": "jsonl",
-        "*.dbclient-js": "javascript",
         "stdint.h": "c",
         "cstdint": "c",
         "stdint-gcc.h": "c",
@@ -86,7 +86,9 @@
         "tcp_tcb.h": "c",
         "utility.h": "c",
         "download_1_packages.h": "c",
-        "socket.h": "c"
+        "socket.h": "c",
+        "stdio.h": "c",
+        "common.h": "c"
     }
     
 }

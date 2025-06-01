@@ -55,6 +55,6 @@ build:
 
 .PHONY: clean test
 clean:
-	rm -f build/$(APP) build/$(APP)-shared build/$(APP)-test build/libhandler.so
+	rm -f build/$(APP) build/$(APP)-shared build/$(APP)-test build/$(APP)-dev build/libhandler.so
 	test -d build && rmdir -p build || true
 

@@ -55,7 +55,7 @@ bool custom_write(struct packet_stack_t* packet_stack, struct package_buffer_t* 
         handler->handler_config->write(buffer, interface, 0);
     } else {        
         const struct handler_t* next_handler = packet_stack->handlers[--stack_idx];
-        next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler);        
+        return next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler);        
     }
     
     return true;

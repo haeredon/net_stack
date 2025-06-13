@@ -38,13 +38,13 @@ void* test_get_tcp_package_payload(struct package_buffer_t* buffer) {
     return (uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->data_offset + get_tcp_header_length(header);  
 }
 
-struct packet_stack_t create_packet_stack(const void* header, struct handler_t* ip_handler) {
+struct packet_stack_t create_packet_stack(const void* package, struct handler_t* ip_handler) {
     struct packet_stack_t packet_stack = { 
         .pre_build_response = 0, .post_build_response = 0,
-        .packet_pointers = get_ipv4_header_from_package(header), // we need this extra layer because tcp depends on ip
+        .packet_pointers = get_ipv4_header_from_package(package), // we need this extra layer because tcp depends on ip
         .write_chain_length = 1, .handlers = ip_handler };
 
-    packet_stack.packet_pointers[1] = get_tcp_header_from_package(header);
+    packet_stack.packet_pointers[1] = get_tcp_header_from_package(package);
     packet_stack.packet_pointers[2] = 0;
     
     return packet_stack;
@@ -113,8 +113,8 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // SECOND (ACK)
     packet_stack = create_packet_stack(pkt39, ip_handler);
-    // no reponse for this one, so we empty the buffer and check if it stays empty
 
+    // no reponse for this one, so we empty the buffer and check if it stays empty
     memset(tcp_response_buffer->buffer, 0 , tcp_response_buffer->size);
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
@@ -143,6 +143,56 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) ||
        (expected_tcp_payload_length == actual_tcp_payload_length && 
        memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
+        return false;
+    }
+
+    // FOURTH (ACK-PSH (server hello))
+    packet_stack = create_packet_stack(pkt40, ip_handler); // using previous package, because we just need something pointing the right way
+
+    // the server is sending here, so write to custom handler and expect nothing else
+    struct package_buffer_t* to_write = (struct package_buffer_t*) handler->handler_config->
+                mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct package_buffer_t)); 
+
+    to_write->buffer = (uint8_t*) to_write + sizeof(struct package_buffer_t);
+    to_write->size = DEFAULT_PACKAGE_BUFFER_SIZE;
+    to_write->data_offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
+
+    // set the payload to be sent on the custom handler 
+    expected_tcp_header = get_tcp_header_from_package(pkt42);
+    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt42);
+    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt42);
+    custom_set_response(custom_handler, expected_tcp_payload, expected_tcp_payload_length);    
+    packet_stack.packet_pointers[++packet_stack.write_chain_length] = expected_tcp_payload;
+    
+    // add the handler to the packet stack
+    packet_stack.handlers[1] = handler;
+    packet_stack.handlers[2] = custom_handler;
+
+    if(!custom_handler->operations.write(&packet_stack, to_write, packet_stack.write_chain_length, config->interface, handler)) {
+        return false;
+    }
+
+    tcp_header_buffer = test_get_tcp_package(tcp_response_buffer);
+    actual_tcp_payload_length = test_get_tcp_package_payload_length(tcp_response_buffer);
+    actual_tcp_payload = test_get_tcp_package_payload(tcp_response_buffer);
+
+    if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) ||
+       (expected_tcp_payload_length == actual_tcp_payload_length && 
+       memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
+        return false;
+    }
+
+    // FIFTH (ACK)
+    packet_stack = create_packet_stack(pkt43, ip_handler);
+
+    // no reponse for this one, so we empty the buffer and check if it stays empty
+    memset(tcp_response_buffer->buffer, 0 , tcp_response_buffer->size);
+    
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
+
+    if(!array_is_zero(tcp_response_buffer->buffer, tcp_response_buffer->size)) {
         return false;
     }
 

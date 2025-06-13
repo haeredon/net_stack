@@ -21,6 +21,11 @@ struct tcp_priv_t {
     struct tcp_socket_t* tcp_sockets[SOCKET_BUFFER_SIZE];
 };
 
+struct tcp_output_buffer_t {
+    struct response_buffer_t* buffer;
+    struct packet_stack_t* packet_stack;
+};
+
 struct tcp_pseudo_header_t {
     uint32_t source_ip;
     uint32_t destination_ip;

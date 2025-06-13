@@ -9,7 +9,13 @@
 
 #define TCP_DATA_OFFSET_MASK 0xF0
 
+struct tcp_write_args_t {
+    uint32_t connection_id;
+    struct tcp_socket_t* socket;
+};
+
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config);
+
 
 #endif // HANDLERS_TCP_H

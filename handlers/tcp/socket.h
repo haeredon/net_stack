@@ -36,6 +36,7 @@ struct transmission_control_block_t {
 
     enum TCP_STATE state;
 
+    struct tcp_block_buffer_t* out_buffer;
     struct tcp_block_buffer_t* in_buffer;
     uint8_t* out_header[TCP_HEADER_MAX_SIZE];
 

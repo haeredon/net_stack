@@ -41,6 +41,7 @@ struct transmission_control_block_t* create_transmission_control_block(struct ha
     tcb->receive_next = tcb->receive_initial_sequence_num;                      
 
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
+    tcb->out_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
 
     tcb->state = LISTEN; 
     

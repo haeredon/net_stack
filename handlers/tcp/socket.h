@@ -46,7 +46,7 @@ struct transmission_control_block_t {
 
 struct tcp_socket_t {
     uint16_t listening_port;
-    uint32_t ipv4;
+    uint32_t ipv4;  // right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
 
     // the read function of the handler is not allowed to block

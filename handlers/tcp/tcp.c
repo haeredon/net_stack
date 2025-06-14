@@ -455,7 +455,7 @@ bool tcp_write(struct new_out_packet_stack_t* packet_stack, void* args, struct i
         return false;
     }
 
-    struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(socket, tcp_args->connection_id);
+    struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(tcp_args->socket, tcp_args->connection_id);
 
     if(!tcb) {
         NETSTACK_LOG(NETSTACK_WARNING, "Could not find transmission control block.\n");   
@@ -463,8 +463,8 @@ bool tcp_write(struct new_out_packet_stack_t* packet_stack, void* args, struct i
     }
 
     struct tcp_header_t* out_header = (struct tcp_header_t*) tcb->out_header;
-    out_header->source_port = tcp_args->socket->ipv4;
-    out_header->destination_port = tcb->remote_ipv4;
+    out_header->source_port = tcp_args->socket->listening_port;
+    out_header->destination_port = tcb->remote_port;
     out_header->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
     out_header->window = htons(tcb->receive_window);
     out_header->urgent_pointer = 0; // Not supported
@@ -475,21 +475,32 @@ bool tcp_write(struct new_out_packet_stack_t* packet_stack, void* args, struct i
     out_buffer.offset -= sizeof(struct tcp_header_t);
    
     // add buffer to outgoing block buffer
-    tcp_block_buffer_add(tcb->out_buffer, out_buffer.buffer, out_header->sequence_num, payload_size);
+    tcp_block_buffer_add(tcb->out_buffer, packet_stack, out_header->sequence_num, payload_size);
         
     // then iterate over all outgoin buffers 
-    uint16_t num_ready = tcp_block_buffer_num_ready(tcb->out_buffer,);
-    while(num_ready--) {
-        struct package_buffer_t* buffer = (struct package_buffer_t*) tcp_block_buffer_get_head(tcb->out_buffer)->data;
+    struct tcp_block_t* buffer_block;
+    while(buffer_block = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->out_buffer)) {
+        struct new_out_packet_stack_t* out_package_stack = (struct new_out_packet_stack_t*) buffer_block->data;
     
+        response_header = (struct tcp_header_t*) ((uint8_t*) out_buffer.buffer + out_buffer.offset - sizeof(struct tcp_header_t)); // we don't calculate in options here
+        
+        uint16_t remote_window = ntohs(tcb->send_window);
+        payload_size = buffer_block->payload_size;        
+
         // if the outgoing package fit in the send window then send it, else just abort but keep the buffer for later
-        if(fit in window) {
+        if(remote_window >= payload_size) {
             // this can't be the bottom if the stack because TCP is dependent on IP, hence no check for the bottom
-            const struct handler_t* next_handler = packet_stack->handlers[--stack_idx];
+            const struct handler_t* next_handler = packet_stack->handlers[--packet_stack->stack_idx];
             
-            if(!next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler)) {
+            struct ipv4_write_args_t next_args = {
+                .destination_ip = tcb->remote_ipv4
+            };
+
+            if(!next_handler->operations.write(packet_stack, &next_args, packet_stack->stack_idx, interface, next_handler)) {
                 return false;
             }
+
+            /** SHOULD PROBABLY UPDATE THE SEND WINDOW SOMEWHERE AROUND HERE!!!!! */
 
             tcp_block_buffer_remove_front(tcb->out_buffer, 1);         
         } else {

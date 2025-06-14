@@ -13,6 +13,10 @@ struct ipv4_priv_t {
     int dummy;
 };
 
+struct ipv4_write_args_t {
+    uint32_t destination_ip; // network representation
+};
+
 struct ipv4_header_t {
     uint8_t flags_1;
     uint8_t flags_2;

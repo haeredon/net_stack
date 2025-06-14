@@ -25,6 +25,9 @@
  *      1. Response buffer size
  *      2. Number of connections
  *      3. Number of listeners
+ * 
+ * Known issues
+ *  - Only check and push output queue for a transmission control block when it actually has activity from a client
  */
 
 
@@ -124,21 +127,28 @@ uint32_t tcb_header_to_connection_id(struct ipv4_header_t* ipv4_header, struct t
     return id;
 }
 
-bool tcp_internal_write(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t connection_id, uint8_t stack_idx, struct interface_t* interface) {
+bool tcp_internal_write(struct handler_t* handler, struct new_in_packet_stack_t* packet_stack, 
+    struct tcp_socket_t* tcb, uint32_t connection_id, uint8_t stack_idx, struct interface_t* interface) {
 
     struct new_out_packet_stack_t* out_packate_stack = (struct new_out_packet_stack_t*) handler->handler_config->
                 mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct new_out_packet_stack_t)); 
+
+    out_packate_stack->handlers = packet_stack->handlers;
+    out_packate_stack->args = packet_stack->return_args;
 
     out_packate_stack->out_buffer.buffer = (uint8_t*) out_packate_stack + sizeof(struct new_out_packet_stack_t);
     out_packate_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
     out_packate_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
 
-    struct tcp_write_args_t args = {
+    out_packate_stack->stack_idx = stack_idx;
+        
+    struct tcp_write_args_t tcp_args = {
         .connection_id = connection_id,
         .socket = socket
     };
+    out_packate_stack->args[out_packate_stack->stack_idx] = &tcp_args;
 
-    handler->operations.write(out_packate_stack, &args, stack_idx, interface, handler);
+    handler->operations.write(out_packate_stack, interface, handler);
 }
 
 void set_response(struct tcp_header_t* response_header, uint32_t sequence_num, uint32_t acnowledgement_num, uint8_t control_bits) {
@@ -212,7 +222,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                             htonl(tcb->receive_next),
                             TCP_ACK_FLAG
                         );
-                        tcp_internal_write(handler, socket, tcb->id, packet_stack->write_chain_length, interface);
+                        tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
                         return 0;
                     }
 
@@ -240,7 +250,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                             TCP_ACK_FLAG
                         );        
 
-                        tcp_internal_write(handler, socket, tcb->id, packet_stack->write_chain_length, interface);
+                        tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
 
                         // set next buffer pointer for next protocol level     
                         packet_stack->write_chain_length++;
@@ -264,7 +274,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     TCP_ACK_FLAG
                 );
 
-                tcp_internal_write(handler, socket, tcb->id, packet_stack->write_chain_length, interface);
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
             }                
         }
 
@@ -330,7 +340,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                         TCP_RST_FLAG
                     );
 
-                    tcp_internal_write(handler, socket, tcb->id, packet_stack->write_chain_length, interface);
+                    tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
                 } else {
                     tcb->send_window = ntohs(tcp_header->window);
                     tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
@@ -354,7 +364,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                     TCP_ACK_FLAG
                 );
 
-                tcp_internal_write(handler, socket, tcb->id, packet_stack->write_chain_length, interface);
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
             }                
         }
 
@@ -418,7 +428,7 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
             tcb->send_unacknowledged = tcb->send_initial_sequence_num;
             tcb->send_next++;      
 
-            tcp_internal_write(handler, packet_stack->write_chain_length, interface);
+            tcp_internal_write(handler, packet_stack, packet_stack->write_chain_length, interface);
         }
 
         tcp_block_buffer_remove_front(tcb->in_buffer, 1);         
@@ -427,8 +437,8 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
     return 0;
 }
 
-bool tcp_write(struct new_out_packet_stack_t* packet_stack, void* args, struct interface_t* interface, const struct handler_t* handler) {
-    struct tcp_write_args_t* tcp_args = (struct tcp_write_args_t*) args;
+bool tcp_write(struct new_out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
+    struct tcp_write_args_t* tcp_args = (struct tcp_write_args_t*) packet_stack->args[packet_stack->stack_idx];
 
     if(!packet_stack->stack_idx) {
         NETSTACK_LOG(NETSTACK_WARNING, "TCP as the bottom header in packet stack is not possible, yet it happended.\n");   
@@ -491,12 +501,8 @@ bool tcp_write(struct new_out_packet_stack_t* packet_stack, void* args, struct i
         if(remote_window >= payload_size) {
             // this can't be the bottom if the stack because TCP is dependent on IP, hence no check for the bottom
             const struct handler_t* next_handler = packet_stack->handlers[--packet_stack->stack_idx];
-            
-            struct ipv4_write_args_t next_args = {
-                .destination_ip = tcb->remote_ipv4
-            };
-
-            if(!next_handler->operations.write(packet_stack, &next_args, packet_stack->stack_idx, interface, next_handler)) {
+   
+            if(!next_handler->operations.write(packet_stack, interface, next_handler)) {
                 return false;
             }
 

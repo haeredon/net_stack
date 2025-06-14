@@ -38,13 +38,15 @@ struct new_out_buffer_t {
 
 struct new_in_packet_stack_t {
     const struct handler_t* handlers[10];
+    void* return_args[10];
 
     const struct new_in_buffer_t in_buffer;
     uint8_t stack_idx;
 };
 
 struct new_out_packet_stack_t {
-    const struct handler_t* handlers[10];
+    struct handler_t* handlers[10];
+    void* args[10];
 
     struct new_out_buffer_t out_buffer;
     uint8_t stack_idx;

@@ -15,6 +15,7 @@ struct ipv4_priv_t {
 
 struct ipv4_write_args_t {
     uint32_t destination_ip; // network representation
+    uint8_t protocol;
 };
 
 struct ipv4_header_t {

@@ -59,11 +59,14 @@ uint16_t ipv4_calculate_checksum(const struct ipv4_header_t* header) {
     return ((uint16_t) ~sum);
 }
 
-bool ipv4_write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
-    struct ipv4_header_t* packet_stack_header = (struct ipv4_header_t*) packet_stack->packet_pointers[stack_idx];
-    struct ipv4_header_t* response_header = (struct ipv4_header_t*) ((uint8_t*) buffer->buffer + buffer->data_offset - sizeof(struct ipv4_header_t));
 
-    if(buffer->data_offset < sizeof(struct ipv4_header_t)) {
+bool ipv4_write(struct new_out_packet_stack_t* packet_stack, void* args, struct interface_t* interface, const struct handler_t* handler) { {
+    struct ipv4_write_args_t* ipv4_args = (struct ipv4_write_args_t*) args;    
+
+    struct new_out_buffer_t* out_buffer = &packet_stack->out_buffer;
+    struct ipv4_header_t* response_header = (struct ipv4_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct ipv4_header_t)); // we don't calculate in options here
+
+    if(out_buffer->offset < sizeof(struct ipv4_header_t)) {
         NETSTACK_LOG(NETSTACK_ERROR, "No room for ipv4 header in buffer\n");         
         return false;   
     };
@@ -74,21 +77,21 @@ bool ipv4_write(struct packet_stack_t* packet_stack, struct package_buffer_t* bu
     response_header->identification = 0; // don't use
     response_header->flags_3 = 64; // don't fragment, it's not supported
     response_header->time_to_live = 64; // have this as configuration
-    response_header->protocol = packet_stack_header->protocol;
+    response_header->protocol = ipv4_args->protocol;
     response_header->header_checksum = 0; // leave 0 so that it's ready for checksum calculation further down
-    response_header->source_ip = packet_stack_header->destination_ip;
-    response_header->destination_ip = packet_stack_header->source_ip;
-    response_header->total_length = htons(buffer->size - buffer->data_offset);
+    response_header->source_ip = interface->ipv4_addr;
+    response_header->destination_ip = ipv4_args->destination_ip;
+    response_header->total_length = htons(out_buffer->size - out_buffer->offset);
     response_header->header_checksum = ipv4_calculate_checksum(response_header);
 
-    buffer->data_offset -= sizeof(struct ipv4_header_t);
+    out_buffer->offset -= sizeof(struct ipv4_header_t);
    
     // if this is the bottom of the packet stack, then write to the interface
-    if(!stack_idx) {
-        handler->handler_config->write(buffer, interface, 0);
+    if(!packet_stack->stack_idx) {
+        handler->handler_config->write(out_buffer, interface, 0);
     } else {
-        const struct handler_t* next_handler = packet_stack->handlers[--stack_idx];
-        return next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler);        
+        const struct handler_t* next_handler = packet_stack->handlers[--packet_stack->stack_idx];
+        return next_handler->operations.write(packet_stack, /** ARGS **/, interface, next_handler);        
     }
     
     return true;
@@ -124,6 +127,13 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
         if(next_handler) {
             // set next buffer pointer for next protocol level     
             packet_stack->packet_pointers[packet_stack->write_chain_length] = ((uint8_t*) header) + sizeof(struct ipv4_header_t);
+
+            struct ipv4_write_args_t ipv4_response_args = {
+                .destination_ip = header->source_ip,
+                .protocol = header->protocol
+            };
+
+            packet_stack->args[packet_idx] = &ipv4_response_args;
             
             next_handler->operations.read(packet_stack, interface, next_handler);  
         } else {

@@ -19,6 +19,11 @@ struct ethernet_priv_t {
     int dummy;
 };
 
+struct ethernet_write_args_t {
+    uint8_t destination[6];
+    uint16_t ethernet_type;
+};
+
 struct ethernet_header_t{
     uint8_t destination[6];
     uint8_t source[6];

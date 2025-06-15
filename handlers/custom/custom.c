@@ -27,53 +27,47 @@ void custom_init_handler(struct handler_t* handler, void* priv_config) {
     handler->priv = private;
 }
 
+bool custom_write(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
+    struct custom_priv_t* private = (struct custom_priv_t*) packet_stack->handlers[packet_stack->stack_idx]->priv;    
 
-uint16_t custom_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) {        
-    struct custom_priv_t* private = (struct custom_priv_t*) packet_stack->handlers[response_buffer->stack_idx]->priv;    
-    uint8_t* buffer = ((uint8_t*) (response_buffer->buffer)) + response_buffer->offset;
+    struct out_buffer_t* out_buffer = &packet_stack->out_buffer;
+    uint8_t* response_buffer = (uint8_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - private->response_length);
 
-    memcpy(buffer, private->response_buffer, private->response_length);
-    response_buffer->offset += private->response_length;
-    return private->response_length;
-}
-
-
-bool custom_write(struct packet_stack_t* packet_stack, struct package_buffer_t* buffer, uint8_t stack_idx, struct interface_t* interface, const struct handler_t* handler) {
-    struct custom_priv_t* private = (struct custom_priv_t*) packet_stack->handlers[stack_idx]->priv;    
-    uint8_t* response_buffer = (uint8_t*) buffer->buffer + buffer->data_offset - private->response_length;
-
-    if(buffer->data_offset < private->response_length) {
+    if(out_buffer->offset < private->response_length) {
         NETSTACK_LOG(NETSTACK_ERROR, "No room for custom header in buffer\n");         
         return false;   
     };
 
     memcpy(response_buffer, private->response_buffer, private->response_length);
-    buffer->data_offset -= private->response_length;
+    out_buffer->offset -= private->response_length;
    
     // if this is the bottom of the packet stack, then write to the interface
-    if(!stack_idx) {
-        handler->handler_config->write(buffer, interface, 0);
+    if(!packet_stack->stack_idx) {
+        handler->handler_config->write(out_buffer, interface, 0);
     } else {        
-        const struct handler_t* next_handler = packet_stack->handlers[--stack_idx];
-        return next_handler->operations.write(packet_stack, buffer, stack_idx, interface, next_handler);        
+        const struct handler_t* next_handler = packet_stack->handlers[--packet_stack->stack_idx];
+        return next_handler->operations.write(packet_stack, interface, next_handler);        
     }
     
     return true;
 }
 
-uint16_t custom_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    packet_stack->handlers[packet_stack->write_chain_length] = handler;   
+uint16_t custom_read(struct in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+    packet_stack->handlers[packet_stack->stack_idx] = handler;   
 
-    struct package_buffer_t* response_buffer = 
-        (struct package_buffer_t*) handler->handler_config->
-            mem_allocate("response: custom_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct package_buffer_t)); 
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
+            mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
 
-    response_buffer->buffer = (uint8_t*) response_buffer + sizeof(struct package_buffer_t);
-    response_buffer->size = DEFAULT_PACKAGE_BUFFER_SIZE;
-    response_buffer->data_offset = DEFAULT_PACKAGE_BUFFER_SIZE;
+    *out_package_stack->handlers = *packet_stack->handlers;
+    *out_package_stack->args = *packet_stack->return_args;
 
-    handler->operations.write(packet_stack, response_buffer, packet_stack->write_chain_length, 
-        interface, handler);
+    out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
+    out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
+    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
+
+    out_package_stack->stack_idx = packet_stack->stack_idx;
+
+    handler->operations.write(out_package_stack, interface, handler);
 }
 
 void custom_set_response(struct handler_t* handler, void* response_buffer, uint32_t response_length) {

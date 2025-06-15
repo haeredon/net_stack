@@ -60,10 +60,10 @@ uint16_t ipv4_calculate_checksum(const struct ipv4_header_t* header) {
 }
 
 
-bool ipv4_write(struct new_out_packet_stack_t* packet_stack, void* args, struct interface_t* interface, const struct handler_t* handler) { {
-    struct ipv4_write_args_t* ipv4_args = (struct ipv4_write_args_t*) args;    
+bool ipv4_write(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
+    struct ipv4_write_args_t* ipv4_args = (struct ipv4_write_args_t*) packet_stack->args[packet_stack->stack_idx];    
 
-    struct new_out_buffer_t* out_buffer = &packet_stack->out_buffer;
+    struct out_buffer_t* out_buffer = &packet_stack->out_buffer;
     struct ipv4_header_t* response_header = (struct ipv4_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct ipv4_header_t)); // we don't calculate in options here
 
     if(out_buffer->offset < sizeof(struct ipv4_header_t)) {
@@ -91,15 +91,16 @@ bool ipv4_write(struct new_out_packet_stack_t* packet_stack, void* args, struct 
         handler->handler_config->write(out_buffer, interface, 0);
     } else {
         const struct handler_t* next_handler = packet_stack->handlers[--packet_stack->stack_idx];
-        return next_handler->operations.write(packet_stack, /** ARGS **/, interface, next_handler);        
+        return next_handler->operations.write(packet_stack, interface, next_handler);        
     }
     
     return true;
 }
 
-uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    uint8_t packet_idx = packet_stack->write_chain_length++;
-    struct ipv4_header_t* header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_idx];
+uint16_t ipv4_read(struct in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+    uint8_t packet_idx = packet_stack->stack_idx++;
+    packet_stack->handlers[packet_idx] = handler;  
+    struct ipv4_header_t* header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_idx];
 
     if(ipv4_calculate_checksum(header)) {
         NETSTACK_LOG(NETSTACK_INFO, "IPv4 checksum wrong: Dropping package.\n");          
@@ -126,14 +127,14 @@ uint16_t ipv4_read(struct packet_stack_t* packet_stack, struct interface_t* inte
 
         if(next_handler) {
             // set next buffer pointer for next protocol level     
-            packet_stack->packet_pointers[packet_stack->write_chain_length] = ((uint8_t*) header) + sizeof(struct ipv4_header_t);
+            packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = ((uint8_t*) header) + sizeof(struct ipv4_header_t);
 
             struct ipv4_write_args_t ipv4_response_args = {
                 .destination_ip = header->source_ip,
                 .protocol = header->protocol
             };
 
-            packet_stack->args[packet_idx] = &ipv4_response_args;
+            packet_stack->return_args[packet_idx] = &ipv4_response_args;
             
             next_handler->operations.read(packet_stack, interface, next_handler);  
         } else {

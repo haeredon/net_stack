@@ -127,28 +127,28 @@ uint32_t tcb_header_to_connection_id(struct ipv4_header_t* ipv4_header, struct t
     return id;
 }
 
-bool tcp_internal_write(struct handler_t* handler, struct new_in_packet_stack_t* packet_stack, 
-    struct tcp_socket_t* tcb, uint32_t connection_id, uint8_t stack_idx, struct interface_t* interface) {
+bool tcp_internal_write(struct handler_t* handler, struct in_packet_stack_t* packet_stack, 
+    struct tcp_socket_t* socket, uint32_t connection_id, uint8_t stack_idx, struct interface_t* interface) {
 
-    struct new_out_packet_stack_t* out_packate_stack = (struct new_out_packet_stack_t*) handler->handler_config->
-                mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct new_out_packet_stack_t)); 
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
+                mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
 
-    out_packate_stack->handlers = packet_stack->handlers;
-    out_packate_stack->args = packet_stack->return_args;
+    *out_package_stack->handlers = *packet_stack->handlers;
+    *out_package_stack->args = *packet_stack->return_args;
 
-    out_packate_stack->out_buffer.buffer = (uint8_t*) out_packate_stack + sizeof(struct new_out_packet_stack_t);
-    out_packate_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
-    out_packate_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
+    out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
+    out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
+    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
 
-    out_packate_stack->stack_idx = stack_idx;
+    out_package_stack->stack_idx = stack_idx;
         
     struct tcp_write_args_t tcp_args = {
         .connection_id = connection_id,
         .socket = socket
     };
-    out_packate_stack->args[out_packate_stack->stack_idx] = &tcp_args;
+    out_package_stack->args[out_package_stack->stack_idx] = &tcp_args;
 
-    handler->operations.write(out_packate_stack, interface, handler);
+    handler->operations.write(out_package_stack, interface, handler);
 }
 
 void set_response(struct tcp_header_t* response_header, uint32_t sequence_num, uint32_t acnowledgement_num, uint8_t control_bits) {
@@ -178,10 +178,10 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
     struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
     
     while(num_ready--) {
-        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
+        struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
-        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
-        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx - 1];
 
         uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
 
@@ -222,7 +222,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                             htonl(tcb->receive_next),
                             TCP_ACK_FLAG
                         );
-                        tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
+                        tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
                         return 0;
                     }
 
@@ -250,11 +250,11 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                             TCP_ACK_FLAG
                         );        
 
-                        tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
+                        tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
 
                         // set next buffer pointer for next protocol level     
-                        packet_stack->write_chain_length++;
-                        packet_stack->packet_pointers[packet_stack->write_chain_length] = tcp_get_payload(tcp_header);                        
+                        packet_stack->stack_idx++;
+                        packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = tcp_get_payload(tcp_header);                        
 
                         // call next protocol level, tls, http, app specific etc.
                         socket->next_handler->operations.read(packet_stack, interface, next_handler);
@@ -274,7 +274,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     TCP_ACK_FLAG
                 );
 
-                tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
             }                
         }
 
@@ -306,10 +306,10 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
 
 uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
     if(num_ready) {
-        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
+        struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
-        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
-        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx - 1];
 
         uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
 
@@ -340,7 +340,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                         TCP_RST_FLAG
                     );
 
-                    tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
+                    tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
                 } else {
                     tcb->send_window = ntohs(tcp_header->window);
                     tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
@@ -364,7 +364,7 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                     TCP_ACK_FLAG
                 );
 
-                tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->write_chain_length, interface);
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
             }                
         }
 
@@ -390,10 +390,10 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
 
 uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
     if(num_ready) {
-        struct packet_stack_t* packet_stack = (struct packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
+        struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
-        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length];
-        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->packet_pointers[packet_stack->write_chain_length - 1];
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx - 1];
 
         struct tcp_socket_t* socket = tcp_get_socket(handler, ipv4_header->destination_ip, tcp_header->destination_port);
 
@@ -409,7 +409,7 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
                 TCP_RST_FLAG
             );
 
-            tcp_internal_write(handler, packet_stack->write_chain_length, interface);
+            tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
         } else if(tcp_header->control_bits | TCP_SYN_FLAG == TCP_SYN_FLAG) {
             tcb->receive_initial_sequence_num = ntohl(tcp_header->sequence_num);           
             tcb->receive_next = tcb->receive_initial_sequence_num + 1; 
@@ -428,7 +428,7 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
             tcb->send_unacknowledged = tcb->send_initial_sequence_num;
             tcb->send_next++;      
 
-            tcp_internal_write(handler, packet_stack, packet_stack->write_chain_length, interface);
+            tcp_internal_write(handler, packet_stack, socket, tcb->id, packet_stack->stack_idx, interface);
         }
 
         tcp_block_buffer_remove_front(tcb->in_buffer, 1);         
@@ -437,7 +437,7 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
     return 0;
 }
 
-bool tcp_write(struct new_out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
+bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
     struct tcp_write_args_t* tcp_args = (struct tcp_write_args_t*) packet_stack->args[packet_stack->stack_idx];
 
     if(!packet_stack->stack_idx) {
@@ -445,7 +445,7 @@ bool tcp_write(struct new_out_packet_stack_t* packet_stack, struct interface_t* 
         return false;
     }
 
-    struct new_out_buffer_t out_buffer = packet_stack->out_buffer;
+    struct out_buffer_t out_buffer = packet_stack->out_buffer;
     struct tcp_header_t* response_header = (struct tcp_header_t*) ((uint8_t*) out_buffer.buffer + out_buffer.offset - sizeof(struct tcp_header_t)); // we don't calculate in options here
 
     uint64_t payload_size = out_buffer.size - out_buffer.offset;
@@ -514,11 +514,10 @@ bool tcp_write(struct new_out_packet_stack_t* packet_stack, struct interface_t* 
         }        
     }
 
-    return true
-    
+    return true;    
 }
 
-uint16_t tcp_read(struct new_in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) { 
+uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) { 
     packet_stack->handlers[packet_stack->stack_idx] = handler;  
     struct tcp_header_t* header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
     

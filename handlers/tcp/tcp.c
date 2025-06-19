@@ -486,6 +486,10 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
     out_header->window = htons(tcb->receive_window);
     out_header->urgent_pointer = 0; // Not supported
 
+    if(payload_size) {
+        out_header->control_bits |= TCP_PSH_FLAG;
+    }
+
     out_header->checksum = _tcp_calculate_checksum(out_header, tcp_args->socket->ipv4, tcb->remote_ipv4);
     
     memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t));

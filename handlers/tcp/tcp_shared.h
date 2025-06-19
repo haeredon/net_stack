@@ -7,6 +7,7 @@
 #define TCP_ACK_FLAG 16
 #define TCP_RST_FLAG 4
 #define TCP_FIN_FLAG 1
+#define TCP_PSH_FLAG 8
 
 #define SOCKET_BUFFER_SIZE 64
 #define TCP_WINDOW 4096

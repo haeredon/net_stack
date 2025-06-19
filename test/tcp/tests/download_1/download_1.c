@@ -124,11 +124,11 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // THIRD (ACK-PSH, ACK)
+    // THIRD (ACK-PSH (client hello), ACK, ACK-PSH (server hello)). We only check the correctness of the server_hello here
     packet_stack = create_packet_stack(pkt40, ip_handler);
-    expected_tcp_header = get_tcp_header_from_package(pkt41);
-    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt41);
-    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt41);
+    expected_tcp_header = get_tcp_header_from_package(pkt42);
+    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt42);
+    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt42);
     custom_set_response(custom_handler, expected_tcp_payload, expected_tcp_payload_length);
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {

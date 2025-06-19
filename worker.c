@@ -72,7 +72,8 @@ static void worker_main_loop(struct lcore_setup_t* setup)
 
 		for (j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer = pkts_burst[j];
-			struct packet_stack_t packet_stack = { .packet_pointers = 0, .write_chain_length = 0 };
+
+			struct in_packet_stack_t packet_stack = { .stack_idx = 0, .in_buffer = { .packet_pointers = 0 } };
 
 			void* buffer_start = rte_pktmbuf_mtod(buffer, void *);
 
@@ -94,7 +95,7 @@ int worker_start_lcore_worker(void* setups) {
 
 	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
 		struct handler_t* handler = lcore_setup->handlers[i];
-		handler->init(handler);
+		handler->init(handler, 0);
 	}
 	
 	worker_main_loop(lcore_setup);

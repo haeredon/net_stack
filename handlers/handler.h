@@ -45,13 +45,13 @@ struct in_buffer_t {
 
 struct out_buffer_t {
     void* buffer;
-    uint64_t size;
-    uint64_t offset;
+    uint64_t size; // probably not used
+    uint64_t offset; // probably not used
 };
 
 
 struct in_packet_stack_t {
-    const struct handler_t* handlers[10];
+    struct handler_t* handlers[10];
     void* return_args[10];
 
     struct in_buffer_t in_buffer;
@@ -59,7 +59,7 @@ struct in_packet_stack_t {
 };
 
 struct out_packet_stack_t {
-    const struct handler_t* handlers[10];
+    struct handler_t* handlers[10];
     void* args[10];
 
     struct out_buffer_t out_buffer;

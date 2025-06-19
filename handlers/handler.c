@@ -56,13 +56,13 @@ struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 	// these are root handlers which will be activated when a package arrives
 	struct handler_t** handlers = (struct handler_t**) config->mem_allocate("handler array for ethernet", sizeof(struct handler_t*) * 2);
 	
-	handlers[0] = pcapng_create_handler(config);
-	handlers[1] = ethernet_create_handler(config);
+	// handlers[0] = pcapng_create_handler(config);
+	handlers[0] = ethernet_create_handler(config);
 	
 	// these are handlers which will not be activated when a package arrives, but must still be 
 	// created because they might be called by a root handler
-    struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
-	arp_handler->init(arp_handler, 0);
+    // struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
+	// arp_handler->init(arp_handler, 0);
 
 	struct handler_t* ipv4_handler = ipv4_create_handler(config); // TODO: fix memory leak
 	ipv4_handler->init(ipv4_handler, 0);

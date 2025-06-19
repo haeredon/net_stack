@@ -88,7 +88,8 @@
         "download_1_packages.h": "c",
         "socket.h": "c",
         "stdio.h": "c",
-        "common.h": "c"
+        "common.h": "c",
+        "inet.h": "c"
     }
     
 }

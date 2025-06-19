@@ -1,8 +1,8 @@
-#include "socket.h"
+#include "handlers/tcp/socket.h"
 #include "handlers/handler.h"
 #include "handlers/ipv4/ipv4.h"
-#include "tcp_shared.h"
-#include "tcp_block_buffer.h"
+#include "handlers/tcp/tcp_shared.h"
+#include "handlers/tcp/tcp_block_buffer.h"
 #include "log.h"
 
 #include <string.h>
@@ -24,7 +24,9 @@ struct transmission_control_block_t* create_transmission_control_block(struct ha
 
     tcb->id = connection_id;    
 
-    tcb->remote_ipv4 = source_ip;                                 
+    tcb->remote_ipv4 = source_ip;   
+
+    tcb->remote_port = initial_header->source_port;                           
     
     tcb->send_initial_sequence_num = tcp_shared_generate_sequence_number();
     tcb->send_next = tcb->send_initial_sequence_num;

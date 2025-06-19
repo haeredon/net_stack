@@ -76,9 +76,8 @@ int64_t ipv4_test_write(struct response_t response) {
 }
 
 bool send_and_check_response(const uint8_t* request, const uint8_t* response, uint16_t response_size, struct handler_t* handler, struct test_config_t* config) {
-    struct packet_stack_t packet_stack = { 
-        .pre_build_response = 0, .post_build_response = 0,
-        .packet_pointers = request, .write_chain_length = 0 };
+    struct in_packet_stack_t packet_stack = { 
+        .in_buffer = { .packet_pointers = realloc}, .stack_idx = 0 };
     
     if(handler->operations.read(&packet_stack, config->interface, handler)) {
         return false;

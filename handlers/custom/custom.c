@@ -58,8 +58,8 @@ uint16_t custom_read(struct in_packet_stack_t* packet_stack, struct interface_t*
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
             mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
 
-    *out_package_stack->handlers = *packet_stack->handlers;
-    *out_package_stack->args = *packet_stack->return_args;
+    memcpy(out_package_stack->handlers, packet_stack->handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, packet_stack->return_args, 10 * sizeof(void*));
 
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;

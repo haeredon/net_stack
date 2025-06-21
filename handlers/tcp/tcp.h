@@ -12,6 +12,7 @@
 struct tcp_write_args_t {
     uint32_t connection_id;
     struct tcp_socket_t* socket;
+    uint8_t flags;
 };
 
 

@@ -63,4 +63,6 @@ enum TCP_STATE {
 
 uint32_t tcp_shared_generate_sequence_number();
 
+uint32_t tcp_shared_calculate_connection_id(uint32_t source_ip, uint16_t source_port, uint16_t destination_port);
+
 #endif // HANDLERS_TCP_SHARED_H

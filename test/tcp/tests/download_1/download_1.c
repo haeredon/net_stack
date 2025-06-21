@@ -145,6 +145,60 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
+    // FOURTH (ACK)
+    packet_stack = create_packet_stack(pkt43, ip_handler);
+
+    // no reponse for this one, so we empty the buffer and check if it stays empty
+    memset(tcp_response_buffer->buffer, 0 , tcp_response_buffer->size);
+    
+    if(handler->operations.read(&packet_stack, config->interface, handler)) {
+        return false;
+    }
+
+    if(!array_is_zero(tcp_response_buffer->buffer, tcp_response_buffer->size)) {
+        return false;
+    }
+
+    // FIFTH (ACK-PSH (Change cipher), ACK
+    uint8_t data[1024];
+
+    struct tcp_write_args_t tcp_args = {
+        .connection_id = tcp_shared_calculate_connection_id(ipv4_first_header->source_ip, tcp_first_header->source_port, tcp_first_header->destination_port),
+        .socket = &socket,
+        .flags = TCP_ACK_FLAG | TCP_PSH_FLAG
+    };
+
+    struct out_packet_stack_t out_packet_stack = {
+        .handlers = { ip_handler, handler, custom_handler },        
+        .out_buffer = {
+            .buffer = &data,
+            .offset = 1024,
+            .size = 1024    
+        },
+        .stack_idx = 2        
+    };
+    out_packet_stack.args[1] = &tcp_args;
+
+    expected_tcp_header = get_tcp_header_from_package(pkt44);
+    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt44);
+    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt44);
+    custom_set_response(custom_handler, expected_tcp_payload, expected_tcp_payload_length);
+    
+    if(!custom_handler->operations.write(&out_packet_stack, config->interface, custom_handler)) {
+        return false;
+    }
+
+    tcp_header_buffer = test_get_tcp_package(tcp_response_buffer);
+    actual_tcp_payload_length = test_get_tcp_package_payload_length(tcp_response_buffer);
+    actual_tcp_payload = test_get_tcp_package_payload(tcp_response_buffer);
+
+    if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) ||
+       (expected_tcp_payload_length == actual_tcp_payload_length && 
+       memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
+        return false;
+    }
+
+
     // FOURTH (ACK-PSH (server hello))
     // packet_stack = create_packet_stack(pkt40, ip_handler); // using previous package, because we just need something pointing the right way
 

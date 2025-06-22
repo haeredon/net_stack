@@ -258,7 +258,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
         if(tcp_header->control_bits & TCP_FIN_FLAG) {
             tcb->receive_next = ntohl(tcp_header->sequence_num) + 1;       
 
-            tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG & TCP_FIN_FLAG, packet_stack->stack_idx, interface);
+            tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG | TCP_FIN_FLAG, packet_stack->stack_idx, interface);
             
             tcb->state = CLOSE_WAIT;
             tcb->state_function = tcp_close_wait;

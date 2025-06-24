@@ -29,7 +29,21 @@
  * Known issues
  *  - Only check and push output queue for a transmission control block when it actually has activity from a client
  *  - Doen't flush when to server/client when receiving FIN
+ *  - Does not handle URG bit
  */
+
+
+//////////////////////////////// NOTES //////////////////////////////////////
+// ESTABLISHED STATE 
+// CLOSE-WAIT STATE
+//     - different in segment text. Should just not occur
+//     - different in fin check. just remain in close-wait
+
+// FIN-WAIT-1 STATE 
+// FIN-WAIT-2 STATE
+//     - different in ack check. add 1 additional check
+//     - different in fin check. enter TIME-WAIT
+
 
 
 void tcp_close_handler(struct handler_t* handler) {
@@ -150,20 +164,72 @@ bool tcp_internal_write(struct handler_t* handler, struct in_packet_stack_t* pac
     handler->operations.write(out_package_stack, interface, handler);
 }
 
-uint16_t tcp_time_wait(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    return 1;
-}
-
-uint16_t tcp_last_ack(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    return 1;
-}
-
-uint16_t tcp_closing(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    return 1;
-}
-
 uint16_t tcp_close_wait(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    return 1;
+    struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
+    
+    while(num_ready--) {
+        struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
+
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx - 1];
+
+        uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
+
+        struct tcp_socket_t* socket = tcp_get_socket(handler, ipv4_header->destination_ip, tcp_header->destination_port);
+    
+        if(is_segment_in_window(tcb, tcp_header, payload_size)) {
+            
+            if(tcp_header->control_bits & TCP_RST_FLAG) {
+                // If the RST bit is set, then any outstanding RECEIVEs and SEND should receive "reset" responses. 
+                // All segment queues should be flushed. Users should also receive an unsolicited general "connection reset" signal. 
+                // Enter the CLOSED state, delete the TCB, and return.
+                tcp_delete_transmission_control_block(handler, socket, tcb->id);
+                return 0;
+            } else if(tcp_header->control_bits & TCP_SYN_FLAG) {                
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
+                tcp_block_buffer_remove_front(tcb->in_buffer, 1);
+                return 0;
+            } else if(tcp_header->control_bits & TCP_ACK_FLAG) {
+                // we do not check for the RFC 5961 blind data injection 
+                // attack problem mentioned in RFC 9293        
+
+                uint32_t acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
+                uint32_t sequence_num = ntohl(tcp_header->sequence_num);        
+
+                if(is_acknowledgement_valid(tcb, tcp_header) || tcb->send_unacknowledged == acknowledgement_num) {                                        
+                    tcb->send_unacknowledged = acknowledgement_num;
+
+                    // acknowledgement of something which has not yet been send
+                    if(acknowledgement_num > tcb->send_next && tcb->send_unacknowledged != acknowledgement_num) {
+                        tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
+                        return 0;
+                    }
+
+                    // update window if this is not an old segment
+                    if(tcb->send_last_update_sequence_num < sequence_num ||
+                      (tcb->send_last_update_sequence_num == sequence_num 
+                        && tcb->send_last_update_acknowledgement_num <= acknowledgement_num)) {
+                        
+                        tcb->send_window = ntohs(tcp_header->window);
+                        tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
+                        tcb->send_last_update_acknowledgement_num = tcb->send_last_update_acknowledgement_num;
+                    }                      
+                }
+            } 
+        } else {
+            if(tcp_header->control_bits & TCP_RST_FLAG) {
+                tcp_delete_transmission_control_block(handler, socket, tcb->id);
+                return 1;
+            } else {
+                // <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
+            }                
+        }
+
+        tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
+    }
+
+    return 0;
 }
 
 
@@ -263,8 +329,8 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
             tcb->state = CLOSE_WAIT;
             tcb->state_function = tcp_close_wait;
             tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
-
-            return 0;
+            
+            return tcb->state_function(handler, tcb, num_ready, interface);
         }
 
         tcp_block_buffer_remove_front(tcb->in_buffer, 1);  

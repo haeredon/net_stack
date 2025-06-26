@@ -484,7 +484,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
     }
 
     struct tcp_header_t* out_header = (struct tcp_header_t*) tcb->out_header;
-    out_header->source_port = tcp_args->socket->listening_port;
+    out_header->source_port = tcp_args->socket->port;
     out_header->destination_port = tcb->remote_port;
     out_header->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
     out_header->window = htons(tcb->receive_window);

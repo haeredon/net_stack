@@ -99,7 +99,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     // add mock socket
     struct tcp_socket_t socket = {
         .ipv4 = ipv4_first_header->destination_ip,
-        .listening_port = tcp_first_header->destination_port,
+        .port = tcp_first_header->destination_port,
         .trans_control_block = 0
     };
     socket.next_handler = custom_handler;

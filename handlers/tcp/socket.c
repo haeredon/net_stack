@@ -88,7 +88,7 @@ struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ip
     for (uint8_t i = 0 ; i < SOCKET_BUFFER_SIZE && priv->tcp_sockets[i] ; i++) {
         struct tcp_socket_t* socket = priv->tcp_sockets[i];
         
-        if(socket->listening_port == port && socket->ipv4 == ipv4) {
+        if(socket->port == port && socket->ipv4 == ipv4) {
             return socket;
         } 
     }   
@@ -145,3 +145,47 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     return false;     
 }
 
+
+
+uint32_t tcp_socket_open(struct tcp_socket_t* socket) {
+    // create a TCB somehow
+    // initiate a handshake
+}
+
+bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id) {
+    // just call the write function
+}
+
+void tcp_socket_close(struct tcp_socket_t* socket, uint32_t connection_id) {
+    // send FINISH
+    // potential clean up    
+}
+
+void tcp_socket_abort(struct tcp_socket_t* socket, uint32_t connection_id) {
+    // send RESET
+    // potential clean up    
+}
+
+void tcp_socket_status(struct tcp_socket_t* socket, uint32_t connection_id) {
+    // return some status from TCB
+}
+
+
+struct tcp_socket_t tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
+    void (*receive)(uint8_t* data, uint64_t size)) {
+        struct tcp_socket_t socket = {
+            .ipv4 = ipv4,
+            .port = port,
+            .next_handler = next_handler, // deprecated
+            .operations = {
+                .open = tcp_socket_open,
+                .send = tcp_socket_send,
+                .receive = receive,
+                .close = tcp_socket_close,
+                .abort = tcp_socket_abort,
+                .status = tcp_socket_status
+            }
+        };
+
+        return socket;
+}

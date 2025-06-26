@@ -44,10 +44,20 @@ struct transmission_control_block_t {
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
+struct socket_operations_t {
+    uint32_t (*open)(struct tcp_socket_t* socket);
+    bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id);
+    void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function 
+    void (*close)(struct tcp_socket_t* socket, uint32_t connection_id);
+    void (*abort)(struct tcp_socket_t* socket, uint32_t connection_id);
+    void (*status)(struct tcp_socket_t* socket, uint32_t connection_id);
+};
+
 struct tcp_socket_t {
-    uint16_t listening_port;
+    uint16_t port; // listening port for passive socket or just port for active socket
     uint32_t ipv4;  // right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
+    struct socket_operations_t operations;
 
     // the read function of the handler is not allowed to block
     // because it will block ACKs from the tcp protocol. It should 
@@ -68,5 +78,9 @@ void tcp_delete_transmission_control_block(struct handler_t* handler, struct tcp
 bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
+
+struct tcp_socket_t tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
+    void (*receive)(uint8_t* data, uint64_t size));
+
 
 #endif // HANDLERS_TCP_SOCKET_H

@@ -4,6 +4,7 @@
 #include "handlers/handler.h"
 #include "handlers/ipv4/ipv4.h"
 #include "tcp_block_buffer.h"
+#include "handlers/tcp/socket.h"
 
 #include <stdbool.h>
 

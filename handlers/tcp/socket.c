@@ -147,7 +147,12 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
 
 
 
-uint32_t tcp_socket_open(struct tcp_socket_t* socket) {
+uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket) {
+    // struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
+    //             header, ipv4_header->source_ip, tcp_listen);
+
+    
+            
     // create a TCB somehow
     // initiate a handshake
 }

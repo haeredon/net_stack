@@ -26,20 +26,20 @@ struct transmission_control_block_t* create_transmission_control_block(struct ha
 
     tcb->remote_ipv4 = source_ip;   
 
-    tcb->remote_port = initial_header->source_port;                           
+    tcb->remote_port = initial_header ? initial_header->source_port : 0;                           
     
     tcb->send_initial_sequence_num = tcp_shared_generate_sequence_number();
     tcb->send_next = tcb->send_initial_sequence_num;
-    tcb->send_window = initial_header->window;
+    tcb->send_window = initial_header ? initial_header->window : 0;
 
     tcb->send_unacknowledged = 0;
     tcb->send_urgent_pointer = 0;
     tcb->send_last_update_sequence_num = 0;
     tcb->send_last_update_acknowledgement_num = 0;        
     
-    tcb->receive_initial_sequence_num = ntohl(initial_header->sequence_num);       
+    tcb->receive_initial_sequence_num = initial_header ? ntohl(initial_header->sequence_num) : 0;       
     tcb->receive_window = priv->window;
-    tcb->receive_urgent_pointer = initial_header->urgent_pointer;                  
+    tcb->receive_urgent_pointer = initial_header ? initial_header->urgent_pointer : 0;                  
     tcb->receive_next = tcb->receive_initial_sequence_num;                      
 
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);

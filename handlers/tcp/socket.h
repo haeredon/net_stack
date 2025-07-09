@@ -7,7 +7,7 @@
 #include "handlers/handler.h"
 #include "handlers/socket.h"
 #include "handlers/ipv4/ipv4.h"
-#include "tcp_shared.h"
+#include "handlers/tcp/tcp_shared.h"
 #include "tcp_block_buffer.h"
 
 #define TCP_SOCKET_NUM_TCB 32
@@ -45,19 +45,22 @@ struct transmission_control_block_t {
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
+// IF WE GET MORE THAN ONE SOCKET. THIS MUST BE AUTO GENERATED WITH A MACRO
 struct socket_operations_t {
-    uint32_t (*open)(struct tcp_socket_t* socket);
-    bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id);
+    uint32_t (*open)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port);
+    bool (*send)(struct socket_t* socket, uint32_t connection_id);
     void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function 
-    void (*close)(struct tcp_socket_t* socket, uint32_t connection_id);
-    void (*abort)(struct tcp_socket_t* socket, uint32_t connection_id);
-    void (*status)(struct tcp_socket_t* socket, uint32_t connection_id);
+    void (*close)(struct socket_t* socket, uint32_t connection_id);
+    void (*abort)(struct socket_t* socket, uint32_t connection_id);
+    void (*status)(struct socket_t* socket, uint32_t connection_id);
 };
 
 struct tcp_socket_t {
     uint16_t port; // listening port for passive socket or just port for active socket
     uint32_t ipv4; // host ip: right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
+
+    struct socket_operations_t operations;
 
     struct socket_t socket;
     

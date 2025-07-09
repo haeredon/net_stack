@@ -1,6 +1,8 @@
 #ifndef HANDLERS_TCP_SHARED_H
 #define HANDLERS_TCP_SHARED_H
 
+#include "handlers/ipv4/ipv4.h"
+
 #include <stdint.h>
 
 #define TCP_SYN_FLAG 2
@@ -70,9 +72,5 @@ uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, uint32_t sourc
 uint16_t tcp_get_payload_length(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header);
 
 void* tcp_get_payload(struct tcp_header_t* tcp_header);
-
-bool is_acknowledgement_valid(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header);
-
-bool is_segment_in_window(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header, uint32_t payload_size);
 
 #endif // HANDLERS_TCP_SHARED_H

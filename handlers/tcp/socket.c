@@ -145,11 +145,13 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     return false;     
 }
 
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)((char *)__mptr - offsetof(type,member));})
 
 
 // returns connection id of the tcb
 uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port) {
-
     // create connection id
     uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, port, socket->ipv4);
 
@@ -193,21 +195,21 @@ uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket,
     };
 }
 
-bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id) {
+bool tcp_socket_send(struct socket_t* socket, uint32_t connection_id) {
     // just call the write function
 }
 
-void tcp_socket_close(struct tcp_socket_t* socket, uint32_t connection_id) {
+void tcp_socket_close(struct socket_t* socket, uint32_t connection_id) {
     // send FINISH
     // potential clean up    
 }
 
-void tcp_socket_abort(struct tcp_socket_t* socket, uint32_t connection_id) {
+void tcp_socket_abort(struct socket_t* socket, uint32_t connection_id) {
     // send RESET
     // potential clean up    
 }
 
-void tcp_socket_status(struct tcp_socket_t* socket, uint32_t connection_id) {
+void tcp_socket_status(struct socket_t* socket, uint32_t connection_id) {
     // return some status from TCB
 }
 
@@ -219,13 +221,13 @@ struct tcp_socket_t tcp_create_socket(struct handler_t* next_handler, uint16_t p
             .port = port,
             .next_handler = next_handler, // deprecated
             .operations = {
-                .open = tcp_socket_open,
-                .send = tcp_socket_send,
-                .receive = receive,
-                .close = tcp_socket_close,
-                .abort = tcp_socket_abort,
-                .status = tcp_socket_status
-            }
+                    .open = tcp_socket_open,
+                    .send = tcp_socket_send,
+                    .receive = receive,
+                    .close = tcp_socket_close,
+                    .abort = tcp_socket_abort,
+                    .status = tcp_socket_status
+            }        
         };
 
         return socket;

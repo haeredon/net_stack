@@ -12,8 +12,27 @@
 #include <arpa/inet.h>
 
 
+bool is_acknowledgement_valid(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header) {
+    uint32_t acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
 
+    return tcb->send_unacknowledged < acknowledgement_num && 
+       tcb->send_next >= acknowledgement_num;
+}
 
+bool is_segment_in_window(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header, uint32_t payload_size) {
+    uint32_t sequence_num = ntohl(tcp_header->sequence_num);
+
+    if(payload_size) {
+        uint32_t sequence_end = sequence_num + payload_size - 1 /* -1 because it says in RFC, maybe think it through */;
+        return tcb->receive_window && (sequence_num >= tcb->receive_next &&
+               sequence_num < tcb->receive_next + tcb->receive_window && 
+               sequence_end < tcb->receive_next + tcb->receive_window);
+    } else {
+        return ((tcb->receive_window) && (sequence_num >= tcb->receive_next &&
+               sequence_num < tcb->receive_next + tcb->receive_window)) || 
+               (!tcb->receive_window && tcb->receive_next == sequence_num);
+    }
+}
 
 bool tcp_internal_write(struct handler_t* handler, struct in_packet_stack_t* packet_stack, 
     struct tcp_socket_t* socket, uint32_t connection_id, uint8_t flags, uint8_t stack_idx, struct interface_t* interface) {

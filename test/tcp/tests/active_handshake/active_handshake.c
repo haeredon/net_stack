@@ -51,15 +51,15 @@ struct in_packet_stack_t create_in_packet_stack(const void* package, struct hand
 }
 
 struct out_packet_stack_t create_out_packet_stack(struct handler_t* ip_handler, 
-        struct handler_t* tcp_handler, struct handler_t* custom_handler, struct tcp_write_args_t* tcp_args) {
+    struct handler_t* tcp_handler, struct tcp_write_args_t* tcp_args) {
     struct out_packet_stack_t out_packet_stack = {
-        .handlers = { ip_handler, tcp_handler, custom_handler },        
+        .handlers = { ip_handler, tcp_handler },        
         .out_buffer = {
             .buffer = &out_buffer,
             .offset = 2048,
             .size = 2048    
         },
-        .stack_idx = 2        
+        .stack_idx = 1        
     };
     out_packet_stack.args[1] = tcp_args;
 
@@ -101,8 +101,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     socket.operations.open(socket);
 
-
-
+    
 
     return true;
 }

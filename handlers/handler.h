@@ -93,6 +93,11 @@ struct handler_config_t {
     uint16_t (*write)(struct out_buffer_t* buffer, struct interface_t* interface, struct transmission_config_t* transmission_config); 
 };
 
+struct handlers_t {
+    struct handler_t* handlers[10];
+    uint8_t size;
+};
+
 struct handler_t {
     void (*init)(struct handler_t*, void* priv_config); 
     void (*close)(struct handler_t*);

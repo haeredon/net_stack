@@ -1,8 +1,10 @@
+#include "handlers/tcp/tcp.h"
 #include "handlers/tcp/socket.h"
 #include "handlers/handler.h"
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/tcp/tcp_shared.h"
 #include "handlers/tcp/tcp_block_buffer.h"
+#include "handlers/tcp/tcp_states.h"
 #include "log.h"
 
 #include <string.h>
@@ -15,7 +17,7 @@ void delete_transmission_control_block(struct handler_t* handler, struct transmi
 
 struct transmission_control_block_t* create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
-        uint32_t source_ip, void* listen_state_function) {
+        uint32_t source_ip, void* state_function) {
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
     
     struct transmission_control_block_t* tcb = 
@@ -44,21 +46,19 @@ struct transmission_control_block_t* create_transmission_control_block(struct ha
 
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
     tcb->out_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
-
-    tcb->state = LISTEN; 
     
-    tcb->state_function = listen_state_function;                              
+    tcb->state_function = state_function;                              
 
     return tcb;
 }
 
 struct transmission_control_block_t* tcp_create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
-        uint32_t source_ip, void* listen_state_function) {
+        uint32_t source_ip, void* state_function) {
     for (uint64_t i = 0; i < TCP_SOCKET_NUM_TCB; i++) {
         if(!socket->trans_control_block[i]) {
             socket->trans_control_block[i] = create_transmission_control_block(handler, socket, 
-                connection_id, initial_header, source_ip, listen_state_function); 
+                connection_id, initial_header, source_ip, state_function); 
             return socket->trans_control_block[i];
         }        
     }
@@ -147,14 +147,50 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
 
 
 
-uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket) {
-    // struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
-    //             header, ipv4_header->source_ip, tcp_listen);
+// returns connection id of the tcb
+uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port) {
 
-    
+    // create connection id
+    uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, port, socket->ipv4);
+
+    // stub tcp header for tcb initialization of active mode
+    struct tcp_header_t initial_header = {
+        .window = 0,
+        .urgent_pointer = 0,
+        .source_port = port,
+        .window = 0
+    };
+
+    // create a TCB somehow        
+    struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
+                &initial_header, remote_ip, tcp_close);
             
-    // create a TCB somehow
     // initiate a handshake
+    struct tcp_write_args_t tcp_args = {
+        .connection_id = connection_id,
+        .socket = socket,
+        .flags = TCP_SYN_FLAG
+    };
+
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
+                mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
+
+    memcpy(out_package_stack->handlers, socket->socket.handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, socket->socket.handler_args, 10 * sizeof(void*));
+    socket->socket.handler_args[socket->socket.depth - 1] = &tcp_args;
+
+    out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
+    out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
+    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
+
+    out_package_stack->stack_idx = socket->socket.depth - 1;
+
+    if(handler->operations.write(out_package_stack, socket->socket.interface, handler)) {
+        NETSTACK_LOG(NETSTACK_ERROR, "TCP: Could not open socket connection\n");   
+        return 1;
+    } else {
+        return connection_id;
+    };
 }
 
 bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id) {

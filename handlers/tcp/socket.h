@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "handlers/handler.h"
+#include "handlers/socket.h"
 #include "handlers/ipv4/ipv4.h"
 #include "tcp_shared.h"
 #include "tcp_block_buffer.h"
@@ -55,10 +56,11 @@ struct socket_operations_t {
 
 struct tcp_socket_t {
     uint16_t port; // listening port for passive socket or just port for active socket
-    uint32_t ipv4;  // right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
+    uint32_t ipv4; // host ip: right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
-    struct socket_operations_t operations;
 
+    struct socket_t socket;
+    
     // the read function of the handler is not allowed to block
     // because it will block ACKs from the tcp protocol. It should 
     // return fast to acknowledge that it takes ownership of the data

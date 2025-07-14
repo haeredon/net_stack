@@ -145,13 +145,9 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     return false;     
 }
 
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)((char *)__mptr - offsetof(type,member));})
 
 
-// returns connection id of the tcb
-uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port) {
+void some_open_function() {
     // create connection id
     uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, port, socket->ipv4);
 
@@ -195,6 +191,11 @@ uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket,
     };
 }
 
+
+uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket, struct thread_t* thread, uint32_t remote_ip, uint16_t port) {    
+    thread->work->enqueue(some_open_function, arguments);
+}
+
 bool tcp_socket_send(struct socket_t* socket, uint32_t connection_id) {
     // just call the write function
 }
@@ -221,12 +222,12 @@ struct tcp_socket_t tcp_create_socket(struct handler_t* next_handler, uint16_t p
             .port = port,
             .next_handler = next_handler, // deprecated
             .operations = {
-                    .open = tcp_socket_open,
-                    .send = tcp_socket_send,
-                    .receive = receive,
-                    .close = tcp_socket_close,
-                    .abort = tcp_socket_abort,
-                    .status = tcp_socket_status
+                .open = tcp_socket_open,
+                .send = tcp_socket_send,
+                .receive = receive,
+                .close = tcp_socket_close,
+                .abort = tcp_socket_abort,
+                .status = tcp_socket_status
             }        
         };
 

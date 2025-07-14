@@ -49,14 +49,14 @@ struct transmission_control_block_t {
 struct socket_operations_t {
     uint32_t (*open)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port);
     bool (*send)(struct socket_t* socket, uint32_t connection_id);
-    void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function 
+    void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
     void (*close)(struct socket_t* socket, uint32_t connection_id);
     void (*abort)(struct socket_t* socket, uint32_t connection_id);
     void (*status)(struct socket_t* socket, uint32_t connection_id);
 };
 
 struct tcp_socket_t {
-    uint16_t port; // listening port for passive socket or just port for active socket
+    uint16_t port; // incoming port
     uint32_t ipv4; // host ip: right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
 

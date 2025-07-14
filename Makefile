@@ -8,7 +8,7 @@ SRCS-DEV := main_dev.c
 INCLUDES-TEST := -I ./ 
 SRCS-y := main.c worker.c 
 SRCS-HANDLERS := handlers/ethernet/ethernet.c handlers/handler.c handlers/protocol_map.c handlers/ipv4/ipv4.c handlers/custom/custom.c handlers/tcp/tcp.c handlers/tcp/tcp_block_buffer.c handlers/tcp/socket.c handlers/tcp/tcp_shared.c handlers/tcp/tcp_states.c
-SRCS-UTILITY := util/array.c util/b_tree.c
+SRCS-UTILITY := util/array.c util/b_tree.c util/queue.c
 SRCS-LOG := log.c
 INCLUDES := -I ./
 

@@ -20,4 +20,23 @@ int worker_start_lcore_worker(void* setups);
 
 extern volatile bool force_quit; 
 
+
+/************************************************************************************ */
+
+// FIFO queue
+struct work_queue_t {
+    void (*enqueue)();
+    void (*dequeue)();
+    void (*notify)();    
+};
+
+struct thread_t {
+    struct work_queue_t work_queue;        
+
+    void (*run)();
+};
+
+struct thread_t create_netstack_thread();
+
+
 #endif // WORKER_H

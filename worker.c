@@ -107,3 +107,18 @@ int worker_start_lcore_worker(void* setups) {
 
 	return 0;	
 }
+
+/*********************************************** */
+
+
+void run() {
+
+}
+
+struct thread_t create_netstack_thread() {
+	struct thread_t thread = {
+		.run = run
+	};
+
+	return thread;
+}

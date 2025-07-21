@@ -4,7 +4,7 @@
 #include<stdbool.h>
 
 
-struct queue_t* queue_dequeue(struct queue_t* queue) {
+void* queue_dequeue(struct queue_t* queue) {
     pthread_mutex_lock(&queue->lock);
 
     void* value = 0;

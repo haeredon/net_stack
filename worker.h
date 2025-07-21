@@ -2,9 +2,11 @@
 #define WORKER_H
 
 #include "handlers/handler.h"
+#include "util/queue.h"
 
-#include <stdint.h>
-#include <rte_mbuf.h>
+#include<stdint.h>
+#include<rte_mbuf.h>
+#include<pthread.h>
 
 #define MAX_PKT_BURST 32
 
@@ -23,20 +25,16 @@ extern volatile bool force_quit;
 
 /************************************************************************************ */
 
-// FIFO queue
-struct work_queue_t {
-    void (*enqueue)();
-    void (*dequeue)();
-    void (*notify)();    
+
+struct execution_context_t {
+    struct queue_t* work_queue;        
+
+    pthread_t thread;
+
+    int (*start)(struct execution_context_t* thread);
 };
 
-struct thread_t {
-    struct work_queue_t work_queue;        
-
-    void (*run)();
-};
-
-struct thread_t create_netstack_thread();
+struct execution_context_t create_netstack_thread(void* (*mem_allocate)(const char *type, size_t size));
 
 
 #endif // WORKER_H

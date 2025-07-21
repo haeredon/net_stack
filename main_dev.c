@@ -1,6 +1,7 @@
 #include "handlers/handler.h"
 #include "handlers/socket.h"
 #include "worker.h"
+#include "execution_pool.h"
 
 #include <stdint.h>
 
@@ -35,7 +36,7 @@ void* net_stack_malloc(const char *type, size_t size) {
 uint8_t main(int argc, char **argv) {
 
 
-    // HANDLER STUFF ///////////////////////////////////
+    //////////////////////// HANDLER STUFF ///////////////////////////////////
 
 	// set handlers and choose memory allocator
 	struct handler_config_t *handler_config = (struct handler_config_t*) rte_zmalloc("Handler Config", sizeof(struct handler_config_t), 0);	
@@ -44,27 +45,39 @@ uint8_t main(int argc, char **argv) {
 		
 	struct handler_t** handlers = handler_create_stacks(handler_config);
 
-    // // initialize handler worker thread
-    struct thread_t thread = create_netstack_thread();
+    //////////////////////// THREADING STUFF ////////////// 
+    struct execution_pool_t execution_pool = create_execution_pool(net_stack_malloc, 3);
+    execution_pool.open(&execution_pool);
 
-    // thread.run();
 
-    // thread.work_queue.enqueue(/* some package */);   
+    /*
+    * // inside handles, get the exection_contexts like this
+    * struct execution_context_t execution_context = execution_pool.get_execution_context(hash);
+    * execution_context.enqueue(package);
+    * 
+    * // when doing package read, do it like this
+    * struct execution_context_t execution_context = execution_pool.get_any_execution_context();
+    * execution_context.enqueue(package);
+    * 
+    */
 
-    // // NETWORK LAYER STUFF ///////////////////////////////////////////////////////
+    ////////////////////// NETWORK LAYER STUFF ///////////////////////////////////////////////////////
     // NetworkOffloader offloader = create_network_offloader();
-    // offloader->affinity(some affinity stuff linking packages to threads through some filter function)
+    
+    //////////////////////// USER STUFF /////////////////////////////////////////////
+    void receive_callback() {
+       
+    }
+    
+    void open_callback() {
+       socket.send(receive_callback); 
+    }
+  
+    void create_callback() {
+       socket.open(open_callback); 
+    }
 
-    // // CLIENT STUFF /////////////////////    
-
-    // Socket socket = create_tcp_socket(); // this function enques the creation of the socket on the thread queue
-    // socket.open();
-    // socket.send(some package);
-
-
-
-
-
+    Socket socket = create_tcp_socket(create_callback); // this function enques the creation of the socket on the thread queue
 
     while(1);
     

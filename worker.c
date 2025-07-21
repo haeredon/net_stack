@@ -38,6 +38,8 @@
 
 #include "worker.h"
 #include "handlers/handler.h"
+#include "util/queue.h"
+#include "log.h"
 
 #define RTE_LOGTYPE_L2FWD RTE_LOGTYPE_USER1
 
@@ -110,15 +112,34 @@ int worker_start_lcore_worker(void* setups) {
 
 /*********************************************** */
 
+void* consume_tasks(void* thread_arg) {
+    NETSTACK_LOG(NETSTACK_INFO, "Worker thread started\n");   
 
-void run() {
-
+	struct execution_context_t* execution_context = (struct execution_context_t*) thread_arg;
+     
+	while(true) {
+		struct task_t task = queue_dequeue(execution_context->work_queue);	
+		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed task\n");   
+		task->start();
+	}
+	
+	
+	return NULL;
 }
 
-struct thread_t create_netstack_thread() {
-	struct thread_t thread = {
-		.run = run
+
+int start(struct execution_context_t* thread) {
+	NETSTACK_LOG(NETSTACK_INFO, "Worker thread starting\n");   
+
+	pthread_t thread;
+    return pthread_create(&thread, NULL, consume_tasks, thread);
+}
+
+struct execution_context_t create_netstack_thread(void* (*mem_allocate)(const char *type, size_t size)) {
+	struct execution_context_t execution_context = {
+		.start = start,
+		.work_queue = queue_create_queue(mem_allocate)
 	};
 
-	return thread;
+	return execution_context;
 }

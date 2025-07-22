@@ -112,34 +112,49 @@ int worker_start_lcore_worker(void* setups) {
 
 /*********************************************** */
 
-void* consume_tasks(void* thread_arg) {
+void* consume_tasks(void* execution_context_arg) {
     NETSTACK_LOG(NETSTACK_INFO, "Worker thread started\n");   
 
-	struct execution_context_t* execution_context = (struct execution_context_t*) thread_arg;
+	struct execution_context_t* execution_context = (struct execution_context_t*) execution_context_arg;
      
-	while(true) {
+	while(execution_context->state == RUNNING) {
 		struct task_t task = queue_dequeue(execution_context->work_queue);	
 		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed task\n");   
 		task->start();
-	}
-	
+	}	
 	
 	return NULL;
 }
 
+void stop(struct execution_context_t* execution_context) {
+	pthread_mutex_lock(&execution_context->state_lock);
 
-int start(struct execution_context_t* thread) {
-	NETSTACK_LOG(NETSTACK_INFO, "Worker thread starting\n");   
-
-	pthread_t thread;
-    return pthread_create(&thread, NULL, consume_tasks, thread);
+	pthread_join(execution_context->thread, NULL);
+	execution_context->state = STOPPED;
+	
+	pthread_mutex_unlock(&execution_context->state_lock);
 }
 
-struct execution_context_t create_netstack_thread(void* (*mem_allocate)(const char *type, size_t size)) {
-	struct execution_context_t execution_context = {
-		.start = start,
-		.work_queue = queue_create_queue(mem_allocate)
-	};
+int start(struct execution_context_t* execution_context) {
+	NETSTACK_LOG(NETSTACK_INFO, "Worker thread starting\n");   
+
+	pthread_mutex_lock(&execution_context->state_lock);
+
+	pthread_t thread;
+	execution_context->state = RUNNING;
+    return pthread_create(&thread, NULL, consume_tasks, thread);
+
+	pthread_mutex_unlock(&execution_context->state_lock);
+}
+
+struct execution_context_t* create_netstack_thread(void* (*mem_allocate)(const char *type, size_t size)) {
+	struct execution_context_t* execution_context = (struct execution_context_t*) mem_allocate("Execution context", 
+        sizeof(struct execution_context_t));
+
+	execution_context->start = start;
+	execution_context->work_queue = queue_create_queue(mem_allocate);
+
+	pthread_mutex_init(&execution_context->state_lock, 0);    
 
 	return execution_context;
 }

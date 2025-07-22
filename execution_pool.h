@@ -12,7 +12,9 @@
 
 
 struct execution_pool_t {
-    uint8_t num_threads;
+    struct execution_context_t** execution_contexts;
+    
+    uint8_t num_executions;    
 
     bool (*open)(struct execution_pool_t* execution_pool);
     bool (*close)(struct execution_pool_t* execution_pool);

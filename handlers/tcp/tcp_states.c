@@ -272,7 +272,6 @@ uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control
                     tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
 
                     tcb->state_function = tcp_established;
-                    tcb->receiver->work->enqueue(ESTABLISHED);
                     return tcb->state_function(handler, tcb, num_ready, interface);
                 }
             } 

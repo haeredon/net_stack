@@ -55,6 +55,7 @@ struct transmission_control_block_t* create_transmission_control_block(struct ha
 struct transmission_control_block_t* tcp_create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
         uint32_t source_ip, void* state_function) {
+    pthread_mutex_lock(&socket->tcb_list_lock);
     for (uint64_t i = 0; i < TCP_SOCKET_NUM_TCB; i++) {
         if(!socket->trans_control_block[i]) {
             socket->trans_control_block[i] = create_transmission_control_block(handler, socket, 
@@ -62,13 +63,15 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
             return socket->trans_control_block[i];
         }        
     }
+    pthread_mutex_unlock(&socket->tcb_list_lock);
     return 0;
 }
 
 /**
  * Get the transmission control block associated with the given connection id on the given socket.
  */
-struct transmission_control_block_t* tcp_get_transmission_control_block(const struct tcp_socket_t* socket, uint32_t connection_id) {
+struct transmission_control_block_t* tcp_get_transmission_control_block(struct tcp_socket_t* socket, uint32_t connection_id) {
+    pthread_mutex_lock(&socket->tcb_list_lock);
     for (uint8_t i = 0 ; i < TCP_SOCKET_NUM_TCB ; i++) {
         struct transmission_control_block_t* tcb = socket->trans_control_block[i];
         
@@ -76,6 +79,7 @@ struct transmission_control_block_t* tcp_get_transmission_control_block(const st
             return tcb;
         } 
     }   
+    pthread_mutex_unlock(&socket->tcb_list_lock);
     return 0; 
 }
 
@@ -113,6 +117,7 @@ void tcp_delete_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
  * and disassociating it from the socket
  */
 void tcp_delete_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t connection_id) {
+    pthread_mutex_lock(&socket->tcb_list_lock);
     for (uint8_t i = 0 ; i < TCP_SOCKET_NUM_TCB ; i++) {
         struct transmission_control_block_t* tcb = socket->trans_control_block[i];
         
@@ -121,6 +126,7 @@ void tcp_delete_transmission_control_block(struct handler_t* handler, struct tcp
             socket->trans_control_block[i] = 0;
         } 
     }   
+    pthread_mutex_unlock(&socket->tcb_list_lock);
 }
 
 /**
@@ -135,19 +141,20 @@ void tcp_reset_socket(struct tcp_socket_t* socket) {
  */
 bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
-
+    
+    pthread_mutex_lock(&priv->socket_list_lock);
     for (uint64_t i = 0; i < SOCKET_BUFFER_SIZE; i++) {
         if(!priv->tcp_sockets[i]) {
             priv->tcp_sockets[i] = socket;
+            pthread_mutex_unlock(&priv->socket_list_lock);
             return true;
         }        
     }
+    pthread_mutex_unlock(&priv->socket_list_lock);
     return false;     
 }
 
-
-
-void some_open_function() {
+uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port, void(*open_callback)()) {    
     // create connection id
     uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, port, socket->ipv4);
 
@@ -191,11 +198,6 @@ void some_open_function() {
     };
 }
 
-
-uint32_t tcp_socket_open(struct handler_t* handler, struct tcp_socket_t* socket, struct thread_t* thread, uint32_t remote_ip, uint16_t port) {    
-    thread->work->enqueue(some_open_function, arguments);
-}
-
 bool tcp_socket_send(struct socket_t* socket, uint32_t connection_id) {
     // just call the write function
 }
@@ -215,21 +217,25 @@ void tcp_socket_status(struct socket_t* socket, uint32_t connection_id) {
 }
 
 
-struct tcp_socket_t tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
+struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
     void (*receive)(uint8_t* data, uint64_t size)) {
-        struct tcp_socket_t socket = {
-            .ipv4 = ipv4,
-            .port = port,
-            .next_handler = next_handler, // deprecated
-            .operations = {
-                .open = tcp_socket_open,
-                .send = tcp_socket_send,
-                .receive = receive,
-                .close = tcp_socket_close,
-                .abort = tcp_socket_abort,
-                .status = tcp_socket_status
-            }        
-        };
+        struct tcp_socket_t* socket = (struct tcp_socket_t*) mem_allocate("TCP socket", sizeof(struct tcp_socket_t));
+
+        socket->ipv4 = ipv4,
+        socket->port = port,
+        socket->next_handler = next_handler, // deprecated
+        socket->operations.connect = tcp_socket_connect,
+        socket->operations.receive = receive;
+        socket->operations.close = tcp_socket_close;
+        socket->operations.abort = tcp_socket_abort;
+        socket->operations.status = tcp_socket_status;
+
+        int init_lock_res = pthread_mutex_init(&socket->tcb_list_lock, 0);
+
+        // TODO: Should probably free the entire socket and return nullptr, instead of just logging an error
+        if(init_lock_res) {
+            NETSTACK_LOG(NETSTACK_ERROR, "TCP: Failed to initialize socket lock\n");   
+        }
 
         return socket;
 }

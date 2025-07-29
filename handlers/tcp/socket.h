@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #include "handlers/handler.h"
 #include "handlers/socket.h"
@@ -41,13 +42,15 @@ struct transmission_control_block_t {
     struct tcp_block_buffer_t* in_buffer;
     uint8_t* out_header[TCP_HEADER_MAX_SIZE];
 
+    pthread_mutex_t lock;
+
     uint16_t (*state_function)(struct handler_t* handler,
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
 // IF WE GET MORE THAN ONE SOCKET. THIS MUST BE AUTO GENERATED WITH A MACRO
 struct socket_operations_t {
-    uint32_t (*open)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port);
+    uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port, void(*open_callback)());
     bool (*send)(struct socket_t* socket, uint32_t connection_id);
     void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
     void (*close)(struct socket_t* socket, uint32_t connection_id);
@@ -59,6 +62,8 @@ struct tcp_socket_t {
     uint16_t port; // incoming port
     uint32_t ipv4; // host ip: right now tcp is tightly bound to ipv4. This field should be more generic to support both ipv4 and ipv6
     struct transmission_control_block_t* trans_control_block[TCP_SOCKET_NUM_TCB];
+
+    pthread_mutex_t tcb_list_lock;
 
     struct socket_operations_t operations;
 
@@ -74,7 +79,7 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
         uint32_t source_ip, void* listen_state_function);
 
-struct transmission_control_block_t* tcp_get_transmission_control_block(const struct tcp_socket_t* socket, uint32_t connection_id);
+struct transmission_control_block_t* tcp_get_transmission_control_block(struct tcp_socket_t* socket, uint32_t connection_id);
 
 void tcp_delete_socket(struct handler_t* handler, struct tcp_socket_t* socket) ;
 
@@ -84,7 +89,7 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
-struct tcp_socket_t tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
+struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
     void (*receive)(uint8_t* data, uint64_t size));
 
 

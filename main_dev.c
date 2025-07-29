@@ -1,5 +1,8 @@
 #include "handlers/handler.h"
 #include "handlers/socket.h"
+#include "handlers/ethernet/ethernet.h"
+#include "handlers/ipv4/ipv4.h"
+#include "handlers/tcp/socket.h"
 #include "worker.h"
 #include "execution_pool.h"
 
@@ -31,6 +34,15 @@
 void* net_stack_malloc(const char *type, size_t size) {
 	return rte_malloc(type, size, 0);
 }
+
+void receive_callback(uint8_t* data, uint64_t size) {
+       // handle data
+    }
+    
+void open_callback() {
+    // get handler and socket information somehow
+    //socket.send(socket, connection_id, handler); 
+}  
 
 
 uint8_t main(int argc, char **argv) {
@@ -65,19 +77,33 @@ uint8_t main(int argc, char **argv) {
     // NetworkOffloader offloader = create_network_offloader();
     
     //////////////////////// USER STUFF /////////////////////////////////////////////
-    void receive_callback() {
-       
-    }
-    
-    void open_callback() {
-       socket.send(receive_callback); 
-    }
-  
-    void create_callback() {
-       socket.open(open_callback); 
-    }
+        
+    // initialize socket
+    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, 1337, 0xAAAAAAAA, receive_callback); 
 
-    Socket socket = create_tcp_socket(create_callback); // this function enques the creation of the socket on the thread queue
+    tcp_socket.socket.handlers[0] = handlers[0]; // ethernet
+    tcp_socket.socket.handlers[1] = handlers[1]; // ipv4
+    tcp_socket.socket.handlers[2] = handlers[2]; // tcp
+
+    struct ethernet_write_args_t eth_args = {
+        .destination = { 0, 0, 0, 0, 0, 0},
+        .ethernet_type = 0x0800
+    };
+
+    struct ipv4_write_args_t ipv4_args = {
+        .destination_ip = 0xAAAAAAAA,
+        .protocol = 0xFF       
+    };
+
+    tcp_socket.socket->handler_args[0] = &eth_args;
+    tcp_socket.socket->handler_args[1] = &ipv4_args;
+    // no need for tcp, because those args will be set by the open call to the tcp socket
+
+    tcp_socket.socket.depth = 3;
+    
+
+    //ConnectionId connectionId = socket->open(socket, handler, remote_ip, port, open_callback):
+
 
     while(1);
     

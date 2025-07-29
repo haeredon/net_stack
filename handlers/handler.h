@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 
 #define DEFAULT_PACKAGE_BUFFER_SIZE 0xFFFF

@@ -3,17 +3,13 @@
 
 ### Protocols (Basic Implementation)
 
+#### Base Implementations
 - [X] Ethernet
-    - [ ] Broadcast
 - [X] ARP
 - [ ] UDP
 - [ ] QUIC
 - [ ] TCP
-    - [ ] Overflowing Sequence Numbers
-    - [ ] Modulo windows
 - [x] IPv4
-    - [ ] Multicast
-    - [ ] Broadcast
 - [ ] IPv6
 - [ ] TLS
 

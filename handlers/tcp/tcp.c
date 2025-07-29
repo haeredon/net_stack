@@ -63,6 +63,11 @@ void tcp_init_handler(struct handler_t* handler, void* priv_config) {
 
     tcp_priv->window = config->window;
 
+    int init_lock_res = pthread_mutex_init(&tcp_priv->socket_list_lock, 0);
+    if(init_lock_res) {
+        NETSTACK_LOG(NETSTACK_ERROR, "TCP: Failed to initialize private storage lock for handler\n");   
+    }
+
     handler->priv = (void*) tcp_priv;
 }
 

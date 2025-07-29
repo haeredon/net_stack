@@ -22,6 +22,8 @@ struct tcp_priv_config_t {
 struct tcp_priv_t {
     int window;
     struct tcp_socket_t* tcp_sockets[SOCKET_BUFFER_SIZE];
+
+    pthread_mutex_t socket_list_lock;
 };
 
 struct tcp_output_buffer_t {

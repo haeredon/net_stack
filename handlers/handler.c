@@ -6,7 +6,7 @@
 #include "handlers/ethernet/ethernet.h"
 #include "handlers/pcapng/pcapng.h"
 #include "handlers/ipv4/ipv4.h"
-#include "log.h"
+#include "util/log.h"
 
 
 // uint16_t handler_response(struct packet_stack_t* packet_stack, struct interface_t* interface, struct transmission_config_t* transmission_config) {

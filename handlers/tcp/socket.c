@@ -5,7 +5,7 @@
 #include "handlers/tcp/tcp_shared.h"
 #include "handlers/tcp/tcp_block_buffer.h"
 #include "handlers/tcp/tcp_states.h"
-#include "log.h"
+#include "util/log.h"
 #include "util/memory.h"
 
 #include <string.h>

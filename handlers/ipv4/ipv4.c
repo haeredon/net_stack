@@ -9,7 +9,7 @@
 #include "handlers/protocol_map.h"
 
 
-#include "log.h"
+#include "util/log.h"
 
 /*
  * Internet Protocol Version 4 handler. No support for options field or fragmentation.

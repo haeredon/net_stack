@@ -8,7 +8,7 @@
 
 #include "util/array.h"
 
-#include "log.h"
+#include "util/log.h"
 
 /*
  * Address Resolution Protocol handler. Only supports IPv4 over ethernet.

@@ -8,7 +8,7 @@
 
  
 
-#include "log.h"
+#include "util/log.h"
 
 
 struct key_val_t key_vals[ETHERNET_NUM_ETH_TYPE_ENTRIES];

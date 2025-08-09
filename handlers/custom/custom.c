@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "log.h"
+#include "util/log.h"
 #include "handlers/custom/custom.h"
 #include "handlers/handler.h"
 

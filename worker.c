@@ -39,7 +39,7 @@
 #include "worker.h"
 #include "handlers/handler.h"
 #include "util/queue.h"
-#include "log.h"
+#include "util/log.h"
 
 #define RTE_LOGTYPE_L2FWD RTE_LOGTYPE_USER1
 

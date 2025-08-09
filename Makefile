@@ -1,16 +1,16 @@
 # binary name
 APP = net_stack
 
-# all source are stored in SRCS-y
 SRCS-OVERRIDES-TEST := test/tcp/overrides.c
 SRCS-TEST := test/main.c test/ipv4/test.c test/common.c test/tcp/test.c  test/tcp/utility.c test/tcp/overrides.c test/tcp/tests/download_1/download_1.c test/tcp/tests/active_mode/active_mode.c
 OBJS-TEST = $(SRCS-TEST:.c=.o)
-SRCS-DEV := main_dev.c worker.c execution_pool.c
 INCLUDES-TEST := -I ./ 
-SRCS-y := main.c worker.c 
+
+#SRCS-DEV := main_dev.c worker.c execution_pool.c
+
 SRCS-HANDLERS := handlers/ethernet/ethernet.c handlers/handler.c handlers/protocol_map.c handlers/ipv4/ipv4.c handlers/custom/custom.c handlers/tcp/tcp.c handlers/tcp/tcp_block_buffer.c handlers/tcp/socket.c handlers/tcp/tcp_shared.c handlers/tcp/tcp_states.c
-SRCS-UTILITY := util/array.c util/b_tree.c util/queue.c
-SRCS-LOG := log.c
+SRCS-UTILITY := util/array.c util/b_tree.c util/queue.c util/log.c
+OBJS = $(SRCS-HANDLERS:.c=.o) $(SRCS-UTILITY:.c=.o) 
 INCLUDES := -I ./
 
 BUILD-DIR := build
@@ -49,9 +49,17 @@ LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
 # 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-DEV) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
 ############################### NET STACK HANDLERS ###########################
-$(BUILD-DIR)/libhandler.so: $(SRCS-HANDLERS) $(SRCS-LOG) $(SRCS-UTILITY) | build
+$(BUILD-DIR)/libhandler.so: $(addprefix $(OBJ-DIR)/, $(OBJS))
 	mkdir -p $(BUILD-DIR)
-	$(CC) $(CFLAGS) -fpic -shared $(SRCS-HANDLERS) $(SRCS-LOG) $(SRCS-UTILITY) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+	$(CC) $(CFLAGS) -fpic -shared $(addprefix $(OBJ-DIR)/,$(OBJS)) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+
+$(OBJ-DIR)/handlers/%.o: handlers/%.c 
+	mkdir -p $(dir $@)
+	$(CC) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+
+$(OBJ-DIR)/util/%.o: util/%.c 
+	mkdir -p $(dir $@)
+	$(CC) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 ############################### TEST ##########################################
 $(BUILD-DIR)/$(APP)-test: $(addprefix $(OBJ-DIR)/, $(OBJS-TEST)) $(BUILD-DIR)/libhandler.so $(BUILD-DIR)/libtestoverrides.so | $(BUILD-DIR)
@@ -72,6 +80,6 @@ all: $(BUILD-DIR)/$(APP)-test
 
 .PHONY: clean test
 clean:
- 	test -d build && rm -rf build
+	test -d build && rm -rf build
 
 

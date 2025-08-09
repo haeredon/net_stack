@@ -51,11 +51,11 @@ struct transmission_control_block_t {
 // IF WE GET MORE THAN ONE SOCKET. THIS MUST BE AUTO GENERATED WITH A MACRO
 struct socket_operations_t {
     uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port, void(*open_callback)());
-    bool (*send)(struct socket_t* socket, uint32_t connection_id);
+    bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);
     void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
-    void (*close)(struct socket_t* socket, uint32_t connection_id);
-    void (*abort)(struct socket_t* socket, uint32_t connection_id);
-    void (*status)(struct socket_t* socket, uint32_t connection_id);
+    void (*close)(struct tcp_socket_t* socket, uint32_t connection_id);
+    void (*abort)(struct tcp_socket_t* socket, uint32_t connection_id);
+    void (*status)(struct tcp_socket_t* socket, uint32_t connection_id);
 };
 
 struct tcp_socket_t {

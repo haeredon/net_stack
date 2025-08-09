@@ -10,6 +10,7 @@
 #include "test/common.h"
 #include "test/tcp/overrides.h"
 #include "test/tcp/tests/download_1/download_1.h"
+#include "test/tcp/tests/active_mode/active_mode.h"
 
 
 #include <stdbool.h>
@@ -57,14 +58,19 @@ bool tcp_tests_start() {
 
 
     // Initialize tests
-    struct test_t* test = (struct test_t*) malloc(sizeof(struct test_t));
-    strncpy(test->name, "3-Way Handshake, data transfer, and FIN", sizeof("3-Way Handshake, data transfer, and FIN"));    
-    test->test = tcp_test_download_1;
+    struct test_t* download_1_test = (struct test_t*) malloc(sizeof(struct test_t));
+    strncpy(download_1_test->name, "3-Way Handshake, data transfer, and FIN", sizeof("3-Way Handshake, data transfer, and FIN"));    
+    download_1_test->test = tcp_test_download_1;
+
+    struct test_t* tactive_mode_test = (struct test_t*) malloc(sizeof(struct test_t));
+    strncpy(tactive_mode_test->name, "3-Way Handshake, data transfer, and FIN", sizeof("3-Way Handshake, data transfer, and FIN"));    
+    tactive_mode_test->test = tcp_test_active_mode;
 
     // queue tests
     struct test_t* tests[2];
-    tests[0] = test;
-    tests[1] = 0; // zero out last pointer to mark end of array
+    tests[0] = download_1_test;
+    tests[1] = tactive_mode_test;
+    tests[2] = 0; // zero out last pointer to mark end of array
 
     // run tests
     struct test_run_t tcp_test_run = {

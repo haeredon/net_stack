@@ -3,7 +3,7 @@ APP = net_stack
 
 # all source are stored in SRCS-y
 SRCS-OVERRIDES-TEST := test/tcp/overrides.c
-SRCS-TEST := test/main.c test/ipv4/test.c test/common.c test/tcp/test.c  test/tcp/utility.c test/tcp/overrides.c test/tcp/tests/download_1/download_1.c
+SRCS-TEST := test/main.c test/ipv4/test.c test/common.c test/tcp/test.c  test/tcp/utility.c test/tcp/overrides.c test/tcp/tests/download_1/download_1.c test/tcp/tests/active_mode/active_mode.c
 SRCS-DEV := main_dev.c worker.c execution_pool.c
 INCLUDES-TEST := -I ./ 
 SRCS-y := main.c worker.c 

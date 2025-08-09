@@ -185,6 +185,7 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
             if(header->control_bits & TCP_SYN_FLAG) {
                 tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
                 header, ipv4_header->source_ip, tcp_listen);
+                tcp_add_transmission_control_block(socket, tcb);
             
                 if(!tcb) {
                     handler->handler_config->mem_free(tcb);

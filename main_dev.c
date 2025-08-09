@@ -30,7 +30,6 @@
 #include <rte_string_fns.h>
 #include <rte_pcapng.h>
 
-
 void* net_stack_malloc(const char *type, size_t size) {
 	return rte_malloc(type, size, 0);
 }
@@ -81,9 +80,9 @@ uint8_t main(int argc, char **argv) {
     // initialize socket
     struct tcp_socket_t* tcp_socket = tcp_create_socket(0, 1337, 0xAAAAAAAA, receive_callback); 
 
-    tcp_socket.socket.handlers[0] = handlers[0]; // ethernet
-    tcp_socket.socket.handlers[1] = handlers[1]; // ipv4
-    tcp_socket.socket.handlers[2] = handlers[2]; // tcp
+    tcp_socket->socket.handlers[0] = handlers[0]; // ethernet
+    tcp_socket->socket.handlers[1] = handlers[1]; // ipv4
+    tcp_socket->socket.handlers[2] = handlers[2]; // tcp
 
     struct ethernet_write_args_t eth_args = {
         .destination = { 0, 0, 0, 0, 0, 0},
@@ -95,15 +94,16 @@ uint8_t main(int argc, char **argv) {
         .protocol = 0xFF       
     };
 
-    tcp_socket.socket->handler_args[0] = &eth_args;
-    tcp_socket.socket->handler_args[1] = &ipv4_args;
+    tcp_socket->socket.handler_args[0] = &eth_args;
+    tcp_socket->socket.handler_args[1] = &ipv4_args;
     // no need for tcp, because those args will be set by the open call to the tcp socket
 
-    tcp_socket.socket.depth = 3;
+    tcp_socket->socket.depth = 3;
+
+    tcp_add_socket(handlers[2], tcp_socket);
+        
+    ///////////////////////////////// CONNECTING TO REMOTE ///////////////////////////////////////
     
-
-    //ConnectionId connectionId = socket->open(socket, handler, remote_ip, port, open_callback):
-
 
     while(1);
     

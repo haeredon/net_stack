@@ -2,12 +2,8 @@
 #define TEST_TCP_TESTS_ACTIVE_HANDSHAKE_ACTIVE_HANDSHAKE_H
 
 
-/*************************************
- *          TEST DATA                *
-**************************************/
 
-/* Frame (74 bytes) */
-static const unsigned char pkt37[0] = {};
+bool tcp_test_active_handshake(struct handler_t* handler, struct test_config_t* config);
 
 
 #endif // TEST_TCP_TESTS_ACTIVE_HANDSHAKE_ACTIVE_HANDSHAKE_H

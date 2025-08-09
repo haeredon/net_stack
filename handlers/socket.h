@@ -12,7 +12,7 @@
 struct socket_t {
     struct interface_t* interface;    
 
-    struct handlers_t* handlers[10];
+    struct handler_t* handlers[10];
     void* handler_args[10];
     uint8_t depth;
 };

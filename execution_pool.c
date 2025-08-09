@@ -38,7 +38,7 @@ struct execution_pool_t create_execution_pool(void* (*mem_allocate)(const char *
     struct execution_context_t** execution_contexts = (struct execution_context_t**) mem_allocate("Execution pool: execution context array", 
         sizeof(struct execution_contexts*) * num_executions);
 
-    for(uint8_t i = 0 ; i < execution_contexts ; i++) {
+    for(uint8_t i = 0 ; i < num_executions ; i++) {
         execution_contexts[i] = create_netstack_thread(mem_allocate);
     }
 

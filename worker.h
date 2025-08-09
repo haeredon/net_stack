@@ -24,11 +24,16 @@ extern volatile bool force_quit;
 
 
 /************************************************************************************ */
+struct task_t {
+    void* argument;
+    void (*run)(void* argument);            
+};
+
 enum Execution_state {
-    STARTING,
-    STOPPED,
-    STOPPING,
-    RUNNING
+    NET_STACK_STARTING,
+    NET_STACK_STOPPED,
+    NET_STACK_STOPPING,
+    NET_STACK_RUNNING
 }; 
 
 struct execution_context_t {

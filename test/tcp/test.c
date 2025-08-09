@@ -62,14 +62,14 @@ bool tcp_tests_start() {
     strncpy(download_1_test->name, "3-Way Handshake, data transfer, and FIN", sizeof("3-Way Handshake, data transfer, and FIN"));    
     download_1_test->test = tcp_test_download_1;
 
-    struct test_t* tactive_mode_test = (struct test_t*) malloc(sizeof(struct test_t));
-    strncpy(tactive_mode_test->name, "3-Way Handshake, data transfer, and FIN", sizeof("3-Way Handshake, data transfer, and FIN"));    
-    tactive_mode_test->test = tcp_test_active_mode;
+    struct test_t* active_mode_test = (struct test_t*) malloc(sizeof(struct test_t));
+    strncpy(active_mode_test->name, "3-Way Handshake, data transfer, and FIN", sizeof("3-Way Handshake, data transfer, and FIN"));    
+    active_mode_test->test = tcp_test_active_mode;
 
     // queue tests
     struct test_t* tests[2];
     tests[0] = download_1_test;
-    tests[1] = tactive_mode_test;
+    tests[1] = active_mode_test;
     tests[2] = 0; // zero out last pointer to mark end of array
 
     // run tests

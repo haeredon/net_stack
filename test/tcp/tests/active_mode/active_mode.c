@@ -12,31 +12,31 @@
 #include "handlers/ethernet/ethernet.h"
 #include "test/tcp/utility.h"
 #include "util/array.h"
-
-struct out_buffer_t* tcp_response_buffer;
-uint8_t out_buffer[2048]; // used for writing
+ 
+static struct out_buffer_t* tcp_response_buffer;
+static uint8_t out_buffer[2048]; // used for writing
 bool connected = false;
 
-bool nothing(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
+static bool nothing(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
     tcp_response_buffer = &packet_stack->out_buffer;
     return true;
 }
 
-uint16_t test_get_tcp_package_payload_length(struct out_buffer_t* buffer) {
+static uint16_t test_get_tcp_package_payload_length(struct out_buffer_t* buffer) {
     struct tcp_header_t* header = (struct tcp_header_t*) ((uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->offset);
     return tcp_response_buffer->size - tcp_response_buffer->offset - get_tcp_header_length(header);
 }
 
-void* test_get_tcp_package_payload(struct out_buffer_t* buffer) {
+static void* test_get_tcp_package_payload(struct out_buffer_t* buffer) {
     struct tcp_header_t* header = (struct tcp_header_t*) ((uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->offset);
     return (uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->offset + get_tcp_header_length(header);  
 }
 
-struct tcp_header_t* test_get_tcp_package(struct out_buffer_t* buffer) {
+static struct tcp_header_t* test_get_tcp_package(struct out_buffer_t* buffer) {
     return (struct tcp_header_t*) ((uint8_t*) tcp_response_buffer->buffer + tcp_response_buffer->offset);
 }
 
-struct in_packet_stack_t create_in_packet_stack(const void* package, struct handler_t* ip_handler) {
+static struct in_packet_stack_t create_in_packet_stack(const void* package, struct handler_t* ip_handler) {
     struct in_packet_stack_t packet_stack = { 
         .in_buffer = { .packet_pointers = get_ipv4_header_from_package(package) }, // we need this extra layer because tcp depends on ip
         .stack_idx = 1, .handlers = ip_handler };
@@ -47,7 +47,7 @@ struct in_packet_stack_t create_in_packet_stack(const void* package, struct hand
     return packet_stack;
 }
 
-
+ 
 void connect_callback() {
     connected = true;
 }
@@ -56,7 +56,7 @@ void receive(uint8_t *data, uint64_t size) {
     // DUMMY, Not called in this test
 }
 
-bool tcp_test_active_handshake(struct handler_t* handler, struct test_config_t* config) {
+bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* config) {
     struct ipv4_header_t* ipv4_first_header = get_ipv4_header_from_package(pkt1);
     struct tcp_header_t* tcp_first_header = get_tcp_header_from_package(pkt1);
     struct tcp_header_t* tcp_second_header = get_tcp_header_from_package(pkt2);

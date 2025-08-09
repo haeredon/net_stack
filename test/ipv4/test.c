@@ -22,17 +22,17 @@
 //     010. .... = Flags: 0x2, Don't fragment
 //     ...0 0000 0000 0000 = Fragment Offset: 0
 //     Time to Live: 64
-//     Protocol: TCP (6)
+//     Protocol: TCP (6) 
 //     Header Checksum: 0xa6ce [correct]
 //     [Header checksum status: Good]
-//     [Calculated Checksum: 0xa6ce]
+//     [Calculated Checksum: 0xa6ce]  
 //     Source Address: 192.168.0.117
 //     Destination Address: 32.32.32.32
 static const unsigned char ipv4_1_req[20] = {
     0x45, 0x00, 0x00, 0x14, 0x92, 0xb8, 0x40, 0x00,
     0x40, 0x06, 0xa6, 0xce, 0xc0, 0xa8, 0x00, 0x75, 
     0x20, 0x20, 0x20, 0x20                                      
-};
+}; 
 
 // Internet Protocol Version 4, Src: 32.32.32.32, Dst: 192.168.0.117
 //     0100 .... = Version: 4

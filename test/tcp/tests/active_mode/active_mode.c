@@ -64,7 +64,7 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
     // mock write callbacks
     handler->handler_config->write = 0;
     // generated sequence number must be whatever which is in the response to the first header
-    current_sequence_number = 1; 
+    current_sequence_number = ntohl(tcp_first_header->sequence_num); 
     // also get window from response package
     ((struct tcp_priv_t*) handler->priv)->window = 1024; // change for whatever is in the dump
 

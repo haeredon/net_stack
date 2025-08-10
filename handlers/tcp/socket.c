@@ -168,14 +168,17 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
     // initiate a handshake    
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
                 mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
+    
+    struct tcp_write_args_t tcp_args = {
+        .connection_id = connection_id,
+        .socket = socket,
+        .flags = TCP_SYN_FLAG
+    };    
+
+    socket->socket.handler_args[socket->socket.depth - 1] = &tcp_args;
 
     memcpy(out_package_stack->handlers, socket->socket.handlers, 10 * sizeof(struct handler_t*));
     memcpy(out_package_stack->args, socket->socket.handler_args, 10 * sizeof(void*));
-
-    struct tcp_write_args_t* tcp_args = socket->socket.handler_args[socket->socket.depth - 1];
-    tcp_args->connection_id = connection_id;
-    tcp_args->socket = socket;
-    tcp_args->flags = TCP_SYN_FLAG;
 
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
@@ -185,7 +188,7 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
 
     tcp_add_transmission_control_block(socket, tcb);
     
-    if(handler->operations.write(out_package_stack, socket->socket.interface, handler)) {
+    if(!handler->operations.write(out_package_stack, socket->socket.interface, handler)) {
         NETSTACK_LOG(NETSTACK_ERROR, "TCP: Could not open socket connection\n");   
         return 0;
     } else {

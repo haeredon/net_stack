@@ -12,6 +12,9 @@
 #include <arpa/inet.h>
 
 
+uint16_t tcp_established(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
+uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
+
 bool is_acknowledgement_valid(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header) {
     uint32_t acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
 
@@ -172,7 +175,7 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
         bool ack_acceptable = false;
 
         if(tcp_header->control_bits & TCP_ACK_FLAG) {            
-            uint32_t acknowledgement_num = nthol(tcp_header->acknowledgement_num);
+            uint32_t acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
 
             if(acknowledgement_num <= tcb->send_initial_sequence_num ||
                acknowledgement_num > tcb->send_next) {

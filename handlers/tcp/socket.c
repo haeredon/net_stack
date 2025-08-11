@@ -224,17 +224,17 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
     return handler->operations.write(out_package_stack, socket->socket.interface, handler);
 }
 
-void tcp_socket_close(struct socket_t* socket, uint32_t connection_id) {
+void tcp_socket_close(struct tcp_socket_t* socket, uint32_t connection_id) {
     // send FINISH
     // potential clean up    
 }
 
-void tcp_socket_abort(struct socket_t* socket, uint32_t connection_id) {
+void tcp_socket_abort(struct tcp_socket_t* socket, uint32_t connection_id) {
     // send RESET
     // potential clean up    
 }
 
-void tcp_socket_status(struct socket_t* socket, uint32_t connection_id) {
+void tcp_socket_status(struct tcp_socket_t* socket, uint32_t connection_id) {
     // return some status from TCB
 }
 

@@ -149,7 +149,7 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     return false;     
 }
 
-uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port, void(*connect_callback)()) {    
+uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port) {    
     // create connection id
     uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, port, socket->ipv4);
 
@@ -163,7 +163,7 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
 
     // create a TCB somehow        
     struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
-                &initial_header, remote_ip, tcp_close);
+                &initial_header, remote_ip, tcp_syn_sent);
             
     // initiate a handshake    
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
@@ -199,6 +199,8 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
 }
 
 bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size) {
+    // if state is SYN-SENT STATE SYN-RECEIVED STATE, then queue the request to be sent when connection has been established
+
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("send package: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
 
     memcpy(out_package_stack->handlers, socket->socket.handlers, 10 * sizeof(struct handler_t*));
@@ -238,14 +240,15 @@ void tcp_socket_status(struct socket_t* socket, uint32_t connection_id) {
 
 
 struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
-    void (*receive)(uint8_t* data, uint64_t size)) {
+    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)()) {
         struct tcp_socket_t* socket = (struct tcp_socket_t*) NET_STACK_MALLOC("TCP socket", sizeof(struct tcp_socket_t));
 
         socket->ipv4 = ipv4,
         socket->port = port,
         socket->next_handler = next_handler, // deprecated
         socket->operations.connect = tcp_socket_connect,
-        socket->operations.receive = receive;
+        socket->operations.on_receive = on_receive;
+        socket->operations.on_connect = on_connect;
         socket->operations.close = tcp_socket_close;
         socket->operations.abort = tcp_socket_abort;
         socket->operations.status = tcp_socket_status;

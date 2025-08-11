@@ -132,6 +132,106 @@ uint16_t tcp_close_wait(struct handler_t* handler, struct transmission_control_b
     return 0;
 }
 
+void tcp_receive_payload(struct handler_t* handler, struct tcp_socket_t* socket, 
+    struct transmission_control_block_t* tcb, struct in_packet_stack_t* packet_stack, 
+    struct interface_t* interface,
+    void* payload, uint16_t payload_size) {                       
+    
+    struct handler_t* next_handler = socket->next_handler;
+
+    tcb->receive_next += payload_size;
+    tcb->receive_window -= payload_size;
+    
+    tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
+
+    // fill in write arguments for possible future write based on this read
+    struct tcp_write_args_t tcp_args = {
+        .connection_id = tcb->id,
+        .socket = socket,
+        .flags = TCP_ACK_FLAG
+    };
+    packet_stack->return_args[packet_stack->stack_idx] = &tcp_args;
+
+    // set next buffer pointer for next protocol level     
+    packet_stack->stack_idx++;
+    packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = payload;                        
+
+    // call next protocol level, tls, http, app specific etc.
+    socket->next_handler->operations.read(packet_stack, interface, next_handler);
+}
+
+uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
+    if(num_ready) {
+        struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
+
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx - 1];
+
+        struct tcp_socket_t* socket = tcp_get_socket(handler, ipv4_header->destination_ip, tcp_header->destination_port);
+
+        bool ack_acceptable = false;
+
+        if(tcp_header->control_bits & TCP_ACK_FLAG) {            
+            uint32_t acknowledgement_num = nthol(tcp_header->acknowledgement_num);
+
+            if(acknowledgement_num <= tcb->send_initial_sequence_num ||
+               acknowledgement_num > tcb->send_next) {
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_RST_FLAG, packet_stack->stack_idx, interface);
+                return 0;
+            } 
+
+            ack_acceptable = true;
+        } 
+        
+        if(tcp_header->control_bits & TCP_RST_FLAG) {
+            if(ack_acceptable) {                
+                // signal user that connection has been terminated
+                tcp_delete_transmission_control_block(handler, socket, tcb->id);
+                return 0;
+            } else {
+                tcp_block_buffer_remove_front(tcb->in_buffer, 1); 
+                return 0;
+            }
+        }
+
+        if(tcp_header->control_bits & TCP_SYN_FLAG) {
+            tcb->receive_initial_sequence_num = ntohl(tcp_header->sequence_num);
+            tcb->receive_next = tcb->receive_initial_sequence_num + 1; 
+
+            if(tcp_header->control_bits & TCP_ACK_FLAG) {
+                tcb->send_unacknowledged = ntohl(tcp_header->acknowledgement_num);
+            }
+
+            if(tcb->send_unacknowledged > tcb->send_initial_sequence_num) {                
+                tcb->state_function = tcp_established;
+
+                uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
+                
+                if(payload_size) {
+                    tcp_receive_payload(handler, socket, tcb, packet_stack, interface, tcp_get_payload(tcp_header), payload_size);
+                } else {
+                    tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
+                }
+            } else {
+                tcb->state_function = tcp_syn_received;
+
+                tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_SYN_FLAG | TCP_ACK_FLAG, packet_stack->stack_idx, interface);
+
+                tcb->send_window = ntohl(tcp_header->window);
+                tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
+                tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
+            }
+        }
+
+        if((!tcp_header->control_bits & (TCP_SYN_FLAG | TCP_RST_FLAG))) {
+            tcp_block_buffer_remove_front(tcb->in_buffer, 1); 
+        }
+
+        return 0;
+    }
+
+    return 1;
+}
 
 uint16_t tcp_established(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
     struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
@@ -156,7 +256,7 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                 return 0;
             } else if(tcp_header->control_bits & TCP_SYN_FLAG) {                
                 tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
-                tcp_block_buffer_remove_front(tcb->in_buffer, 1);
+                tcp_block_buffer_remove_front(tcb->in_buffer, 1);                
                 return 0;
             } else if(tcp_header->control_bits & TCP_ACK_FLAG) {
                 // we do not check for the RFC 5961 blind data injection 
@@ -185,28 +285,8 @@ uint16_t tcp_established(struct handler_t* handler, struct transmission_control_
                     }
 
                     // if the package contains a payload, pass it to next handler
-                    if(payload_size) {                        
-                        struct handler_t* next_handler = socket->next_handler;
-
-                        tcb->receive_next += payload_size;
-                        tcb->receive_window -= payload_size;
-                        
-                        tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
-
-                        // fill in write arguments for possible future write based on this read
-                        struct tcp_write_args_t tcp_args = {
-                            .connection_id = tcb->id,
-                            .socket = socket,
-                            .flags = TCP_ACK_FLAG
-                        };
-                        packet_stack->return_args[packet_stack->stack_idx] = &tcp_args;
-
-                        // set next buffer pointer for next protocol level     
-                        packet_stack->stack_idx++;
-                        packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = tcp_get_payload(tcp_header);                        
-
-                        // call next protocol level, tls, http, app specific etc.
-                        socket->next_handler->operations.read(packet_stack, interface, next_handler);
+                    if(payload_size) {    
+                        tcp_receive_payload(handler, socket, tcb, packet_stack, interface, tcp_get_payload(tcp_header), payload_size);                    
                     }                        
                 }
             } 

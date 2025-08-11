@@ -50,9 +50,10 @@ struct transmission_control_block_t {
 
 // IF WE GET MORE THAN ONE SOCKET. THIS MUST BE AUTO GENERATED WITH A MACRO
 struct socket_operations_t {
-    uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port, void(*open_callback)());
+    uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port);
     bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);
-    void (*receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
+    void (*on_receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
+    void (*on_connect)();
     void (*close)(struct tcp_socket_t* socket, uint32_t connection_id);
     void (*abort)(struct tcp_socket_t* socket, uint32_t connection_id);
     void (*status)(struct tcp_socket_t* socket, uint32_t connection_id);
@@ -92,7 +93,7 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
 struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
-    void (*receive)(uint8_t* data, uint64_t size));
+    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)());
 
 
 #endif // HANDLERS_TCP_SOCKET_H

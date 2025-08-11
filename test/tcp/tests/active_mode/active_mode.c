@@ -85,7 +85,7 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
     
       
     // set up tcp socket 
-    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->source_port, ipv4_first_header->source_ip, receive); 
+    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->source_port, ipv4_first_header->source_ip, receive, connect_callback); 
 
     tcp_socket->socket.handlers[0] = ip_handler; // ipv4
     tcp_socket->socket.handlers[1] = handler; // tcp
@@ -107,8 +107,7 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
     // 1st (SYN)
     uint32_t connection_id = tcp_socket->operations.connect(handler, tcp_socket, 
         ipv4_first_header->destination_ip, 
-        tcp_first_header->destination_port, 
-        connect_callback);
+        tcp_first_header->destination_port);
 
     if(!connection_id) {
         return false;

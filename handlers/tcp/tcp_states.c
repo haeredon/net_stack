@@ -63,13 +63,37 @@ bool tcp_internal_write(struct handler_t* handler, struct in_packet_stack_t* pac
 }
 
 uint16_t tcp_close(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    NETSTACK_LOG(NETSTACK_ERROR, "TCP: tcp_close() not implemented.\n");   
-    return -1;
+    while(num_ready--) {
+        struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
+
+        struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];
+        struct ipv4_header_t* ipv4_header = (struct ipv4_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx - 1];
+
+        uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
+
+        struct tcp_socket_t* socket = tcp_get_socket(handler, ipv4_header->destination_ip, tcp_header->destination_port);
+    
+        if(!(tcp_header->control_bits & TCP_RST_FLAG)) {
+            uint8_t control_bits = TCP_RST_FLAG;
+
+            if(tcp_header->control_bits & TCP_ACK_FLAG) {
+                tcb->send_next = ntohl(tcp_header->acknowledgement_num);
+            } else {
+                tcb->send_next = 0;
+                tcb->receive_next = ntohl(tcp_header->sequence_num) + payload_size;
+                control_bits |= TCP_ACK_FLAG;
+            }
+
+            tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_RST_FLAG, packet_stack->stack_idx, interface);
+        }
+
+        tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
+    }
+
+    return 0;
 }
 
 uint16_t tcp_close_wait(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
-    
     while(num_ready--) {
         struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
@@ -237,9 +261,7 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
 }
 
 uint16_t tcp_established(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
-    struct tcp_block_t* incoming_packets = (struct tcp_block_t*) tcp_block_buffer_get_head(tcb->in_buffer);
-    
-    while(num_ready--) {
+     while(num_ready--) {
         struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
         struct tcp_header_t* tcp_header = (struct tcp_header_t*) packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx];

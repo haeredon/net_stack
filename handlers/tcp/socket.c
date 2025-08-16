@@ -45,6 +45,8 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
     tcb->receive_urgent_pointer = initial_header ? initial_header->urgent_pointer : 0;                  
     tcb->receive_next = tcb->receive_initial_sequence_num;                      
 
+    tcb->fin_num = 0;
+
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
     tcb->out_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
     

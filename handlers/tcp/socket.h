@@ -36,7 +36,11 @@ struct transmission_control_block_t {
     uint16_t receive_urgent_pointer;
     uint32_t receive_initial_sequence_num;
 
+    uint32_t fin_num; // if a fin has been sent, then this is the sequence number of it
+
     enum TCP_STATE state;
+
+    bool active_mode;
 
     struct tcp_block_buffer_t* out_buffer;
     struct tcp_block_buffer_t* in_buffer;
@@ -54,6 +58,7 @@ struct socket_operations_t {
     bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);
     void (*on_receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
     void (*on_connect)();
+    void (*on_close)();
     void (*close)(struct tcp_socket_t* socket, uint32_t connection_id);
     void (*abort)(struct tcp_socket_t* socket, uint32_t connection_id);
     void (*status)(struct tcp_socket_t* socket, uint32_t connection_id);

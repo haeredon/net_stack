@@ -11,8 +11,6 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-uint16_t tcp_established(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
-uint16_t tcp_syn_received(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 
 bool is_acknowledgement_valid(struct transmission_control_block_t* tcb, struct tcp_header_t* tcp_header) {
     uint32_t acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
@@ -163,7 +161,8 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
             }
 
             if(tcb->send_unacknowledged > tcb->send_initial_sequence_num) {                
-                tcb->state_function = tcp_established;
+                tcb->state = ESTABLISHED;
+                tcb->state_function = tcp_others;                
 
                 uint16_t payload_size = tcp_get_payload_length(ipv4_header, tcp_header);
                 
@@ -173,7 +172,8 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
                     tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
                 }
             } else {
-                tcb->state_function = tcp_syn_received;
+                tcb->state = SYN_RECEIVED;
+                tcb->state_function = tcp_others;
 
                 tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_SYN_FLAG | TCP_ACK_FLAG, packet_stack->stack_idx, interface);
 
@@ -194,7 +194,7 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
 }
 
 
-uint16_t kage(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
+uint16_t tcp_others(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
      while(num_ready--) {
         struct in_packet_stack_t* packet_stack = (struct in_packet_stack_t*) tcp_block_buffer_get_head(tcb->in_buffer)->data;
 
@@ -244,11 +244,7 @@ uint16_t kage(struct handler_t* handler, struct transmission_control_block_t* tc
 
                 bool ackOk = acknowledgement_num <= tcb->send_next && acknowledgement_num > tcb->send_unacknowledged;
 
-                if(state == ESTABLISHED || state == FIN_WAIT_1 || state == FIN_WAIT_2 || state == CLOSE_WAIT || state == CLOSING) {
-                    if(ackOk) {
-                        tcb->send_unacknowledged = acknowledgement_num;
-                    }
-
+                if(state == ESTABLISHED || state == FIN_WAIT_1 || state == FIN_WAIT_2 || state == CLOSE_WAIT || state == CLOSING) {                    
                     // acknowledgement of something which has not yet been send
                     if(acknowledgement_num > tcb->send_next) {
                         tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
@@ -267,79 +263,80 @@ uint16_t kage(struct handler_t* handler, struct transmission_control_block_t* tc
                             tcb->send_last_update_acknowledgement_num = tcb->send_last_update_acknowledgement_num;
                         }
                     }
-
-                    if(acknowledgement_num <= tcb->send_unacknowledged) {
-                        tcp_block_buffer_remove_front(tcb->in_buffer, 1);                
-                        continue;
+                    
+                    if(ackOk) {
+                        tcb->send_unacknowledged = acknowledgement_num;
                     }
 
-                    if(FIN_WAIT_1) {
+                    if(state == FIN_WAIT_1) {
                         // if this is an acknowledgement of a previous sent FIN
                         if(tcb->fin_num && acknowledgement_num >= tcb->fin_num) {
                             tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
                             tcb->state = FIN_WAIT_2;
                         }
-                    } else if(FIN_WAIT_2) {
+                    } else if(state == FIN_WAIT_2) {
                         // if the retransmission queue is empty, then report a close to the user 
                         if(tcb->send_next == tcb->send_last_update_acknowledgement_num) {
                             socket->operations.on_close();
                         }
-                    } else if(CLOSING) {
+                    } else if(state == CLOSING) {
                         // if this is an acknowledgement of a previous sent FIN
                         if(tcb->fin_num && acknowledgement_num >= tcb->fin_num) {
                             tcp_block_buffer_remove_front(tcb->in_buffer, 1);  
                             tcb->state = TIME_WAIT;
                         }
-                    } else if(SYN_RECEIVED) {
-                        if(!ackOk) {
-                            tcb->send_next = ntohl(tcp_header->acknowledgement_num);                            
-                            tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_RST_FLAG, packet_stack->stack_idx, interface);
-                        } else {
-                            tcb->send_window = ntohs(tcp_header->window);
-                            tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
-                            tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
-
-                            tcb->state = ESTABLISHED;
-                        }
-                    } else if(LAST_ACK) {
+                    } else if(state == LAST_ACK) {
                         // if this is an acknowledgement of a previous sent FIN
                         if(tcb->fin_num && acknowledgement_num >= tcb->fin_num) {
                             tcb->state == CLOSED;
                             return 0;
                         }
-                    } else if(TIME_WAIT) {
+                    } else if(state == TIME_WAIT) {
                         // if this is an acknowledgement of a previous sent FIN
                         if(tcb->fin_num && acknowledgement_num >= tcb->fin_num) {
                             tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
                             // TODO: restart timer
                         }                        
                     } 
-                } else {
-                    tcp_block_buffer_remove_front(tcb->in_buffer, 1);                
-                    continue;
+                } else if(state == SYN_RECEIVED) {
+                    if(!ackOk) {
+                        tcb->send_next = ntohl(tcp_header->acknowledgement_num);                            
+                        tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_RST_FLAG, packet_stack->stack_idx, interface);
+                    } else {
+                        tcb->send_window = ntohs(tcp_header->window);
+                        tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
+                        tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
+
+                        tcb->state = ESTABLISHED;
+                    }
                 }
+            } else {
+                tcp_block_buffer_remove_front(tcb->in_buffer, 1);                
+                continue;
             }
 
             if(payload_size) {
-                if(ESTABLISHED || FIN_WAIT_1 || FIN_WAIT_2) {
+                if(state == ESTABLISHED || state == FIN_WAIT_1 || state == FIN_WAIT_2) {
                     tcp_receive_payload(handler, socket, tcb, packet_stack, interface, tcp_get_payload(tcp_header), payload_size);                    
                 }
             }
             
             if(tcp_header->control_bits & TCP_FIN_FLAG) {
-                if(CLOSED || LISTEN || SYN_SENT) {
+                if(state == CLOSED || state == LISTEN || state == SYN_SENT) {
                     tcp_block_buffer_remove_front(tcb->in_buffer, 1);                
                     continue;
                 }
                 
-                tcb->receive_next = ntohl(tcp_header->sequence_num) + 1;       
+                tcb->receive_next = ntohl(tcp_header->sequence_num) + 1;
                 tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG | TCP_FIN_FLAG, packet_stack->stack_idx, interface);
+
+                tcb->send_next++;
 
                 socket->operations.on_close();
 
-                if(ESTABLISHED) {
+                if(state == ESTABLISHED) {
                     tcb->state = CLOSE_WAIT;             
-                } else if(FIN_WAIT_1) {
+                } else if(state == FIN_WAIT_1) {
                     uint32_t acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
                     // if this is an acknowledgement of a previous sent FIN
                     if(tcb->fin_num && acknowledgement_num >= tcb->fin_num) {
@@ -347,9 +344,9 @@ uint16_t kage(struct handler_t* handler, struct transmission_control_block_t* tc
                     } else {
                         tcb->state = CLOSING;
                     }
-                } else if(FIN_WAIT_2) {
+                } else if(state == FIN_WAIT_2) {
                     tcb->state = TIME_WAIT;
-                } else if(TIME_WAIT) {
+                } else if(state == TIME_WAIT) {
                     // TODO: restart timer
                 } 
             }
@@ -390,7 +387,8 @@ uint16_t tcp_listen(struct handler_t* handler, struct transmission_control_block
             tcb->receive_next = tcb->receive_initial_sequence_num + 1; 
             tcb->receive_urgent_pointer = 0;
 
-            tcb->state_function = tcp_syn_received;
+            tcb->state = SYN_RECEIVED;
+            tcb->state_function = tcp_others;
 
             tcb->send_next = tcb->send_initial_sequence_num;
 

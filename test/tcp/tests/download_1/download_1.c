@@ -66,6 +66,13 @@ static struct out_packet_stack_t create_out_packet_stack(struct handler_t* ip_ha
     return out_packet_stack;
 }
 
+
+static void connect_callback() {}
+
+static void on_close(uint8_t *data, uint64_t size) {}
+
+static void receive(uint8_t *data, uint64_t size) {}
+
 bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config) {
     struct ipv4_header_t* ipv4_first_header = get_ipv4_header_from_package(pkt37);
     struct tcp_header_t* tcp_first_header = get_tcp_header_from_package(pkt37);
@@ -97,18 +104,15 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
     ip_handler->operations.write = nothing;
 
     // add mock socket
-    struct tcp_socket_t socket = {
-        .ipv4 = ipv4_first_header->destination_ip,
-        .port = tcp_first_header->destination_port,
-        .trans_control_block = 0
-    };
-    socket.next_handler = custom_handler;
-    tcp_add_socket(handler, &socket);
+    // set up tcp socket 
+    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->destination_port, ipv4_first_header->destination_ip, receive, connect_callback, on_close); 
+    tcp_socket->next_handler = custom_handler;
+    tcp_add_socket(handler, tcp_socket);
 
     // add arguments for socket writes
     struct tcp_write_args_t tcp_args = {
         .connection_id = tcp_shared_calculate_connection_id(ipv4_first_header->source_ip, tcp_first_header->source_port, tcp_first_header->destination_port),
-        .socket = &socket,
+        .socket = tcp_socket,
         .flags = TCP_ACK_FLAG | TCP_PSH_FLAG
     };
 
@@ -348,7 +352,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
         return false;
     }
 
-    // 14TH (ACK-PSH (change_cipher), ACK) PCAPNH(16)
+    // 14TH (ACK-PSH (change_cipher), ACK-PSH) PCAPNH(16)
     packet_stack = create_in_packet_stack(pkt52, ip_handler);
     expected_tcp_header = get_tcp_header_from_package(pkt54);
     expected_tcp_payload = get_tcp_payload_payload_from_package(pkt54);

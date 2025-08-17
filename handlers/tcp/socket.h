@@ -83,7 +83,7 @@ struct tcp_socket_t {
 
 struct transmission_control_block_t* tcp_create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
-        uint32_t source_ip, void* listen_state_function);
+        uint32_t source_ip, enum TCP_STATE state);
 
 struct transmission_control_block_t* tcp_get_transmission_control_block(struct tcp_socket_t* socket, uint32_t connection_id);
 
@@ -98,7 +98,7 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
 struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
-    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)());
+    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)(), void (*on_close)());
 
 
 #endif // HANDLERS_TCP_SOCKET_H

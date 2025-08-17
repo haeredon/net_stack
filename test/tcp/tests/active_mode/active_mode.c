@@ -52,6 +52,10 @@ void connect_callback() {
     connected = true;
 }
 
+void on_close(uint8_t *data, uint64_t size) {
+    // DUMMY, Not called in this test
+}
+
 void receive(uint8_t *data, uint64_t size) {
     // DUMMY, Not called in this test
 }
@@ -85,7 +89,7 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
     
       
     // set up tcp socket 
-    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->source_port, ipv4_first_header->source_ip, receive, connect_callback); 
+    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->source_port, ipv4_first_header->source_ip, receive, connect_callback, on_close); 
 
     tcp_socket->socket.handlers[0] = ip_handler; // ipv4
     tcp_socket->socket.handlers[1] = handler; // tcp

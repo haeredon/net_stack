@@ -18,7 +18,7 @@ void delete_transmission_control_block(struct handler_t* handler, struct transmi
 
 struct transmission_control_block_t* tcp_create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 
         uint32_t connection_id, const struct tcp_header_t* initial_header, 
-        uint32_t source_ip, void* state_function) {
+        uint32_t source_ip, enum TCP_STATE state) {
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
     
     struct transmission_control_block_t* tcb = 
@@ -50,7 +50,22 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
     tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
     tcb->out_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
     
-    tcb->state_function = state_function;                              
+    tcb->state = state;
+
+    switch(tcb->state) {
+        case LISTEN:
+            tcb->state_function = tcp_listen;
+            break;
+        case SYN_SENT:
+            tcb->state_function = tcp_syn_sent;
+            break;
+        case CLOSED:
+            tcb->state_function = tcp_close;
+            break;
+        default:
+            tcb->state_function = tcp_others;
+            break;
+    }
 
     return tcb;
 }
@@ -165,7 +180,7 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
 
     // create a TCB somehow        
     struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
-                &initial_header, remote_ip, tcp_syn_sent);
+                &initial_header, remote_ip, SYN_SENT);
             
     // initiate a handshake    
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
@@ -242,7 +257,7 @@ void tcp_socket_status(struct tcp_socket_t* socket, uint32_t connection_id) {
 
 
 struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
-    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)()) {
+    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)(), void (*on_close)()) {
         struct tcp_socket_t* socket = (struct tcp_socket_t*) NET_STACK_MALLOC("TCP socket", sizeof(struct tcp_socket_t));
 
         socket->ipv4 = ipv4,
@@ -251,6 +266,7 @@ struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t 
         socket->operations.connect = tcp_socket_connect,
         socket->operations.on_receive = on_receive;
         socket->operations.on_connect = on_connect;
+        socket->operations.on_close = on_close;
         socket->operations.close = tcp_socket_close;
         socket->operations.abort = tcp_socket_abort;
         socket->operations.status = tcp_socket_status;

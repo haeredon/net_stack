@@ -166,22 +166,23 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     return false;     
 }
 
-uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t remote_ip, uint16_t port) {    
+uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t local_port, uint32_t remote_ip, uint16_t remote_port) {    
     // create connection id
-    uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, port, socket->ipv4);
+    uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, remote_port, local_port);
 
-    // stub tcp header for tcb initialization of active mode
+    // stub tcp header for tcb initialization of active mode. This is the supposed incoming remote header to kick 
+    // of the connection
     struct tcp_header_t initial_header = {
         .window = 0,
         .urgent_pointer = 0,
-        .source_port = port,
+        .source_port = remote_port,
         .window = 0
     };
 
     // create a TCB somehow        
     struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
                 &initial_header, remote_ip, SYN_SENT);
-            
+                
     // initiate a handshake    
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
                 mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
@@ -209,10 +210,9 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
         NETSTACK_LOG(NETSTACK_ERROR, "TCP: Could not open socket connection\n");   
         return 0;
     } else {
+        tcb->send_next++; // we send a SYN, which count as 1 sequence number
         return connection_id;
     };
-
-    return connection_id;
 }
 
 bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size) {

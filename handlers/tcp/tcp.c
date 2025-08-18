@@ -200,6 +200,10 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
 
         uint16_t tcp_payload_size = tcp_get_payload_length(ipv4_header, header);
         tcp_block_buffer_add(tcb->in_buffer, packet_stack, header->sequence_num, tcp_payload_size);
+
+        if(tcb->state == SYN_SENT) {
+            tcb->receive_next = ntohl(header->sequence_num);
+        }
         
         uint16_t num_ready = tcp_block_buffer_num_ready(tcb->in_buffer, tcb->receive_next);
         

@@ -110,6 +110,7 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
 
     // 1st (SYN)
     uint32_t connection_id = tcp_socket->operations.connect(handler, tcp_socket, 
+        tcp_first_header->source_port,
         ipv4_first_header->destination_ip, 
         tcp_first_header->destination_port);
 

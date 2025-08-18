@@ -171,6 +171,8 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
                 } else {
                     tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_ACK_FLAG, packet_stack->stack_idx, interface);
                 }
+
+                socket->operations.on_connect();
             } else {
                 tcb->state = SYN_RECEIVED;
                 tcb->state_function = tcp_others;

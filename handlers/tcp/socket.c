@@ -219,22 +219,24 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
     // if state is SYN-SENT STATE SYN-RECEIVED STATE, then queue the request to be sent when connection has been established
 
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("send package: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
+    struct handler_t* handler = socket->socket.handlers[socket->socket.depth - 1];
+    
+    struct tcp_write_args_t tcp_args = {
+        .connection_id = connection_id,
+        .socket = socket,
+        .flags = TCP_ACK_FLAG | TCP_PSH_FLAG
+    };    
+
+    socket->socket.handler_args[socket->socket.depth - 1] = &tcp_args;
 
     memcpy(out_package_stack->handlers, socket->socket.handlers, 10 * sizeof(struct handler_t*));
     memcpy(out_package_stack->args, socket->socket.handler_args, 10 * sizeof(void*));
 
-    struct handler_t* handler = socket->socket.handlers[socket->socket.depth - 1];
-    
-    struct tcp_write_args_t* tcp_args = socket->socket.handler_args[socket->socket.depth - 1];
-    tcp_args->connection_id = connection_id;
-    tcp_args->socket = socket;
-    tcp_args->flags = TCP_PSH_FLAG;
-
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
-    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
+    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE - size;          
 
-    memcpy((uint8_t*) (out_package_stack->out_buffer.buffer) - size, buffer, size);
+    memcpy((uint8_t*) (out_package_stack->out_buffer.buffer) + out_package_stack->out_buffer.offset, buffer, size);
 
     out_package_stack->stack_idx = socket->socket.depth - 1;
 
@@ -270,6 +272,7 @@ struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t 
         socket->operations.close = tcp_socket_close;
         socket->operations.abort = tcp_socket_abort;
         socket->operations.status = tcp_socket_status;
+        socket->operations.send = tcp_socket_send;
 
         int init_lock_res = pthread_mutex_init(&socket->tcb_list_lock, 0);
 

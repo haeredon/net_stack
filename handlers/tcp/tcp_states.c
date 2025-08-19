@@ -178,11 +178,11 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
                 tcb->state_function = tcp_others;
 
                 tcp_internal_write(handler, packet_stack, socket, tcb->id, TCP_SYN_FLAG | TCP_ACK_FLAG, packet_stack->stack_idx, interface);
-
-                tcb->send_window = ntohl(tcp_header->window);
-                tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
-                tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
             }
+
+            tcb->send_window = ntohs(tcp_header->window);
+            tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
+            tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
         }
 
         if((!tcp_header->control_bits & (TCP_SYN_FLAG | TCP_RST_FLAG))) {

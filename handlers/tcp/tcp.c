@@ -120,7 +120,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
     out_header->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
     out_header->window = htons(tcb->receive_window);
     out_header->urgent_pointer = 0; // Not supported
-    out_header->control_bits = tcp_args->flags;
+    out_header->control_bits = tcp_args->flags; 
 
     out_header->sequence_num = htonl(tcb->send_next);
     out_header->acknowledgement_num = htonl(tcb->receive_next);
@@ -132,7 +132,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
 
     out_header->checksum = _tcp_calculate_checksum(out_header, tcp_args->socket->ipv4, tcb->remote_ipv4);
     
-    memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t));
+    memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t)); 
     out_buffer->offset -= sizeof(struct tcp_header_t);
    
     // add buffer to outgoing block buffer
@@ -208,7 +208,7 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
         uint16_t num_ready = tcp_block_buffer_num_ready(tcb->in_buffer, tcb->receive_next);
         
         if(num_ready) {
-            return tcb->state_function(handler, tcb, num_ready, interface);
+            return tcb->state_function(handler, tcb, num_ready, interface); 
         }
     }
 

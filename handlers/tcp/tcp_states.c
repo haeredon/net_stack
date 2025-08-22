@@ -115,7 +115,9 @@ void tcp_receive_payload(struct handler_t* handler, struct tcp_socket_t* socket,
     packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = payload;                        
 
     // call next protocol level, tls, http, app specific etc.
-    socket->next_handler->operations.read(packet_stack, interface, next_handler);
+    if(socket->next_handler) {        
+        socket->next_handler->operations.read(packet_stack, interface, next_handler);        
+    }    
 }
 
 uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface) {
@@ -183,6 +185,8 @@ uint16_t tcp_syn_sent(struct handler_t* handler, struct transmission_control_blo
             tcb->send_window = ntohs(tcp_header->window);
             tcb->send_last_update_sequence_num = ntohl(tcp_header->sequence_num);
             tcb->send_last_update_acknowledgement_num = ntohl(tcp_header->acknowledgement_num);
+
+            tcp_block_buffer_remove_front(tcb->in_buffer, 1); 
         }
 
         if((!tcp_header->control_bits & (TCP_SYN_FLAG | TCP_RST_FLAG))) {

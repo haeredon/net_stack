@@ -264,7 +264,7 @@ struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t 
 
         socket->ipv4 = ipv4,
         socket->port = port,
-        socket->next_handler = next_handler, // deprecated
+        socket->next_handler = next_handler, 
         socket->operations.connect = tcp_socket_connect,
         socket->operations.on_receive = on_receive;
         socket->operations.on_connect = on_connect;

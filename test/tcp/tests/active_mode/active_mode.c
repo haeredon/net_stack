@@ -204,26 +204,8 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
         return false;
     }
 
-    // 5th
-    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt8);
-    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt8);
-
-    if(!tcp_socket->operations.send(tcp_socket, connection_id, expected_tcp_payload, expected_tcp_payload_length)) {
-        return false;
-    }
-
-    expected_tcp_header = get_tcp_header_from_package(pkt8);
-    tcp_header_buffer = test_get_tcp_package(tcp_response_buffer);
-    actual_tcp_payload_length = test_get_tcp_package_payload_length(tcp_response_buffer);
-    actual_tcp_payload = test_get_tcp_package_payload(tcp_response_buffer);
-
-    if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) || 
-       (expected_tcp_payload_length == actual_tcp_payload_length && 
-       memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
-        return false;
-    }
-
-    packet_stack = create_in_packet_stack(pkt9, ip_handler);
+    // 5th (PSH-ACK, ACK) (8,9)
+    packet_stack = create_in_packet_stack(pkt8, ip_handler);
 
     // no reponse for this one, so we empty the buffer and check if it stays empty
     memset(tcp_response_buffer->buffer, 0 , tcp_response_buffer->size);
@@ -232,7 +214,17 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
         return false;
     }
 
-    if(!array_is_zero(tcp_response_buffer->buffer, tcp_response_buffer->size)) {
+    expected_tcp_header = get_tcp_header_from_package(pkt9);
+    expected_tcp_payload = get_tcp_payload_payload_from_package(pkt9);
+    expected_tcp_payload_length = get_tcp_payload_length_from_package(pkt9);
+    
+    tcp_header_buffer = test_get_tcp_package(tcp_response_buffer);
+    actual_tcp_payload_length = test_get_tcp_package_payload_length(tcp_response_buffer);
+    actual_tcp_payload = test_get_tcp_package_payload(tcp_response_buffer);
+
+    if(!is_tcp_header_equal(tcp_header_buffer, expected_tcp_header, &ignores) || 
+       (expected_tcp_payload_length == actual_tcp_payload_length && 
+       memcmp(expected_tcp_payload, actual_tcp_payload, expected_tcp_payload_length))) {
         return false;
     }
 

@@ -198,6 +198,8 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
             }
         } 
 
+        uint32_t aa = ntohl(header->sequence_num);
+
         uint16_t tcp_payload_size = tcp_get_payload_length(ipv4_header, header);
         tcp_block_buffer_add(tcb->in_buffer, packet_stack, header->sequence_num, tcp_payload_size);
 

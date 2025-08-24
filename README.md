@@ -8,7 +8,7 @@
 - [X] ARP
 - [ ] UDP
 - [ ] QUIC
-- [ ] TCP
+- [X] TCP
 - [x] IPv4
 - [ ] IPv6
 - [ ] TLS

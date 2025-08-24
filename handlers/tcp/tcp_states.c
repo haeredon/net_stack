@@ -34,6 +34,7 @@ bool is_segment_in_window(struct transmission_control_block_t* tcb, struct tcp_h
     }
 }
 
+
 bool tcp_internal_write(struct handler_t* handler, struct in_packet_stack_t* packet_stack, 
     struct tcp_socket_t* socket, uint32_t connection_id, uint8_t flags, uint8_t stack_idx, struct interface_t* interface) {
     
@@ -44,17 +45,7 @@ bool tcp_internal_write(struct handler_t* handler, struct in_packet_stack_t* pac
     };
     packet_stack->return_args[stack_idx] = &tcp_args;
 
-    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
-                mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
-
-    memcpy(out_package_stack->handlers, packet_stack->handlers, 10 * sizeof(struct handler_t*));
-    memcpy(out_package_stack->args, packet_stack->return_args, 10 * sizeof(void*));
-
-    out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
-    out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
-    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
-
-    out_package_stack->stack_idx = stack_idx;
+    struct out_packet_stack_t* out_package_stack = handler_create_out_package_stack(packet_stack, stack_idx);
 
     handler->operations.write(out_package_stack, interface, handler);
 }

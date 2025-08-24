@@ -11,10 +11,6 @@
 
 #define ARP_HDW_TYPE_ETHERNET 256 // big_endian
 
-struct arp_priv_t {
-    int dummy;
-};
-
 struct arp_header_t {
     uint16_t hdw_type;
     uint16_t pro_type;
@@ -26,6 +22,15 @@ struct arp_header_t {
     uint8_t target_hardware_addr[ETHERNET_MAC_SIZE];
     uint32_t target_protocol_addr;
 } __attribute__((packed));
+
+struct arp_priv_t {
+    int dummy;
+};
+
+struct arp_write_args_t {
+    struct arp_header_t header;    
+};
+
 
 
 struct handler_t* arp_create_handler(struct handler_config_t *handler_config);

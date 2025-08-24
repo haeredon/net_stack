@@ -17,7 +17,7 @@ struct test_config_t {
 };
 
 struct test_t {
-    char name[45];
+    char name[128];
     bool (*test)(struct handler_t* handler, struct test_config_t* config);   
 };
 

@@ -73,29 +73,37 @@ void arp_init_handler(struct handler_t* handler, void* priv_config) {
 }
 
 
-uint16_t arp_handle_response(struct packet_stack_t* packet_stack, struct response_buffer_t* response_buffer, const struct interface_t* interface) {    
-    struct arp_header_t* request_header = (struct arp_header_t*) packet_stack->packet_pointers[response_buffer->stack_idx];
-    struct arp_header_t* response_header = (struct arp_header_t*) (((uint8_t*) (response_buffer->buffer)) + response_buffer->offset);
+bool arp_write(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {
+    struct arp_write_args_t* arp_args = (struct arp_write_args_t*) packet_stack->args[packet_stack->stack_idx];    
 
-    response_header->hdw_type = request_header->hdw_type;
-    response_header->pro_type = request_header->pro_type;
-    response_header->hdw_addr_length = request_header->hdw_addr_length;
-    response_header->pro_addr_length = request_header->pro_addr_length;
-    response_header->operation = request_header->operation = ARP_OPERATION_RESPOENSE;
-    memcpy(response_header->sender_hardware_addr, interface->mac, ETHERNET_MAC_SIZE);
-    response_header->sender_protocol_addr = request_header->target_protocol_addr;
-    memcpy(response_header->target_hardware_addr, request_header->sender_hardware_addr, ETHERNET_MAC_SIZE);
-    response_header->target_protocol_addr = request_header->sender_protocol_addr;
+    struct out_buffer_t* out_buffer = &packet_stack->out_buffer;
+    struct arp_header_t* response_header = (struct arp_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct arp_header_t));
 
-    uint16_t num_bytes_written = sizeof(struct arp_header_t);
-    response_buffer->offset += num_bytes_written;
+    if(out_buffer->offset < sizeof(struct arp_header_t)) {
+        NETSTACK_LOG(NETSTACK_ERROR, "No room for arp header in buffer\n");         
+        return false;   
+    };
+
+    memcpy(response_header, &arp_args->header, sizeof(struct arp_header_t));
+  
+    out_buffer->offset -= sizeof(struct arp_header_t);
+   
+    // if this is the bottom of the packet stack, then write to the interface
+    if(!packet_stack->stack_idx) {
+        handler->handler_config->write(out_buffer, interface, 0);
+    } else {
+        const struct handler_t* next_handler = packet_stack->handlers[--packet_stack->stack_idx];
+        return next_handler->operations.write(packet_stack, interface, next_handler);        
+    }
     
-    return num_bytes_written;
-}
+    return true;
+}   
 
-uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
-    uint8_t packet_idx = packet_stack->write_chain_length++;
-    struct arp_header_t* header = (struct arp_header_t*) packet_stack->packet_pointers[packet_idx];
+uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
+    uint8_t packet_idx = packet_stack->stack_idx;
+    packet_stack->handlers[packet_idx] = handler;  
+
+    struct arp_header_t* header = (struct arp_header_t*) packet_stack->in_buffer.packet_pointers[packet_idx];
  
     if(header->hdw_type == ARP_HDW_TYPE_ETHERNET) {
         if(header->pro_type == ETHERNET_TYPE_IPV6) {
@@ -115,12 +123,36 @@ uint16_t arp_read(struct packet_stack_t* packet_stack, struct interface_t* inter
                 }
 
                 if(header->operation == ARP_OPERATION_REQUEST) {
-                    packet_stack->pre_build_response[packet_idx] = arp_handle_response;
-                    handler_response(packet_stack, interface, 0);                                                                                
+                    struct arp_write_args_t arp_write_args = {
+                        .header = {
+                            .hdw_type = header->hdw_type,
+                            .pro_type = header->pro_type,
+                            .hdw_addr_length = header->hdw_addr_length,
+                            .pro_addr_length = header->pro_addr_length,
+                            .operation = ARP_OPERATION_RESPOENSE,
+                            .sender_hardware_addr = 0,
+                            .sender_protocol_addr = header->target_protocol_addr,
+                            .target_hardware_addr = 0,
+                            .target_protocol_addr = header->sender_protocol_addr
+                        }
+                    };
+
+                    memcpy(arp_write_args.header.sender_hardware_addr, interface->mac, ETHERNET_MAC_SIZE);                    
+                    memcpy(arp_write_args.header.target_hardware_addr, header->sender_hardware_addr, ETHERNET_MAC_SIZE);
+
+                    packet_stack->return_args[packet_idx] = &arp_write_args;
+
+                    struct out_packet_stack_t* out_package_stack = handler_create_out_package_stack(packet_stack, packet_idx);
+
+                    if(!handler->operations.write(0, interface, handler)) {
+                        return -1;
+                    }
                 }
             }
         }
     }
+
+    return 0;
 }
 
 
@@ -132,6 +164,7 @@ struct handler_t* arp_create_handler(struct handler_config_t *handler_config) {
     handler->close = arp_close_handler;
 
     handler->operations.read = arp_read;
+    handler->operations.write = arp_write;
 
     ADD_TO_PRIORITY(&ethernet_type_to_handler, htons(ETHERNET_TYPE_ARP), handler);
 

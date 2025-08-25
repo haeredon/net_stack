@@ -24,11 +24,4 @@ uint16_t get_tcp_header_length(struct tcp_header_t* header);
 
 void* get_tcp_payload(struct tcp_header_t* header);
 
-struct ipv4_header_t* get_ipv4_header_from_package(const void* package);
-
-struct tcp_header_t* get_tcp_header_from_package(const void* package);
-uint16_t get_tcp_payload_length_from_package(const void* package);
-
-void* get_tcp_payload_payload_from_package(const void* package); 
-
 #endif // TEST_TCP_UTILITY_H

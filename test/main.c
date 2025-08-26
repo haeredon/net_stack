@@ -3,6 +3,7 @@
 #include "handlers/ipv4/ipv4.h"
 #include "test/ipv4/test.h"
 #include "test/tcp/test.h"
+#include "test/arp/test.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -22,8 +23,9 @@
 int main(int argc, char **argv) {     
     printf("Starting tests\n\n");     
     
-    // ipv4_tests_start();
     tcp_tests_start();
+
+    arp_tests_start();
 
 
     // struct handler_config_t handler_config = { 

@@ -1,5 +1,14 @@
 #include "test/utility.h"
 
+#include <arpa/inet.h>
+
+uint16_t get_tcp_header_length(struct tcp_header_t* header) {
+    return ((header->data_offset & TCP_DATA_OFFSET_MASK) >> 4) * 4;    
+}
+
+void* get_tcp_payload(struct tcp_header_t* header) {
+    return ((uint8_t*) header) + get_tcp_header_length(header);
+}
 
 struct ipv4_header_t* get_ipv4_header_from_package(const void* package) {    
     return (struct ipv4_header_t*) (((uint8_t*) package) + sizeof(struct ethernet_header_t));

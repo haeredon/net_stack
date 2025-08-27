@@ -5,6 +5,7 @@
 #include "handlers/ethernet/ethernet.h"
 #include "handlers/protocol_map.h"
 #include "handlers/handler.h"
+#include "util/memory.h"
 
  
 
@@ -87,8 +88,8 @@ uint16_t ethernet_read(struct in_packet_stack_t* packet_stack, struct interface_
     }    
 }
 
-struct handler_t* ethernet_create_handler(struct handler_config_t *handler_config) {
-    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("ethernet handler", sizeof(struct handler_t));	
+struct handler_t* ethernet_create_handler(struct handler_config_t *handler_config) {    
+    struct handler_t* handler = (struct handler_t*) NET_STACK_MALLOC("ethernet handler", sizeof(struct handler_t)); 
     handler->handler_config = handler_config;
 
     handler->init = ethernet_init_handler;

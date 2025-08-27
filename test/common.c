@@ -17,9 +17,15 @@ bool run_tests(struct test_run_t* test_run) {
 
         printf("Testing: %s\n", test->name);
 
-        test_run->before_each(test_run);
+        if(test_run->before_each) {
+            test_run->before_each(test_run);
+        }
+        
         bool success = test->test(test_run->handler, test_run->config);
-        test_run->after_each(test_run);
+        
+        if(test_run->after_each) {
+            test_run->after_each(test_run);
+        }
     
         if(success) {
             printf("\tSUCCESS\n");

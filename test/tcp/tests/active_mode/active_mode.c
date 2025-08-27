@@ -10,6 +10,7 @@
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/custom/custom.h"
 #include "handlers/ethernet/ethernet.h"
+#include "test/utility.h"
 #include "test/tcp/utility.h"
 #include "util/array.h"
  

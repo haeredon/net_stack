@@ -2,7 +2,7 @@
 APP = net_stack
 
 SRCS-OVERRIDES-TEST := test/tcp/overrides.c
-SRCS-TEST := test/main.c test/ipv4/test.c test/common.c test/tcp/test.c  test/tcp/utility.c test/tcp/overrides.c test/tcp/tests/download_1/download_1.c test/tcp/tests/active_mode/active_mode.c
+SRCS-TEST := test/main.c test/utility.c test/ipv4/test.c test/common.c test/tcp/test.c  test/tcp/utility.c test/tcp/overrides.c test/tcp/tests/download_1/download_1.c test/tcp/tests/active_mode/active_mode.c test/arp/test.c
 OBJS-TEST = $(SRCS-TEST:.c=.o)
 INCLUDES-TEST := -I ./ 
 

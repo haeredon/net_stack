@@ -13,7 +13,10 @@ struct tcp_header_t* get_tcp_header_from_package(const void* package);
 struct arp_header_t* get_arp_header_from_package(const void* package);
 struct ethernet_header_t* get_ethernet_header_from_package(const void* package);
 
+void* get_tcp_payload(struct tcp_header_t* header);
+
 uint16_t get_tcp_payload_length_from_package(const void* package);
+uint16_t get_tcp_header_length(struct tcp_header_t* header);
 
 void* get_tcp_payload_payload_from_package(const void* package); 
 

@@ -17,11 +17,5 @@ extern struct tcp_cmp_ignores_t ignores;
 
 bool is_tcp_header_equal(struct tcp_header_t* a, struct tcp_header_t* b, struct tcp_cmp_ignores_t* ignores);
 
-/**
- * Package Management
- */
-uint16_t get_tcp_header_length(struct tcp_header_t* header);
-
-void* get_tcp_payload(struct tcp_header_t* header);
 
 #endif // TEST_TCP_UTILITY_H

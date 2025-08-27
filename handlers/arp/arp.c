@@ -144,7 +144,7 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
 
                     struct out_packet_stack_t* out_package_stack = handler_create_out_package_stack(packet_stack, packet_idx);
 
-                    if(!handler->operations.write(0, interface, handler)) {
+                    if(!handler->operations.write(out_package_stack, interface, handler)) {
                         return -1;
                     }
                 }

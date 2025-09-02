@@ -31,8 +31,18 @@ struct arp_write_args_t {
     struct arp_header_t header;    
 };
 
+struct arp_entry_t {
+    uint32_t ipv4;
+    uint8_t mac[ETHERNET_MAC_SIZE];
+};
 
+struct arp_resoltion_list_t {
+    struct arp_entry_t** list;
+    uint16_t insert_idx;
+    pthread_rwlock_t lock;
+};
 
+struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4);
 struct handler_t* arp_create_handler(struct handler_config_t *handler_config);
 
 

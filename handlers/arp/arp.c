@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "handlers/arp/arp.h"
 #include "handlers/ethernet/ethernet.h"
@@ -17,20 +18,11 @@
 
 
 // very basic slow implementation of ARP mapping. Should be optimized when more is known about use cases
-struct arp_entry_t {
-    uint32_t ipv4;
-    uint8_t mac[ETHERNET_MAC_SIZE];
-};
-
-struct arp_resoltion_list_t {
-    struct arp_entry_t** list;
-    uint16_t insert_idx;
-};
-
 const uint16_t ARP_RESOLUTION_LIST_SIZE = 256;
 struct arp_resoltion_list_t arp_resolution_list; 
 
 void arp_insert_mapping(struct arp_entry_t* entry) {
+    pthread_rwlock_wrlock(&arp_resolution_list.lock);
     struct arp_entry_t* old_entry = arp_resolution_list.list[arp_resolution_list.insert_idx];
     if(old_entry) {
         free(old_entry);
@@ -38,9 +30,11 @@ void arp_insert_mapping(struct arp_entry_t* entry) {
     
     arp_resolution_list.list[arp_resolution_list.insert_idx] = entry;
     arp_resolution_list.insert_idx = ++arp_resolution_list.insert_idx % ARP_RESOLUTION_LIST_SIZE;
+    pthread_rwlock_unlock(&arp_resolution_list.lock);
 }
 
 struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4) {
+    pthread_rwlock_rdlock(&arp_resolution_list.lock);
     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
         struct arp_entry_t* entry = arp_resolution_list.list[i];
 
@@ -49,10 +43,12 @@ struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4) {
         }
 
         if(ipv4 == entry->ipv4) {
+            pthread_rwlock_unlock(&arp_resolution_list.lock);
             return entry;
         }        
     }
-
+    
+    pthread_rwlock_unlock(&arp_resolution_list.lock);
     return 0;    
 }
 
@@ -62,10 +58,14 @@ void arp_close_handler(struct handler_t* handler) {
 }
 
 void arp_init_handler(struct handler_t* handler, void* priv_config) {
-    struct arp_priv_t* arp_priv = (struct arp_priv_t*) handler->handler_config->mem_allocate("pcap handler private data", sizeof(struct arp_priv_t)); 
+    struct arp_priv_t* arp_priv = (struct arp_priv_t*) handler->handler_config->mem_allocate("arp handler private data", sizeof(struct arp_priv_t)); 
     handler->priv = (void*) arp_priv;
 
     arp_resolution_list.list = (struct arp_entry_t**) handler->handler_config->mem_allocate("Arp resolution list", sizeof(struct arp_entry_t) * ARP_RESOLUTION_LIST_SIZE);     
+    
+    if(pthread_rwlock_init(&arp_resolution_list.lock, 0)) {
+        NETSTACK_LOG(NETSTACK_ERROR, "Could not initialize lock for arp mapping table\n");         
+    }
 
     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
         arp_resolution_list.list[i] = 0;

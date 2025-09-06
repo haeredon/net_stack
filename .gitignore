@@ -1,6 +1,3 @@
 build
-
-
-
 *.out
-test.c
+fun_with_c.c

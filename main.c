@@ -41,6 +41,7 @@
 #include <rte_string_fns.h>
 #include <rte_pcapng.h>
 
+#include "util/memory.h"
 #include "worker.h"
 #include "handlers/handler.h"
 // #include "handlers/pcapng.h"
@@ -177,9 +178,8 @@ signal_handler(int signum)
 	}
 }
 
-void* net_stack_malloc(const char *type, size_t size) {
-	return rte_malloc(type, size, 0);
-}
+
+       
 
 int
 main(int argc, char **argv)
@@ -202,14 +202,12 @@ main(int argc, char **argv)
 
 
 	// setup handlers
-	struct lcore_setup_t* setup = (struct lcore_setup_t*) rte_zmalloc("Lcore setup", sizeof(struct lcore_setup_t), 0);	
+	struct lcore_setup_t* setup = (struct lcore_setup_t*) NET_STACK_MALLOC("Lcore setup", sizeof(struct lcore_setup_t), 0);	
 	setup->interface.port = 0;
 	setup->interface.queue = 0;
 
 	// set handlers memory allocator
-	struct handler_config_t *handler_config = (struct handler_config_t*) rte_zmalloc("Handler Config", sizeof(struct handler_config_t), 0);	
-	handler_config->mem_allocate = net_stack_malloc;
-	handler_config->mem_free = rte_free;
+	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t), 0);	
 		
 	setup->handlers = handler_create_stacks(handler_config);
 	setup->num_handlers = 2;
@@ -222,6 +220,7 @@ main(int argc, char **argv)
 	pktmbuf_pool = rte_pktmbuf_pool_create("mbuf_pool", nb_mbufs,
 		MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
 		rte_socket_id());
+	
 	if (pktmbuf_pool == NULL)
 		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
 

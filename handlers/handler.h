@@ -86,10 +86,7 @@ struct operations_t {
     uint16_t (*read)(struct in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler);
 };
 
-struct handler_config_t {
-    void* (*mem_allocate)(const char *type, size_t size);
-    void (*mem_free)(void*);
-    
+struct handler_config_t {    
     // write callback for handler, that's writing to some interface
     uint16_t (*write)(struct out_buffer_t* buffer, struct interface_t* interface, struct transmission_config_t* transmission_config); 
 };

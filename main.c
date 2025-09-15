@@ -44,9 +44,6 @@
 #include "util/memory.h"
 #include "worker.h"
 #include "handlers/handler.h"
-// #include "handlers/pcapng.h"
-// #include "handlers/ethernet.h"
-// #include "handlers/arp.h"
 
 /* MAC updating enabled by default */
 static int mac_updating = 1;
@@ -65,8 +62,8 @@ static int promiscuous_on = 1;
  */
 #define RX_DESC_DEFAULT 1024
 #define TX_DESC_DEFAULT 1024
-static uint16_t nb_rxd = RX_DESC_DEFAULT;
-static uint16_t nb_txd = TX_DESC_DEFAULT;
+static uint16_t num_rxd = RX_DESC_DEFAULT;
+static uint16_t num_txd = TX_DESC_DEFAULT;
 
 /* ethernet addresses of ports */
 static struct rte_ether_addr l2fwd_ports_eth_addr[RTE_MAX_ETHPORTS];
@@ -187,9 +184,8 @@ main(int argc, char **argv)
 	int ret;
 	uint16_t portid;
 	unsigned lcore_id;
-	unsigned int nb_lcores = 1; // hardcoded, should be detected dynmamically
-	unsigned int nb_mbufs;
-
+	unsigned int num_lcores = 1; // hardcoded, should be detected dynmamically
+	
 	// init EAL
 	ret = rte_eal_init(argc, argv);
 	if (ret < 0)
@@ -214,11 +210,10 @@ main(int argc, char **argv)
 	
 
 	// Create the mbuf pool. 	
-	nb_mbufs = RTE_MAX(2 /* num_ports */ * (nb_rxd + nb_txd + MAX_PKT_BURST +
-		nb_lcores * MEMPOOL_CACHE_SIZE), 8192U);
+	unsigned int num_mbufs = RTE_MAX(2 /* num_ports */ * (num_rxd + num_txd + MAX_PKT_BURST +
+		num_lcores * MEMPOOL_CACHE_SIZE), 8192U);
 
-	pktmbuf_pool = rte_pktmbuf_pool_create("mbuf_pool", nb_mbufs,
-		MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
+	pktmbuf_pool = rte_pktmbuf_pool_create("mbuf_pool", num_mbufs, MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
 		rte_socket_id());
 	
 	if (pktmbuf_pool == NULL)
@@ -226,9 +221,7 @@ main(int argc, char **argv)
 
 
 	// Initialise each port 
-	RTE_ETH_FOREACH_DEV(portid) {
-		struct rte_eth_rxconf rxq_conf;
-		struct rte_eth_txconf txq_conf;
+	RTE_ETH_FOREACH_DEV(portid) {				
 		struct rte_eth_conf local_port_conf = port_conf;
 		struct rte_eth_dev_info dev_info;
 
@@ -251,7 +244,7 @@ main(int argc, char **argv)
 			rte_exit(EXIT_FAILURE, "Cannot configure device: err=%d, port=%u\n", ret, portid);
 		
 
-		ret = rte_eth_dev_adjust_nb_rx_tx_desc(portid, &nb_rxd, &nb_txd);
+		ret = rte_eth_dev_adjust_nb_rx_tx_desc(portid, &num_rxd, &num_txd);
 		if (ret < 0)
 			rte_exit(EXIT_FAILURE,
 				 "Cannot adjust number of descriptors: err=%d, port=%u\n",
@@ -259,11 +252,11 @@ main(int argc, char **argv)
 
 		// init one RX queue 
 		fflush(stdout);
-		rxq_conf = dev_info.default_rxconf;
+		struct rte_eth_rxconf rxq_conf = dev_info.default_rxconf;
 		rxq_conf.offloads = local_port_conf.rxmode.offloads;
 
 		// RX queue setup. 
-		ret = rte_eth_rx_queue_setup(portid, 0, nb_rxd,
+		ret = rte_eth_rx_queue_setup(portid, 0, num_rxd,
 					     rte_eth_dev_socket_id(portid),
 					     &rxq_conf,
 					     pktmbuf_pool);
@@ -273,9 +266,9 @@ main(int argc, char **argv)
 		
 		// Init one TX queue on each port. 
 		fflush(stdout);
-		txq_conf = dev_info.default_txconf;
+		struct rte_eth_txconf txq_conf = dev_info.default_txconf;
 		txq_conf.offloads = local_port_conf.txmode.offloads;
-		ret = rte_eth_tx_queue_setup(portid, 0, nb_txd,
+		ret = rte_eth_tx_queue_setup(portid, 0, num_txd,
 				rte_eth_dev_socket_id(portid),
 				&txq_conf);
 		if (ret < 0)
@@ -331,7 +324,15 @@ main(int argc, char **argv)
 
 	ret = 0;
 	// launch per-lcore init on every lcore 
-	rte_eal_mp_remote_launch(worker_start_lcore_worker, setup, CALL_MAIN);
+	// rte_eal_mp_remote_launch(worker_start_lcore_worker, setup, CALL_MAIN);
+
+	RTE_LCORE_FOREACH_WORKER(lcore_id) {
+		// launch(worker_start_fun, worker_obj, lcore_id)
+	}
+
+	// use main lcore to distribute packages to workers
+
+	// wait for cores to stop
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {
 		if (rte_eal_wait_lcore(lcore_id) < 0) {
 			ret = -1;

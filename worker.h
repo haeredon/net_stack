@@ -9,7 +9,7 @@
 #include<pthread.h>
 
 #define MAX_PKT_BURST 32
-
+#define QUEUE_SIZE 64
 
 
 struct lcore_setup_t {
@@ -37,7 +37,7 @@ enum Execution_state {
 }; 
 
 struct execution_context_t {
-    struct queue_t* work_queue;        
+    QUEUE_TYPE* work_queue;        
 
     pthread_t thread;
 
@@ -48,7 +48,7 @@ struct execution_context_t {
     int (*start)(struct execution_context_t* execution_context);
 };
 
-struct execution_context_t* create_netstack_thread(void* (*mem_allocate)(const char *type, size_t size));
+struct execution_context_t* create_netstack_thread();
 
 
 #endif // WORKER_H

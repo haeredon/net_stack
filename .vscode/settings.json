@@ -91,7 +91,10 @@
         "common.h": "c",
         "inet.h": "c",
         "queue": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "limits": "c",
+        "numeric": "c",
+        "streambuf": "c"
     }
     
 }

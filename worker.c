@@ -116,9 +116,10 @@ void* consume_tasks(void* execution_context_arg) {
     NETSTACK_LOG(NETSTACK_INFO, "Worker thread started\n");   
 
 	struct execution_context_t* execution_context = (struct execution_context_t*) execution_context_arg;
+	void** task;
      
 	while(execution_context->state == NET_STACK_RUNNING) {
-		struct task_t* task = queue_dequeue(execution_context->work_queue);	
+		struct task_t* task = QUEUE_DEQUEUE(execution_context->work_queue, task);	
 		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed task\n");   
 		task->run(task->argument);
 	}	
@@ -146,12 +147,12 @@ int start(struct execution_context_t* execution_context) {
 	pthread_mutex_unlock(&execution_context->state_lock);
 }
 
-struct execution_context_t* create_netstack_thread(void* (*mem_allocate)(const char *type, size_t size)) {
-	struct execution_context_t* execution_context = (struct execution_context_t*) mem_allocate("Execution context", 
+struct execution_context_t* create_netstack_thread() {
+	struct execution_context_t* execution_context = (struct execution_context_t*) NET_STACK_MALLOC("Execution context", 
         sizeof(struct execution_context_t));
 
 	execution_context->start = start;
-	execution_context->work_queue = queue_create_queue(mem_allocate);
+	execution_context->work_queue = QUEUE_CREATE_QUEUE(QUEUE_SIZE);
 
 	pthread_mutex_init(&execution_context->state_lock, 0);    
 

@@ -9,7 +9,7 @@ INCLUDES-TEST := -I ./
 #SRCS-DEV := main_dev.c worker.c execution_pool.c
 
 SRCS-HANDLERS := handlers/ethernet/ethernet.c handlers/handler.c handlers/protocol_map.c handlers/ipv4/ipv4.c handlers/custom/custom.c handlers/tcp/tcp.c handlers/tcp/tcp_block_buffer.c handlers/tcp/socket.c handlers/tcp/tcp_shared.c handlers/tcp/tcp_states.c handlers/arp/arp.c
-SRCS-UTILITY := util/array.c util/b_tree.c util/queue.c util/log.c
+SRCS-UTILITY := util/array.c util/b_tree.c util/log.c
 OBJS = $(SRCS-HANDLERS:.c=.o) $(SRCS-UTILITY:.c=.o) 
 INCLUDES := -I ./
 

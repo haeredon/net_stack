@@ -40,6 +40,7 @@
 #include "handlers/handler.h"
 #include "util/queue.h"
 #include "util/log.h"
+#include "util/memory.h"
 
 #define RTE_LOGTYPE_L2FWD RTE_LOGTYPE_USER1
 
@@ -130,7 +131,7 @@ void* consume_tasks(void* execution_context_arg) {
 void stop(struct execution_context_t* execution_context) {
 	pthread_mutex_lock(&execution_context->state_lock);
 
-	pthread_join(execution_context->thread, NULL);
+	EXECUTION_CONTEXT_THREAD_STOP(execution_context->thread_handle);
 	execution_context->state = NET_STACK_STOPPED;
 	
 	pthread_mutex_unlock(&execution_context->state_lock);
@@ -142,7 +143,7 @@ int start(struct execution_context_t* execution_context) {
 	pthread_mutex_lock(&execution_context->state_lock);
 	
 	execution_context->state = NET_STACK_RUNNING;
-    return pthread_create(&execution_context->thread, NULL, consume_tasks, execution_context);
+    EXECUTION_CONTEXT_THREAD_CREATE(execution_context->thread_handle, consume_tasks, execution_context);
 
 	pthread_mutex_unlock(&execution_context->state_lock);
 }
@@ -152,6 +153,7 @@ struct execution_context_t* create_netstack_thread() {
         sizeof(struct execution_context_t));
 
 	execution_context->start = start;
+	execution_context->stop = stop;
 	execution_context->work_queue = QUEUE_CREATE_QUEUE(QUEUE_SIZE);
 
 	pthread_mutex_init(&execution_context->state_lock, 0);    

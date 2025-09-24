@@ -42,6 +42,7 @@
 #include <rte_pcapng.h>
 
 #include "util/memory.h"
+#include "util/queue.h"
 #include "worker.h"
 #include "handlers/handler.h"
 
@@ -102,9 +103,7 @@ uint64_t num_dropped_packages = 0;
 
 
 /* Check the link status of all ports in up to 9s, and print them finally */
-static void
-check_all_ports_link_status()
-{
+static void check_all_ports_link_status() {
 #define CHECK_INTERVAL 100 /* 100ms */
 #define MAX_CHECK_TIME 90 /* 9s (90 * 100ms) in total */
 	uint16_t portid;
@@ -165,9 +164,7 @@ check_all_ports_link_status()
 
 
 // does not work in current implementation
-static void
-signal_handler(int signum)
-{
+static void signal_handler(int signum) {
 	if (signum == SIGINT || signum == SIGTERM) {
 		printf("\n\nSignal %d received, preparing to exit...\n",
 				signum);
@@ -178,9 +175,7 @@ signal_handler(int signum)
 
        
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	int ret;
 	uint16_t portid;
 	unsigned lcore_id;
@@ -323,14 +318,34 @@ main(int argc, char **argv)
 	check_all_ports_link_status();
 
 	ret = 0;
-	// launch per-lcore init on every lcore 
-	// rte_eal_mp_remote_launch(worker_start_lcore_worker, setup, CALL_MAIN);
 
-	RTE_LCORE_FOREACH_WORKER(lcore_id) {
-		// launch(worker_start_fun, worker_obj, lcore_id)
+	/****************** INITIALIZATION DONE. START WORKERS AND OFFLOADER ********************************* */
+
+	struct offloader_t {		
+		void (*start)(struct offloader_t*);
+		void (*stop)(struct offloader_t*);
+	};
+
+
+	// fixed thread count for now on same socket 
+	const uint8_t NUM_WORKERS = 3;
+	struct execution_context_t* workers[NUM_WORKERS];
+	struct offloader_t* offloader;
+
+	// launch all workers
+	uint8_t worker_idx = 0;
+	RTE_LCORE_FOREACH_WORKER(lcore_id) {		
+		workers[worker_idx] = create_netstack_thread();
+		struct execution_context_t* execution_context = workers[worker_idx];
+		execution_context->start(execution_context);
+				
+		if(++worker_idx == NUM_WORKERS) {
+			break;
+		}
 	}
 
-	// use main lcore to distribute packages to workers
+	// use main lcore (offloader) to distribute packages to workers
+	offloader->start(&offloader);
 
 	// wait for cores to stop
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {

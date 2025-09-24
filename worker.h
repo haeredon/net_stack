@@ -11,6 +11,18 @@
 #define MAX_PKT_BURST 32
 #define QUEUE_SIZE 64
 
+#ifdef RTE_THREAD_MANAGEMENT
+    #define EXECUTION_CONTEXT_THREAD_HANDLE uint64_t
+    #define EXECUTION_CONTEXT_THREAD_CREATE(HANDLE, CALL_FUN, ARG) rte_eal_remote_launch(CALL_FUN, ARG, HANDLE);
+    #define EXECUTION_CONTEXT_THREAD_STOP(HANDLE) rte_eal_wait_lcore(HANDLE)
+#else
+    #define EXECUTION_CONTEXT_THREAD_HANDLE pthread_t
+    #define EXECUTION_CONTEXT_THREAD_CREATE(HANDLE, CALL_FUN, ARG) pthread_create(&HANDLE, NULL, CALL_FUN, ARG);
+    #define EXECUTION_CONTEXT_THREAD_STOP(HANDLE) pthread_join(HANDLE, NULL)
+#endif
+
+
+
 
 struct lcore_setup_t {
     struct interface_t interface;
@@ -39,7 +51,7 @@ enum Execution_state {
 struct execution_context_t {
     QUEUE_TYPE* work_queue;        
 
-    pthread_t thread;
+    EXECUTION_CONTEXT_THREAD_HANDLE thread_handle;
 
     enum Execution_state state;
     pthread_mutex_t state_lock;

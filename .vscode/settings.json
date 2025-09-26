@@ -95,7 +95,8 @@
         "limits": "c",
         "numeric": "c",
         "streambuf": "c",
-        "thread-shared-types.h": "c"
+        "thread-shared-types.h": "c",
+        "memory.h": "c"
     }
     
 }

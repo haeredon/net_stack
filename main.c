@@ -45,17 +45,12 @@
 #include "util/queue.h"
 #include "worker.h"
 #include "handlers/handler.h"
-
-/* MAC updating enabled by default */
-static int mac_updating = 1;
+#include "handlers/ethernet/ethernet.h"
 
 /* Ports set in promiscuous mode off by default. */
 static int promiscuous_on = 1;
 
-#define RTE_LOGTYPE_L2FWD RTE_LOGTYPE_USER1
-
 #define MAX_PKT_BURST 32
-#define BURST_TX_DRAIN_US 100 /* TX drain every ~100us */
 #define MEMPOOL_CACHE_SIZE 256
 
 /*
@@ -66,29 +61,6 @@ static int promiscuous_on = 1;
 static uint16_t num_rxd = RX_DESC_DEFAULT;
 static uint16_t num_txd = TX_DESC_DEFAULT;
 
-/* ethernet addresses of ports */
-static struct rte_ether_addr l2fwd_ports_eth_addr[RTE_MAX_ETHPORTS];
-
-/* mask of enabled ports */
-static uint32_t l2fwd_enabled_port_mask = 0;
-
-/* list of enabled ports */
-static uint32_t l2fwd_dst_ports[RTE_MAX_ETHPORTS];
-
-struct port_pair_params {
-#define NUM_PORTS	2
-	uint16_t port[NUM_PORTS];
-} __rte_cache_aligned;
-
-static struct port_pair_params port_pair_params_array[RTE_MAX_ETHPORTS / 2];
-static struct port_pair_params *port_pair_params;
-static uint16_t nb_port_pair_params;
-
-static unsigned int l2fwd_rx_queue_per_lcore = 1;
-
-#define MAX_RX_QUEUE_PER_LCORE 16
-#define MAX_TX_QUEUE_PER_PORT 16
-
 static struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS];
 
 static struct rte_eth_conf port_conf = {
@@ -98,7 +70,6 @@ static struct rte_eth_conf port_conf = {
 };
 
 struct rte_mempool * pktmbuf_pool = NULL;
-
 uint64_t num_dropped_packages = 0;
 
 
@@ -172,8 +143,36 @@ static void signal_handler(int signum) {
 	}
 }
 
+bool force_quit = false; 
 
-       
+static void offloader_loop(struct interface_t* interface, struct handler_t** handlers) {
+	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
+
+	while (!force_quit) {
+		/* Read packet from RX queues. 8< */
+		uint16_t nb_rx = rte_eth_rx_burst(interface->port, 0, pkts_burst, MAX_PKT_BURST);
+
+		if (unlikely(nb_rx == 0)) {
+			continue;
+		}			
+
+		for (uint16_t j = 0; j < nb_rx; j++) {
+			struct rte_mbuf* buffer = pkts_burst[j];
+
+			struct in_packet_stack_t packet_stack = { .stack_idx = 0, .in_buffer = { .packet_pointers = 0 } };
+
+			void* buffer_start = rte_pktmbuf_mtod(buffer, void *);
+
+			rte_prefetch0(buffer_start); // learn more about this statement!!!
+
+			for (uint8_t i = 0; i < setup->num_handlers; i++) {
+				handlers[i]->operations.read(&packet_stack, interface, handlers[i]);	
+			}
+		}
+
+		/* >8 End of read packet from RX queues. */
+	}
+}
 
 int main(int argc, char **argv) {
 	int ret;
@@ -191,19 +190,6 @@ int main(int argc, char **argv) {
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
 
-
-	// setup handlers
-	struct lcore_setup_t* setup = (struct lcore_setup_t*) NET_STACK_MALLOC("Lcore setup", sizeof(struct lcore_setup_t), 0);	
-	setup->interface.port = 0;
-	setup->interface.queue = 0;
-
-	// set handlers memory allocator
-	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t), 0);	
-		
-	setup->handlers = handler_create_stacks(handler_config);
-	setup->num_handlers = 2;
-	
-
 	// Create the mbuf pool. 	
 	unsigned int num_mbufs = RTE_MAX(2 /* num_ports */ * (num_rxd + num_txd + MAX_PKT_BURST +
 		num_lcores * MEMPOOL_CACHE_SIZE), 8192U);
@@ -214,6 +200,10 @@ int main(int argc, char **argv) {
 	if (pktmbuf_pool == NULL)
 		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
 
+
+	// create net_stack interface
+	struct interface_t* interface = (struct interface_t*) NET_STACK_MALLOC("Interface", sizeof(struct interface_t));
+	bool first_port_initialized = false;	
 
 	// Initialise each port 
 	RTE_ETH_FOREACH_DEV(portid) {				
@@ -313,6 +303,14 @@ int main(int argc, char **argv) {
 		struct rte_ether_addr mac_addr;
 		rte_eth_macaddr_get(portid, &mac_addr);
 		printf("Port %u, MAC address: " RTE_ETHER_ADDR_PRT_FMT "\n\n", portid, RTE_ETHER_ADDR_BYTES(&mac_addr));
+
+		// set net_stack interface properties
+		if(!first_port_initialized) {
+			interface->port = portid; 
+			interface->operations.write = ;
+			memcpy(interface->mac, mac_addr.addr_bytes, ETHERNET_MAC_SIZE);
+			interface->ipv4_addr = 0;
+		}
 	}
 
 	check_all_ports_link_status();
@@ -320,12 +318,6 @@ int main(int argc, char **argv) {
 	ret = 0;
 
 	/****************** INITIALIZATION DONE. START WORKERS AND OFFLOADER ********************************* */
-
-	struct offloader_t {		
-		void (*start)(struct offloader_t*);
-		void (*stop)(struct offloader_t*);
-	};
-
 
 	// fixed thread count for now on same socket 
 	const uint8_t NUM_WORKERS = 3;
@@ -344,8 +336,13 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// use main lcore (offloader) to distribute packages to workers
-	offloader->start(&offloader);
+	// create handlers 
+	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t));	
+	handler_config->write = SOME_INTERFACE_WRITE_FUNCTION;
+	struct handler_t** root_handlers = handler_create_stacks(handler_config);
+
+	// use main lcore (offloader) to distribute packages to exection contexts	
+	offloader_loop(interface, root_handlers);
 
 	// wait for cores to stop
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {
@@ -372,3 +369,26 @@ int main(int argc, char **argv) {
 
 	return ret;
 }
+
+
+
+
+// int worker_start_lcore_worker(void* setups) {
+// 	unsigned lcore_id = rte_lcore_id();
+
+// 	struct lcore_setup_t* lcore_setup = (struct lcore_setup_t*) setups;
+
+// 	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
+// 		struct handler_t* handler = lcore_setup->handlers[i];
+// 		handler->init(handler, 0);
+// 	}
+	
+// 	worker_main_loop(lcore_setup);
+	
+// 	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
+// 		struct handler_t* handler = lcore_setup->handlers[i];
+// 		handler->close(handler);
+// 	}
+
+// 	return 0;	
+// }

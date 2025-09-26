@@ -44,8 +44,10 @@
 #include "util/memory.h"
 #include "util/queue.h"
 #include "worker.h"
+#include "interface.h"
 #include "handlers/handler.h"
 #include "handlers/ethernet/ethernet.h"
+#include "dpdk/write.h"
 
 /* Ports set in promiscuous mode off by default. */
 static int promiscuous_on = 1;
@@ -202,7 +204,10 @@ int main(int argc, char **argv) {
 
 
 	// create net_stack interface
-	struct interface_t* interface = (struct interface_t*) NET_STACK_MALLOC("Interface", sizeof(struct interface_t));
+	struct interface_operations_t interface_operations = {
+		.write = dpdk_write_write
+	};
+	struct interface_t* interface = interface_create_interface(interface_operations);
 	bool first_port_initialized = false;	
 
 	// Initialise each port 
@@ -307,9 +312,9 @@ int main(int argc, char **argv) {
 		// set net_stack interface properties
 		if(!first_port_initialized) {
 			interface->port = portid; 
-			interface->operations.write = ;
 			memcpy(interface->mac, mac_addr.addr_bytes, ETHERNET_MAC_SIZE);
 			interface->ipv4_addr = 0;
+			first_port_initialized = true;
 		}
 	}
 
@@ -338,7 +343,7 @@ int main(int argc, char **argv) {
 
 	// create handlers 
 	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t));	
-	handler_config->write = SOME_INTERFACE_WRITE_FUNCTION;
+	handler_config->write = handler_write;
 	struct handler_t** root_handlers = handler_create_stacks(handler_config);
 
 	// use main lcore (offloader) to distribute packages to exection contexts	

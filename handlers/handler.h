@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#include "interface.h"
+
 
 #define DEFAULT_PACKAGE_BUFFER_SIZE 0xFFFF
 
@@ -24,17 +26,6 @@ struct response_buffer_t {
 };
 
 struct response_t;
-struct interface_operations_t {
-    int64_t (*write)(struct response_t response); // write to hardware level
-};
-
-struct interface_t {
-     uint16_t port;
-     uint32_t ipv4_addr; // so far expressed in network order
-     uint8_t mac[6];
-     struct interface_operations_t operations;
-};
-
 struct handler_t;
 
 struct in_buffer_t {
@@ -45,8 +36,8 @@ struct in_buffer_t {
 
 struct out_buffer_t {
     void* buffer;
-    uint64_t size; // probably not used
-    uint64_t offset; // probably not used
+    uint64_t size; 
+    uint64_t offset; 
 };
 
 
@@ -108,6 +99,7 @@ struct handler_t {
 
 struct out_packet_stack_t* handler_create_out_package_stack(struct in_packet_stack_t* packet_stack, uint8_t package_depth);
 struct handler_t** handler_create_stacks(struct handler_config_t *config);
+uint16_t handler_write(struct out_buffer_t* buffer, struct interface_t* interface, struct transmission_config_t* transmission_config);
 
 
 #endif // HANDLER_HANDLER_H

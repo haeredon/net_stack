@@ -58,9 +58,13 @@ struct execution_context_t {
 
     void (*stop)(struct execution_context_t* execution_context);
     int (*start)(struct execution_context_t* execution_context);
+
+    void* (*get_packet_buffer)(void* packet);
+	void (*free_packet)(void* packet);	
 };
 
-struct execution_context_t* create_netstack_thread();
+struct execution_context_t* create_netstack_execution_context(void* (*get_packet_buffer)(void* packet),
+												   			  void (*free_packet)(void* packet));
 
 
 #endif // WORKER_H

@@ -40,6 +40,7 @@
 #include <rte_mbuf.h>
 #include <rte_string_fns.h>
 #include <rte_pcapng.h>
+#include <rte_ring.h>
 
 #include "util/memory.h"
 #include "util/queue.h"
@@ -48,6 +49,7 @@
 #include "handlers/handler.h"
 #include "handlers/ethernet/ethernet.h"
 #include "dpdk/write.h"
+#include "dpdk/packet.h"
 
 /* Ports set in promiscuous mode off by default. */
 static int promiscuous_on = 1;
@@ -135,7 +137,6 @@ static void check_all_ports_link_status() {
 	}
 }
 
-
 // does not work in current implementation
 static void signal_handler(int signum) {
 	if (signum == SIGINT || signum == SIGTERM) {
@@ -147,7 +148,8 @@ static void signal_handler(int signum) {
 
 bool force_quit = false; 
 
-static void offloader_loop(struct interface_t* interface, struct handler_t** handlers) {
+static void offloader_loop(struct interface_t* interface, 
+						   struct execution_context_t** workers, uint8_t num_execution_contexts) {
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 
 	while (!force_quit) {
@@ -163,12 +165,8 @@ static void offloader_loop(struct interface_t* interface, struct handler_t** han
 
 			struct in_packet_stack_t packet_stack = { .stack_idx = 0, .in_buffer = { .packet_pointers = 0 } };
 
-			void* buffer_start = rte_pktmbuf_mtod(buffer, void *);
-
-			rte_prefetch0(buffer_start); // learn more about this statement!!!
-
-			for (uint8_t i = 0; i < setup->num_handlers; i++) {
-				handlers[i]->operations.read(&packet_stack, interface, handlers[i]);	
+			for (uint8_t i = 0; i < num_execution_contexts; i++) {		
+				rte_ring_sp_enqueue(workers[0]->work_queue, buffer);
 			}
 		}
 
@@ -326,13 +324,13 @@ int main(int argc, char **argv) {
 
 	// fixed thread count for now on same socket 
 	const uint8_t NUM_WORKERS = 3;
-	struct execution_context_t* workers[NUM_WORKERS];
+	struct execution_context_t** workers = (struct execution_context_t**) NET_STACK_MALLOC("execution_contexts", sizeof(struct execution_context_t*));	;
 	struct offloader_t* offloader;
 
 	// launch all workers
 	uint8_t worker_idx = 0;
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {		
-		workers[worker_idx] = create_netstack_thread();
+		workers[worker_idx] = create_netstack_execution_context(dpdk_packet_get_packet_buffer, dpdk_packet_free_packet);
 		struct execution_context_t* execution_context = workers[worker_idx];
 		execution_context->start(execution_context);
 				

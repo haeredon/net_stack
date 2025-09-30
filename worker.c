@@ -78,13 +78,17 @@ int start(struct execution_context_t* execution_context) {
 	pthread_mutex_unlock(&execution_context->state_lock);
 }
 
-struct execution_context_t* create_netstack_thread() {
+struct execution_context_t* create_netstack_execution_context(void* (*get_packet_buffer)(void* packet),
+												   			  void (*free_packet)(void* packet)) {
 	struct execution_context_t* execution_context = (struct execution_context_t*) NET_STACK_MALLOC("Execution context", 
         sizeof(struct execution_context_t));
 
 	execution_context->start = start;
 	execution_context->stop = stop;
 	execution_context->work_queue = QUEUE_CREATE_QUEUE(QUEUE_SIZE);
+
+	execution_context->get_packet_buffer = get_packet_buffer;
+	execution_context->free_packet = free_packet;
 
 	pthread_mutex_init(&execution_context->state_lock, 0);    
 

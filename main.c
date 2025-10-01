@@ -205,7 +205,6 @@ int main(int argc, char **argv) {
 	struct interface_operations_t interface_operations = {
 		.write = dpdk_write_write
 	};
-	struct interface_t* interface = interface_create_interface(interface_operations);
 	bool first_port_initialized = false;	
 
 	// Initialise each port 
@@ -309,10 +308,18 @@ int main(int argc, char **argv) {
 
 		// set net_stack interface properties
 		if(!first_port_initialized) {
+			interfaces = (struct interface_t**) NET_STACK_MALLOC("Interface", 1 /* NUM INTERFACES */ * sizeof(struct interface_t*));
+			struct interface_t* interface = interface_create_interface(interface_operations);			
 			interface->port = portid; 
 			memcpy(interface->mac, mac_addr.addr_bytes, ETHERNET_MAC_SIZE);
 			interface->ipv4_addr = 0;
 			first_port_initialized = true;
+
+			if(portid != 0) {
+				rte_exit(EXIT_FAILURE, "Port on interface must be 0 for now %u\n", portid);
+			}
+			
+			interfaces[portid] = interface;
 		}
 	}
 
@@ -321,6 +328,10 @@ int main(int argc, char **argv) {
 	ret = 0;
 
 	/****************** INITIALIZATION DONE. START WORKERS AND OFFLOADER ********************************* */
+	// create handlers 
+	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t));	
+	handler_config->write = handler_write;
+	struct handler_t** root_handlers = handler_create_stacks(handler_config);
 
 	// fixed thread count for now on same socket 
 	const uint8_t NUM_WORKERS = 3;
@@ -330,7 +341,10 @@ int main(int argc, char **argv) {
 	// launch all workers
 	uint8_t worker_idx = 0;
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {		
-		workers[worker_idx] = create_netstack_execution_context(dpdk_packet_get_packet_buffer, dpdk_packet_free_packet);
+		workers[worker_idx] = create_netstack_execution_context(root_handlers, 
+																1, // this should be calculated at runtime. Right now it is a latent bug
+															  	dpdk_packet_get_packet_buffer, 
+																dpdk_packet_free_packet);
 		struct execution_context_t* execution_context = workers[worker_idx];
 		execution_context->start(execution_context);
 				
@@ -339,13 +353,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// create handlers 
-	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t));	
-	handler_config->write = handler_write;
-	struct handler_t** root_handlers = handler_create_stacks(handler_config);
-
 	// use main lcore (offloader) to distribute packages to exection contexts	
-	offloader_loop(interface, root_handlers);
+	offloader_loop(interface, workers, NUM_WORKERS);
 
 	// wait for cores to stop
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {

@@ -3,6 +3,7 @@
 
 #include "handlers/handler.h"
 #include "util/queue.h"
+#include "interface.h"
 
 #include<stdint.h>
 #include<rte_mbuf.h>
@@ -61,10 +62,17 @@ struct execution_context_t {
 
     void* (*get_packet_buffer)(void* packet);
 	void (*free_packet)(void* packet);	
+    struct interface_t* (*get_interface)(void* packet);	
+
+    struct handler_t** handlers;
+    uint8_t num_handlers;
 };
 
-struct execution_context_t* create_netstack_execution_context(void* (*get_packet_buffer)(void* packet),
-												   			  void (*free_packet)(void* packet));
+struct execution_context_t* create_netstack_execution_context(struct handler_t** handlers, 
+                                                              uint8_t num_handlers,
+                                                              void* (*get_packet_buffer)(void* packet),
+												   			  void (*free_packet)(void* packet),
+                                                              struct interface_t* (*get_interface)(void* packet));
 
 
 #endif // WORKER_H

@@ -30,8 +30,6 @@ struct handler_t;
 
 struct in_buffer_t {
     const void* packet_pointers[10];
-    uint64_t size;
-    uint64_t offset;  
 };
 
 struct out_buffer_t {

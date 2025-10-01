@@ -13,3 +13,8 @@ void* dpdk_packet_get_packet_buffer(void* packet) {
 void dpdk_packet_free_packet(void* packet) {
 	rte_pktmbuf_free((struct rte_mbuf*) packet);
 }
+
+struct interface_t* dpdk_packet_get_interface(void* packet) {
+    struct rte_mbuf* buffer = (struct rte_mbuf*) packet;
+    return interfaces[buffer->port];
+}

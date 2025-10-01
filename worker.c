@@ -50,12 +50,31 @@ void* consume_tasks(void* execution_context_arg) {
 	void** task;
      
 	while(execution_context->state == NET_STACK_RUNNING) {
-		struct task_t* task = QUEUE_DEQUEUE(execution_context->work_queue, task);	
-		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed task\n");   
-		task->run(task->argument);
+		void* packet = QUEUE_DEQUEUE(execution_context->work_queue, task);	
+
+		// if nothing was dequeued, just try again
+		if(packet) {
+			continue;
+		}
+
+		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed packet\n");   
+
+		for(uint8_t i = 0 ; i < execution_context->num_handlers ; i++) {
+			void* buffer = execution_context->get_packet_buffer(packet);
+			struct interface_t* interface = execution_context->get_interface(packet);
+
+			struct in_packet_stack_t packet_stack = { 
+				.stack_idx = 0, 
+				.in_buffer = { 
+					.packet_pointers[0] = buffer
+				} 
+			};
+
+			execution_context->handlers[i]->operations.read(&packet_stack, interface, execution_context->handlers[i]);
+
+			execution_context->free_packet(buffer);
+		}
 	}	
-	
-	return NULL;
 }
 
 void stop(struct execution_context_t* execution_context) {
@@ -78,8 +97,11 @@ int start(struct execution_context_t* execution_context) {
 	pthread_mutex_unlock(&execution_context->state_lock);
 }
 
-struct execution_context_t* create_netstack_execution_context(void* (*get_packet_buffer)(void* packet),
-												   			  void (*free_packet)(void* packet)) {
+struct execution_context_t* create_netstack_execution_context(struct handler_t** handlers,
+    														  uint8_t num_handlers, 
+															  void* (*get_packet_buffer)(void* packet),
+												   			  void (*free_packet)(void* packet),
+															  struct interface_t* (*get_interface)(void* packet)) {
 	struct execution_context_t* execution_context = (struct execution_context_t*) NET_STACK_MALLOC("Execution context", 
         sizeof(struct execution_context_t));
 
@@ -89,6 +111,10 @@ struct execution_context_t* create_netstack_execution_context(void* (*get_packet
 
 	execution_context->get_packet_buffer = get_packet_buffer;
 	execution_context->free_packet = free_packet;
+
+	execution_context->handlers = handlers;
+	execution_context->num_handlers = num_handlers;
+	execution_context->get_interface = get_interface;
 
 	pthread_mutex_init(&execution_context->state_lock, 0);    
 

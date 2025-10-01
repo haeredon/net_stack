@@ -344,7 +344,8 @@ int main(int argc, char **argv) {
 		workers[worker_idx] = create_netstack_execution_context(root_handlers, 
 																1, // this should be calculated at runtime. Right now it is a latent bug
 															  	dpdk_packet_get_packet_buffer, 
-																dpdk_packet_free_packet);
+																dpdk_packet_free_packet,
+																dpdk_packet_get_interface);
 		struct execution_context_t* execution_context = workers[worker_idx];
 		execution_context->start(execution_context);
 				
@@ -354,7 +355,7 @@ int main(int argc, char **argv) {
 	}
 
 	// use main lcore (offloader) to distribute packages to exection contexts	
-	offloader_loop(interface, workers, NUM_WORKERS);
+	offloader_loop(interfaces[0], workers, NUM_WORKERS);
 
 	// wait for cores to stop
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {

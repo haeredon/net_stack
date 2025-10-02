@@ -47,21 +47,21 @@ void* consume_tasks(void* execution_context_arg) {
     NETSTACK_LOG(NETSTACK_INFO, "Worker thread started\n");   
 
 	struct execution_context_t* execution_context = (struct execution_context_t*) execution_context_arg;
-	void** task;
+	void* buffers[1]; // only support single buffer dequeue for now
      
 	while(execution_context->state == NET_STACK_RUNNING) {
-		void* packet = QUEUE_DEQUEUE(execution_context->work_queue, task);	
+		int ret = QUEUE_DEQUEUE(execution_context->work_queue, buffers);	
 
 		// if nothing was dequeued, just try again
-		if(packet) {
+		if(!ret) {
 			continue;
 		}
 
 		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed packet\n");   
 
 		for(uint8_t i = 0 ; i < execution_context->num_handlers ; i++) {
-			void* buffer = execution_context->get_packet_buffer(packet);
-			struct interface_t* interface = execution_context->get_interface(packet);
+			void* buffer = execution_context->get_packet_buffer(buffers[0]);
+			struct interface_t* interface = execution_context->get_interface(buffers[0]);
 
 			struct in_packet_stack_t packet_stack = { 
 				.stack_idx = 0, 

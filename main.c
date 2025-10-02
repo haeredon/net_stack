@@ -44,6 +44,7 @@
 
 #include "util/memory.h"
 #include "util/queue.h"
+#include "util/log.h"
 #include "worker.h"
 #include "interface.h"
 #include "handlers/handler.h"
@@ -65,7 +66,7 @@ static int promiscuous_on = 1;
 static uint16_t num_rxd = RX_DESC_DEFAULT;
 static uint16_t num_txd = TX_DESC_DEFAULT;
 
-static struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS];
+
 
 static struct rte_eth_conf port_conf = {
 	.txmode = {
@@ -150,18 +151,26 @@ bool force_quit = false;
 
 static void offloader_loop(struct interface_t* interface, 
 						   struct execution_context_t** workers, uint8_t num_execution_contexts) {
-	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
+	struct rte_mbuf* read_buffers[MAX_PKT_BURST];
+	struct rte_mbuf* write_buffers[MAX_PKT_BURST];
+	struct out_buffer_t* out_buffers[MAX_PKT_BURST];
+
+	int ret = rte_pktmbuf_alloc_bulk(pktmbuf_pool, write_buffers, MAX_PKT_BURST);
+
+	if(!ret) {
+		NETSTACK_LOG(NETSTACK_SEVERE, "Could not allocate write buffers\n");         
+	}
 
 	while (!force_quit) {
 		/* Read packet from RX queues. 8< */
-		uint16_t nb_rx = rte_eth_rx_burst(interface->port, 0, pkts_burst, MAX_PKT_BURST);
+		uint16_t nb_rx = rte_eth_rx_burst(interface->port, 0, read_buffers, MAX_PKT_BURST);
 
 		if (unlikely(nb_rx == 0)) {
 			continue;
 		}			
 
-		for (uint16_t j = 0; j < nb_rx; j++) {
-			struct rte_mbuf* buffer = pkts_burst[j];
+		for(uint16_t j = 0; j < nb_rx; j++) {
+			struct rte_mbuf* buffer = read_buffers[j];
 
 			struct in_packet_stack_t packet_stack = { .stack_idx = 0, .in_buffer = { .packet_pointers = 0 } };
 
@@ -169,8 +178,21 @@ static void offloader_loop(struct interface_t* interface,
 				rte_ring_sp_enqueue(workers[0]->work_queue, buffer);
 			}
 		}
+		
+		int num_dequed = rte_ring_dequeue_bulk(dpdk_write_write_queue, write_buffers, MAX_PKT_BURST, NULL);
+		
+		if(num_dequed) {
+			for(uint8_t i = 0 ; i < num_dequed ; i++) {
+				write_buffers[i]->buf_addr = (uint8_t*) out_buffers[i]->buffer + out_buffers[i]->offset;
+				write_buffers[i]->data_len = out_buffers[i]->size - out_buffers[i]->offset;
+			}
 
-		/* >8 End of read packet from RX queues. */
+			uint16_t packages_sent = rte_eth_tx_burst(interface->port, 0 /* queue_id is always 0 */, write_buffers, num_dequed);
+
+			if(packages_sent != num_dequed) {
+				NETSTACK_LOG(NETSTACK_WARNING, "Failed to send all packages in transmit queue\n");         
+			}
+		}
 	}
 }
 
@@ -263,16 +285,16 @@ int main(int argc, char **argv) {
 				ret, portid);
 
 		// Initialize TX buffers 
-		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
+		dpdk_write_tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
 				RTE_ETH_TX_BUFFER_SIZE(MAX_PKT_BURST), 0,
 				rte_eth_dev_socket_id(portid));
-		if (tx_buffer[portid] == NULL)
+		if (dpdk_write_tx_buffer[portid] == NULL)
 			rte_exit(EXIT_FAILURE, "Cannot allocate buffer for tx on port %u\n",
 					portid);
 
-		rte_eth_tx_buffer_init(tx_buffer[portid], MAX_PKT_BURST);
+		rte_eth_tx_buffer_init(dpdk_write_tx_buffer[portid], MAX_PKT_BURST);
 
-		ret = rte_eth_tx_buffer_set_err_callback(tx_buffer[portid],
+		ret = rte_eth_tx_buffer_set_err_callback(dpdk_write_tx_buffer[portid],
 				rte_eth_tx_buffer_count_callback,
 				&num_dropped_packages);
 		if (ret < 0)
@@ -342,7 +364,7 @@ int main(int argc, char **argv) {
 	uint8_t worker_idx = 0;
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {		
 		workers[worker_idx] = create_netstack_execution_context(root_handlers, 
-																1, // this should be calculated at runtime. Right now it is a latent bug
+																1 /* num_handlers */, // this should be calculated at runtime. Right now it is a latent bug
 															  	dpdk_packet_get_packet_buffer, 
 																dpdk_packet_free_packet,
 																dpdk_packet_get_interface);
@@ -352,6 +374,13 @@ int main(int argc, char **argv) {
 		if(++worker_idx == NUM_WORKERS) {
 			break;
 		}
+	}
+
+	// initialize offloader write queue
+	dpdk_write_write_queue = rte_ring_create("write ring", 32, rte_socket_id(), RING_F_SC_DEQ);
+
+	if(!dpdk_write_write_queue) {
+		rte_exit(EXIT_FAILURE, "Could not create ring for write queue");
 	}
 
 	// use main lcore (offloader) to distribute packages to exection contexts	

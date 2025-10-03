@@ -8,8 +8,8 @@
 #include "handlers/handler.h"
 
 #include "util/array.h"
-
 #include "util/log.h"
+#include "util/memory.h"
 
 /*
  * Address Resolution Protocol handler. Only supports IPv4 over ethernet.
@@ -54,14 +54,14 @@ struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4) {
 
 void arp_close_handler(struct handler_t* handler) {
     struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
-    handler->handler_config->mem_free(private);
+    NET_STACK_FREE(private);
 }
 
 void arp_init_handler(struct handler_t* handler, void* priv_config) {
-    struct arp_priv_t* arp_priv = (struct arp_priv_t*) handler->handler_config->mem_allocate("arp handler private data", sizeof(struct arp_priv_t)); 
+    struct arp_priv_t* arp_priv = (struct arp_priv_t*) NET_STACK_MALLOC("arp handler private data", sizeof(struct arp_priv_t)); 
     handler->priv = (void*) arp_priv;
 
-    arp_resolution_list.list = (struct arp_entry_t**) handler->handler_config->mem_allocate("Arp resolution list", sizeof(struct arp_entry_t) * ARP_RESOLUTION_LIST_SIZE);     
+    arp_resolution_list.list = (struct arp_entry_t**) NET_STACK_MALLOC("Arp resolution list", sizeof(struct arp_entry_t) * ARP_RESOLUTION_LIST_SIZE);     
     
     if(pthread_rwlock_init(&arp_resolution_list.lock, 0)) {
         NETSTACK_LOG(NETSTACK_ERROR, "Could not initialize lock for arp mapping table\n");         
@@ -116,7 +116,7 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
 
             if(header->target_protocol_addr == interface->ipv4_addr) {
                 if(!mapping) {
-                    struct arp_entry_t* new_arp_entry = handler->handler_config->mem_allocate("arp entry", sizeof(struct arp_entry_t));
+                    struct arp_entry_t* new_arp_entry = NET_STACK_MALLOC("arp entry", sizeof(struct arp_entry_t));
                     new_arp_entry->ipv4 = header->sender_protocol_addr;
                     memcpy(new_arp_entry->mac, header->sender_hardware_addr, ETHERNET_MAC_SIZE);
                     arp_insert_mapping(new_arp_entry);
@@ -157,7 +157,7 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
 
 
 struct handler_t* arp_create_handler(struct handler_config_t *handler_config) {
-    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("arp handler", sizeof(struct handler_t));	
+    struct handler_t* handler = (struct handler_t*) NET_STACK_MALLOC("arp handler", sizeof(struct handler_t));	
     handler->handler_config = handler_config;
 
     handler->init = arp_init_handler;

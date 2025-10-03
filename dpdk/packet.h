@@ -1,7 +1,7 @@
 #ifndef DPDK_PACKET_H
 #define DPDK_PACKET_H
 
-#include "interface.h"
+#include "handlers/interface.h"
 
 struct interface_t** interfaces;
 

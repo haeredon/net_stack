@@ -10,6 +10,7 @@
 
 
 #include "util/log.h"
+#include "util/memory.h"
 
 /*
  * Internet Protocol Version 4 handler. No support for options field or fragmentation.
@@ -34,11 +35,11 @@ struct priority_map_t ip_type_to_handler = {
 
 void ipv4_close_handler(struct handler_t* handler) {
     struct ipv4_priv_t* private = (struct ipv4_priv_t*) handler->priv;    
-    handler->handler_config->mem_free(private);
+    NET_STACK_FREE(private);
 }
 
 void ipv4_init_handler(struct handler_t* handler, void* priv_config) {
-    struct ipv4_priv_t* ipv4_priv = (struct ipv4_priv_t*) handler->handler_config->mem_allocate("ipv4 handler private data", sizeof(struct ipv4_priv_t)); 
+    struct ipv4_priv_t* ipv4_priv = (struct ipv4_priv_t*) NET_STACK_MALLOC("ipv4 handler private data", sizeof(struct ipv4_priv_t)); 
     handler->priv = (void*) ipv4_priv;
 }
 
@@ -148,7 +149,7 @@ uint16_t ipv4_read(struct in_packet_stack_t* packet_stack, struct interface_t* i
 
 
 struct handler_t* ipv4_create_handler(struct handler_config_t *handler_config) {
-    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("ipv4 handler", sizeof(struct handler_t));	
+    struct handler_t* handler = (struct handler_t*) NET_STACK_MALLOC("ipv4 handler", sizeof(struct handler_t));	
     handler->handler_config = handler_config;
 
     handler->init = ipv4_init_handler;

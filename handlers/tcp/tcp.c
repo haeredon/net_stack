@@ -5,6 +5,7 @@
 #include "tcp_block_buffer.h"
 #include "tcp_shared.h"
 #include "socket.h"
+#include "util/memory.h"
 
 #include <string.h>
 #include <arpa/inet.h>
@@ -49,11 +50,11 @@
 
 void tcp_close_handler(struct handler_t* handler) {
     struct tcp_priv_t* private = (struct tcp_priv_t*) handler->priv;    
-    handler->handler_config->mem_free(private);
+    NET_STACK_FREE(private);
 }
 
 void tcp_init_handler(struct handler_t* handler, void* priv_config) {    
-    struct tcp_priv_t* tcp_priv = (struct tcp_priv_t*) handler->handler_config->mem_allocate("tcp handler private data", sizeof(struct tcp_priv_t)); 
+    struct tcp_priv_t* tcp_priv = (struct tcp_priv_t*) NET_STACK_MALLOC("tcp handler private data", sizeof(struct tcp_priv_t)); 
 
     struct tcp_priv_config_t* config = (struct tcp_priv_config_t*) priv_config;
 
@@ -188,7 +189,7 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
                 tcp_add_transmission_control_block(socket, tcb);
             
                 if(!tcb) {
-                    handler->handler_config->mem_free(tcb);
+                    NET_STACK_FREE(tcb);
                     NETSTACK_LOG(NETSTACK_INFO, "Could not allocate transmission control block.\n");          
                     return 1;
                 } 
@@ -218,7 +219,7 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
 }
 
 struct handler_t* tcp_create_handler(struct handler_config_t *handler_config) {
-    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("tcp handler", sizeof(struct handler_t));	
+    struct handler_t* handler = (struct handler_t*) NET_STACK_MALLOC("tcp handler", sizeof(struct handler_t));	
     handler->handler_config = handler_config;
 
     handler->init = tcp_init_handler;

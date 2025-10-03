@@ -19,14 +19,11 @@ struct tcp_block_buffer_t {
     struct tcp_block_t* last_free;
     struct tcp_block_t* blocks;
 
-    void* (*mem_allocate)(const char *type, size_t size);
-    void (*mem_free)(void*);
-
     uint32_t max_size;
 };
 
 
-struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer, void (*mem_free)(void*));
+struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer);
 
 bool tcp_block_buffer_remove_front(struct tcp_block_buffer_t* block_buffer, const uint16_t num_to_remove);
 
@@ -36,8 +33,7 @@ uint16_t tcp_block_buffer_num_ready(struct tcp_block_buffer_t* block_buffer, uin
 
 struct tcp_block_t* tcp_block_buffer_add(struct tcp_block_buffer_t* block_buffer, void* data, const uint32_t sequence_num, uint16_t tcp_payload_size);
 
-struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size,  void* (*mem_allocate)(const char *type, size_t size),
-                                                   void (*mem_free)(void*));
+struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size);
 
 
 

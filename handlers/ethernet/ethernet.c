@@ -20,13 +20,13 @@ struct priority_map_t ethernet_type_to_handler = {
 
 
 void ethernet_init_handler(struct handler_t* handler, void* priv_config) {
-    struct ethernet_priv_t* ethernet_priv = (struct ethernet_priv_t*) handler->handler_config->mem_allocate("pcap handler private data", sizeof(struct ethernet_priv_t)); 
+    struct ethernet_priv_t* ethernet_priv = (struct ethernet_priv_t*) NET_STACK_MALLOC("pcap handler private data", sizeof(struct ethernet_priv_t)); 
     handler->priv = (void*) ethernet_priv;
 }
 
 void ethernet_close_handler(struct handler_t* handler) {
     struct ethernet_priv_t* private = (struct ethernet_priv_t*) handler->priv;    
-    handler->handler_config->mem_free(private);
+    NET_STACK_FREE(private);
 }
 
 bool ethernet_write(struct out_packet_stack_t* packet_stack, struct interface_t* interface, const struct handler_t* handler) {

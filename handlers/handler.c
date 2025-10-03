@@ -33,7 +33,7 @@ struct out_packet_stack_t* handler_create_out_package_stack(struct in_packet_sta
 
 struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 	// these are root handlers which will be activated when a package arrives
-	struct handler_t** handlers = (struct handler_t**) config->mem_allocate("handler array for ethernet", sizeof(struct handler_t*) * 2);
+	struct handler_t** handlers = (struct handler_t**) NET_STACK_MALLOC("handler array for ethernet", sizeof(struct handler_t*) * 2);
 	
 	// handlers[0] = pcapng_create_handler(config);
 	handlers[0] = ethernet_create_handler(config);

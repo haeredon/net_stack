@@ -8,7 +8,7 @@
     #define NET_STACK_FREE(POINTER) rte_free(void *POINTER); 
 #else
     #define NET_STACK_MALLOC(TYPE, SIZE) malloc(SIZE)
-    #define NET_STACK_FREE(POINTER) free(void *POINTER)          
+    #define NET_STACK_FREE(POINTER) free(POINTER)          
 #endif
 
 #endif // UTIL_MEMORY_H 

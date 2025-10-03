@@ -6,11 +6,15 @@ SRCS-TEST := test/main.c test/utility.c test/ipv4/test.c test/common.c test/tcp/
 OBJS-TEST = $(SRCS-TEST:.c=.o)
 INCLUDES-TEST := -I ./ 
 
-#SRCS-DEV := main_dev.c worker.c execution_pool.c
 
-SRCS-HANDLERS := handlers/ethernet/ethernet.c handlers/handler.c handlers/protocol_map.c handlers/ipv4/ipv4.c handlers/custom/custom.c handlers/tcp/tcp.c handlers/tcp/tcp_block_buffer.c handlers/tcp/socket.c handlers/tcp/tcp_shared.c handlers/tcp/tcp_states.c handlers/arp/arp.c
+
+SRCS-HANDLERS := handlers/ethernet/ethernet.c handlers/handler.c handlers/protocol_map.c handlers/ipv4/ipv4.c handlers/custom/custom.c handlers/tcp/tcp.c handlers/tcp/tcp_block_buffer.c handlers/tcp/socket.c handlers/tcp/tcp_shared.c handlers/tcp/tcp_states.c handlers/arp/arp.c handlers/interface.c
 SRCS-UTILITY := util/array.c util/b_tree.c util/log.c
 OBJS = $(SRCS-HANDLERS:.c=.o) $(SRCS-UTILITY:.c=.o) 
+
+SRCS-MAIN := main.c worker.c execution_pool.c dpdk/packet.c dpdk/write.c
+OBJS-MAIN = $(SRCS-MAIN:.c=.o)
+
 INCLUDES := -I ./
 
 BUILD-DIR := build
@@ -23,30 +27,20 @@ ifneq ($(shell $(PKGCONF) --exists libdpdk && echo 0),0)
 $(error "no installation of DPDK found")
 endif
 
-# all: shared
-
-# .PHONY: shared
-# shared: build/$(APP)-shared
-# 	ln -sf $(APP)-shared build/$(APP)
-
-test: build/$(APP)-test
-
-# dev: build/$(APP)-dev
-	
 PC_FILE := $(shell $(PKGCONF) --path libdpdk 2>/dev/null)
 CFLAGS += -g $(shell $(PKGCONF) --cflags libdpdk)
 # Add flag to allow experimental API as l2fwd uses rte_ethdev_set_ptype API
 CFLAGS += -DALLOW_EXPERIMENTAL_API
 LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
 
+############################### NET STACK APP ################################
+build/$(APP): $(BUILD-DIR)/libhandler.so $(addprefix $(OBJ-DIR)/, $(OBJS-MAIN))
+	mkdir -p $(BUILD-DIR)
+	$(CC) -L$(BUILD-DIR) $(CFLAGS) $(addprefix $(OBJ-DIR)/,$(OBJS-MAIN)) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
-
-############################### RUNTIME ######################################
-# build/$(APP)-shared: build/libhandler.so $(SRCS-y) Makefile $(PC_FILE) | build
-# 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-y) $(INCLUDES)  -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
-
-# build/$(APP)-dev: build/libhandler.so $(SRCS-DEV) | build	
-# 	$(CC) -L/home/skod/net_stack/build $(CFLAGS) $(SRCS-DEV) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
+$(OBJ-DIR)/%.o: %.c 
+	mkdir -p $(dir $@)
+	$(CC) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 ############################### NET STACK HANDLERS ###########################
 $(BUILD-DIR)/libhandler.so: $(addprefix $(OBJ-DIR)/, $(OBJS))
@@ -76,6 +70,11 @@ $(BUILD-DIR)/libtestoverrides.so: $(SRCS-OVERRIDES-TEST) | $(BUILD-DIR)
 
 
 ############################### STANDARD TARGETS ###############################
+
+test: $(BUILD-DIR)/$(APP)-test
+
+app: build/$(APP)
+
 all: $(BUILD-DIR)/$(APP)-test 
 
 .PHONY: clean test

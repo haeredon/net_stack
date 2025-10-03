@@ -12,8 +12,8 @@
 #include <arpa/inet.h>
 
 void delete_transmission_control_block(struct handler_t* handler, struct transmission_control_block_t* tcb) {
-    tcp_block_buffer_destroy(tcb->in_buffer, handler->handler_config->mem_free);
-    handler->handler_config->mem_free(tcb);
+    tcp_block_buffer_destroy(tcb->in_buffer);
+    NET_STACK_FREE(tcb);
 }
 
 struct transmission_control_block_t* tcp_create_transmission_control_block(struct handler_t* handler, struct tcp_socket_t* socket, 
@@ -22,7 +22,7 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
     
     struct transmission_control_block_t* tcb = 
-        (struct transmission_control_block_t*) handler->handler_config->mem_allocate("tcp: new session", 
+        (struct transmission_control_block_t*) NET_STACK_MALLOC("tcp: new session", 
             sizeof(struct transmission_control_block_t));
 
     tcb->id = connection_id;    
@@ -47,8 +47,8 @@ struct transmission_control_block_t* tcp_create_transmission_control_block(struc
 
     tcb->fin_num = 0;
 
-    tcb->in_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
-    tcb->out_buffer = create_tcp_block_buffer(10, handler->handler_config->mem_allocate, handler->handler_config->mem_free);
+    tcb->in_buffer = create_tcp_block_buffer(10);
+    tcb->out_buffer = create_tcp_block_buffer(10);
     
     tcb->state = state;
 
@@ -184,8 +184,7 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
                 &initial_header, remote_ip, SYN_SENT);
                 
     // initiate a handshake    
-    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
-                mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
     
     struct tcp_write_args_t tcp_args = {
         .connection_id = connection_id,

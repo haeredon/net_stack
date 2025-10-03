@@ -5,6 +5,7 @@
 #include "util/log.h"
 #include "handlers/custom/custom.h"
 #include "handlers/handler.h"
+#include "util/memory.h"
 
 /*
  * Custom Handler. Just responds immediately with whatever data has been predefined for it. If no data has been defined it will write 
@@ -15,11 +16,11 @@
 
 void custom_close_handler(struct handler_t* handler) {
     struct custom_priv_t* private = (struct custom_priv_t*) handler->priv;    
-    handler->handler_config->mem_free(private);
+    NET_STACK_FREE(private);
 }
 
 void custom_init_handler(struct handler_t* handler, void* priv_config) {
-    struct custom_priv_t* private = (struct custom_priv_t*) handler->handler_config->mem_allocate("custom handler private data", sizeof(struct custom_priv_t)); 
+    struct custom_priv_t* private = (struct custom_priv_t*) NET_STACK_MALLOC("custom handler private data", sizeof(struct custom_priv_t)); 
 
     private->response_length = 0;
     private->response_buffer = 0;
@@ -55,8 +56,7 @@ bool custom_write(struct out_packet_stack_t* packet_stack, struct interface_t* i
 uint16_t custom_read(struct in_packet_stack_t* packet_stack, struct interface_t* interface, struct handler_t* handler) {
     packet_stack->handlers[packet_stack->stack_idx] = handler;   
 
-    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) handler->handler_config->
-            mem_allocate("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
 
     memcpy(out_package_stack->handlers, packet_stack->handlers, 10 * sizeof(struct handler_t*));
     memcpy(out_package_stack->args, packet_stack->return_args, 10 * sizeof(void*));
@@ -77,7 +77,7 @@ void custom_set_response(struct handler_t* handler, void* response_buffer, uint3
 }
 
 struct handler_t* custom_create_handler(struct handler_config_t *handler_config) {
-    struct handler_t* handler = (struct handler_t*) handler_config->mem_allocate("null handler", sizeof(struct handler_t));	
+    struct handler_t* handler = (struct handler_t*) NET_STACK_MALLOC("null handler", sizeof(struct handler_t));	
     handler->handler_config = handler_config;
 
     handler->init = custom_init_handler;

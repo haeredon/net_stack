@@ -46,7 +46,7 @@
 #include "util/queue.h"
 #include "util/log.h"
 #include "worker.h"
-#include "interface.h"
+#include "handlers/interface.h"
 #include "handlers/handler.h"
 #include "handlers/ethernet/ethernet.h"
 #include "dpdk/write.h"
@@ -66,7 +66,7 @@ static int promiscuous_on = 1;
 static uint16_t num_rxd = RX_DESC_DEFAULT;
 static uint16_t num_txd = TX_DESC_DEFAULT;
 
-
+bool force_quit = false; 
 
 static struct rte_eth_conf port_conf = {
 	.txmode = {
@@ -147,7 +147,7 @@ static void signal_handler(int signum) {
 	}
 }
 
-bool force_quit = false; 
+
 
 static void offloader_loop(struct interface_t* interface, 
 						   struct execution_context_t** workers, uint8_t num_execution_contexts) {

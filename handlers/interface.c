@@ -1,5 +1,5 @@
 #include "interface.h"
-
+#include "util/memory.h"
 
 
 struct interface_t* interface_create_interface(struct interface_operations_t interface_operations) {

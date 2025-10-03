@@ -1,7 +1,9 @@
-#ifndef INTERFACE_H
-#define INTERFACE_H
+#ifndef HANDLERS_INTERFACE_H
+#define HANDLERS_INTERFACE_H
 
 #include <stdint.h>
+
+#include "handlers/types.h"
 
 struct interface_operations_t {
     int64_t (*write)(struct out_buffer_t* out_buffer); // write to hardware level
@@ -16,4 +18,4 @@ struct interface_t {
 
 struct interface_t* interface_create_interface(struct interface_operations_t interface_operations);
 
-#endif // INTERFACE_H
+#endif // HANDLERS_INTERFACE_H

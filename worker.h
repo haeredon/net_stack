@@ -3,7 +3,7 @@
 
 #include "handlers/handler.h"
 #include "util/queue.h"
-#include "interface.h"
+#include "handlers/interface.h"
 
 #include<stdint.h>
 #include<rte_mbuf.h>
@@ -23,20 +23,6 @@
 #endif
 
 
-
-
-struct lcore_setup_t {
-    struct interface_t interface;
-    struct handler_t** handlers;
-    uint8_t num_handlers;
-};
-
-int worker_start_lcore_worker(void* setups);
-
-extern volatile bool force_quit; 
-
-
-/************************************************************************************ */
 struct task_t {
     void* argument;
     void (*run)(void* argument);            

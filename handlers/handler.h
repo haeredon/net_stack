@@ -8,6 +8,7 @@
 #include <pthread.h>
 
 #include "interface.h"
+#include "handlers/types.h"
 
 
 #define DEFAULT_PACKAGE_BUFFER_SIZE 0xFFFF
@@ -30,12 +31,6 @@ struct handler_t;
 
 struct in_buffer_t {
     const void* packet_pointers[10];
-};
-
-struct out_buffer_t {
-    void* buffer;
-    uint64_t size; 
-    uint64_t offset; 
 };
 
 

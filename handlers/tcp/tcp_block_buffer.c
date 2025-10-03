@@ -1,5 +1,6 @@
 #include "handlers/tcp/tcp_block_buffer.h"
 #include "util/log.h"
+#include "util/memory.h"
 
 #include <string.h>
 #include <stdbool.h>
@@ -129,18 +130,14 @@ struct tcp_block_t* tcp_block_buffer_get_head(struct tcp_block_buffer_t* block_b
     return block_buffer->blocks;
 }
 
-struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer, void (*mem_free)(void*)) {
+struct tcp_block_t* tcp_block_buffer_destroy(struct tcp_block_buffer_t* block_buffer) {
 
 }
 
-struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size,  void* (*mem_allocate)(const char *type, size_t size),
-                                                   void (*mem_free)(void*)) {
-    struct tcp_block_buffer_t* block_buffer = (struct tcp_block_buffer_t*) mem_allocate("tcp block buffer", sizeof(struct tcp_block_buffer_t));
+struct tcp_block_buffer_t* create_tcp_block_buffer(uint16_t max_size) {
+    struct tcp_block_buffer_t* block_buffer = (struct tcp_block_buffer_t*) NET_STACK_MALLOC("tcp block buffer", sizeof(struct tcp_block_buffer_t));
 
-    block_buffer->mem_allocate = mem_allocate;
-    block_buffer->mem_free = mem_free;
-
-    block_buffer->free_list = block_buffer->mem_allocate("tcp block buffer: free_list", sizeof(struct tcp_block_t) * TCP_BLOCK_BUFFER_DEFAULT_SIZE); 
+    block_buffer->free_list = NET_STACK_MALLOC("tcp block buffer: free_list", sizeof(struct tcp_block_t) * TCP_BLOCK_BUFFER_DEFAULT_SIZE); 
     block_buffer->blocks = 0;
 
     // initialize free list

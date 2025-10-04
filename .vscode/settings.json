@@ -2,17 +2,23 @@
     "makefile.launchConfigurations": [
         {
             "cwd": "/home/skod/net_stack/build",
-            "binaryPath": "/home/skod/net_stack/build/net_stack",
-            "binaryArgs": ["-l", "1-3", "-n", "4", "--in-memory"],
-            "miDebuggerPath": "${workspaceFolder}/tools/gdb",
-            "MIMode": "gdb",
-        },
-        {
-            "cwd": "/home/skod/net_stack/build",
             "binaryPath": "/home/skod/net_stack/build/net_stack-test",
             "binaryArgs": [],
             "miDebuggerPath": "${workspaceFolder}/tools/gdb",
-            "MIMode": "gdb",
+            "MIMode": "gdb"
+        },
+        {
+            "cwd": "/home/skod/net_stack/build",
+            "binaryPath": "/home/skod/net_stack/build/net_stack",
+            "binaryArgs": [
+                "-l",
+                "1-3",
+                "-n",
+                "4",
+                "--in-memory"
+            ],
+            "miDebuggerPath": "${workspaceFolder}/tools/gdb",
+            "MIMode": "gdb"
         }
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",

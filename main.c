@@ -157,7 +157,7 @@ static void offloader_loop(struct interface_t* interface,
 
 	int ret = rte_pktmbuf_alloc_bulk(pktmbuf_pool, write_buffers, MAX_PKT_BURST);
 
-	if(!ret) {
+	if(ret != 0) {
 		NETSTACK_LOG(NETSTACK_SEVERE, "Could not allocate write buffers\n");         
 	}
 
@@ -171,12 +171,7 @@ static void offloader_loop(struct interface_t* interface,
 
 		for(uint16_t j = 0; j < nb_rx; j++) {
 			struct rte_mbuf* buffer = read_buffers[j];
-
-			struct in_packet_stack_t packet_stack = { .stack_idx = 0, .in_buffer = { .packet_pointers = 0 } };
-
-			for (uint8_t i = 0; i < num_execution_contexts; i++) {		
-				rte_ring_sp_enqueue(workers[0]->work_queue, buffer);
-			}
+			rte_ring_sp_enqueue(workers[j % num_execution_contexts]->work_queue, buffer);
 		}
 		
 		int num_dequed = rte_ring_dequeue_bulk(dpdk_write_write_queue, (void**) write_buffers, MAX_PKT_BURST, NULL);
@@ -356,20 +351,21 @@ int main(int argc, char **argv) {
 	struct handler_t** root_handlers = handler_create_stacks(handler_config);
 
 	// fixed thread count for now on same socket 
-	const uint8_t NUM_WORKERS = 3;
+	const uint8_t NUM_WORKERS = 2;
 	struct execution_context_t** workers = (struct execution_context_t**) NET_STACK_MALLOC("execution_contexts", sizeof(struct execution_context_t*));	;
 	struct offloader_t* offloader;
 
 	// launch all workers
 	uint8_t worker_idx = 0;
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {		
-		workers[worker_idx] = create_netstack_execution_context(root_handlers, 
+		workers[worker_idx] = create_netstack_execution_context(lcore_id,
+																root_handlers, 
 																1 /* num_handlers */, // this should be calculated at runtime. Right now it is a latent bug
 															  	dpdk_packet_get_packet_buffer, 
 																dpdk_packet_free_packet,
 																dpdk_packet_get_interface);
 		struct execution_context_t* execution_context = workers[worker_idx];
-		execution_context->start(execution_context);
+		// execution_context->start(execution_context);
 				
 		if(++worker_idx == NUM_WORKERS) {
 			break;

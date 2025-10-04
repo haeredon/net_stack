@@ -36,6 +36,8 @@ enum Execution_state {
 }; 
 
 struct execution_context_t {
+    int worker_id;
+
     QUEUE_TYPE* work_queue;        
 
     EXECUTION_CONTEXT_THREAD_HANDLE thread_handle;
@@ -54,7 +56,8 @@ struct execution_context_t {
     uint8_t num_handlers;
 };
 
-struct execution_context_t* create_netstack_execution_context(struct handler_t** handlers, 
+struct execution_context_t* create_netstack_execution_context(uint8_t worker_id,
+                                                              struct handler_t** handlers, 
                                                               uint8_t num_handlers,
                                                               void* (*get_packet_buffer)(void* packet),
 												   			  void (*free_packet)(void* packet),

@@ -53,7 +53,7 @@ void* consume_tasks(void* execution_context_arg) {
 		int ret = QUEUE_DEQUEUE(execution_context->work_queue, buffers);	
 
 		// if nothing was dequeued, just try again
-		if(!ret) {
+		if(ret != 0) {
 			continue;
 		}
 
@@ -97,7 +97,8 @@ int start(struct execution_context_t* execution_context) {
 	pthread_mutex_unlock(&execution_context->state_lock);
 }
 
-struct execution_context_t* create_netstack_execution_context(struct handler_t** handlers,
+struct execution_context_t* create_netstack_execution_context(uint8_t worker_id,
+														      struct handler_t** handlers,
     														  uint8_t num_handlers, 
 															  void* (*get_packet_buffer)(void* packet),
 												   			  void (*free_packet)(void* packet),
@@ -105,9 +106,11 @@ struct execution_context_t* create_netstack_execution_context(struct handler_t**
 	struct execution_context_t* execution_context = (struct execution_context_t*) NET_STACK_MALLOC("Execution context", 
         sizeof(struct execution_context_t));
 
+	execution_context->worker_id = worker_id;
+
 	execution_context->start = start;
 	execution_context->stop = stop;
-	execution_context->work_queue = QUEUE_CREATE_QUEUE(QUEUE_SIZE);
+	QUEUE_CREATE_QUEUE(execution_context->work_queue, QUEUE_SIZE);
 
 	execution_context->get_packet_buffer = get_packet_buffer;
 	execution_context->free_packet = free_packet;

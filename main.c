@@ -179,7 +179,7 @@ static void offloader_loop(struct interface_t* interface,
 			}
 		}
 		
-		int num_dequed = rte_ring_dequeue_bulk(dpdk_write_write_queue, write_buffers, MAX_PKT_BURST, NULL);
+		int num_dequed = rte_ring_dequeue_bulk(dpdk_write_write_queue, (void**) write_buffers, MAX_PKT_BURST, NULL);
 		
 		if(num_dequed) {
 			for(uint8_t i = 0 ; i < num_dequed ; i++) {

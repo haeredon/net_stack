@@ -1,6 +1,9 @@
 #include "dpdk/packet.h"
+#include "util/memory.h"
 
 #include <rte_mbuf.h>
+
+struct interface_t** interfaces;
 
 void* dpdk_packet_get_packet_buffer(void* packet) {
 	struct rte_mbuf* buffer = (struct rte_mbuf*) packet;

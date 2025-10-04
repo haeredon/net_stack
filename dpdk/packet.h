@@ -3,7 +3,7 @@
 
 #include "handlers/interface.h"
 
-struct interface_t** interfaces;
+extern struct interface_t** interfaces;
 
 void* dpdk_packet_get_packet_buffer(void* packet);
 void dpdk_packet_free_packet(void* packet);

@@ -12,7 +12,7 @@ SRCS-HANDLERS := handlers/ethernet/ethernet.c handlers/handler.c handlers/protoc
 SRCS-UTILITY := util/array.c util/b_tree.c util/log.c
 OBJS = $(SRCS-HANDLERS:.c=.o) $(SRCS-UTILITY:.c=.o) 
 
-SRCS-MAIN := main.c worker.c execution_pool.c dpdk/packet.c dpdk/write.c
+SRCS-MAIN := main.c worker.c dpdk/packet.c dpdk/write.c
 OBJS-MAIN = $(SRCS-MAIN:.c=.o)
 
 INCLUDES := -I ./

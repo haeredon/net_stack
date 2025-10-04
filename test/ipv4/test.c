@@ -102,15 +102,12 @@ bool ipv4_test_basic(struct handler_t* handler, struct test_config_t* config) {
  *          BOOTSTRAP                *
 **************************************/
 bool ipv4_tests_start() {        
-    struct handler_config_t handler_config = { 
-        .mem_allocate = test_malloc, 
-        .mem_free = free 
-    };	
+    struct handler_config_t handler_config = { };	
 
     struct interface_t interface = {
         .port = 0,
         .port = 0,
-        .operations.write = ipv4_test_write,
+        .operations.write = 0,
         .ipv4_addr = OWN_IP,
         .mac = 0
     };

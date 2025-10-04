@@ -88,8 +88,6 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // mock ip lower level and uppler level handlers write functions
     struct handler_config_t handler_config = {
-        .mem_allocate = NET_STACK_MALLOC,
-        .mem_free = NET_STACK_FREE,
         .write = 0 
     };
 

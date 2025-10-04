@@ -22,8 +22,6 @@
 void before_each(struct test_run_t* test_run) {
     // create stub tcp handler
     struct handler_config_t* handler_config = malloc(sizeof(struct handler_config_t));
-    handler_config->mem_allocate = test_malloc;
-    handler_config->mem_free = free;
     handler_config->write = 0; // must be set by individual tests
 
     struct tcp_priv_config_t tcp_priv_config = {

@@ -111,10 +111,7 @@ bool arp_test_basic(struct handler_t* handler, struct test_config_t* config) {
  *          BOOTSTRAP                *
 **************************************/
 bool arp_tests_start() {
-  struct handler_config_t handler_config = { 
-        .mem_allocate = test_malloc, 
-        .mem_free = free 
-    };	
+  struct handler_config_t handler_config = { };	
 
     struct interface_t interface = {
         .port = 0,

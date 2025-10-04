@@ -3,7 +3,9 @@
         {
             "cwd": "/home/skod/net_stack/build",
             "binaryPath": "/home/skod/net_stack/build/net_stack",
-            "binaryArgs": ["-l", "0", "-n", "4", "--in-memory", "--", "-q", "1", "-p", "0x3", "-P"]
+            "binaryArgs": ["-l", "1-3", "-n", "4", "--in-memory"],
+            "miDebuggerPath": "${workspaceFolder}/tools/gdb",
+            "MIMode": "gdb",
         },
         {
             "cwd": "/home/skod/net_stack/build",

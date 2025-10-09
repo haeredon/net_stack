@@ -27,6 +27,10 @@ ifneq ($(shell $(PKGCONF) --exists libdpdk && echo 0),0)
 $(error "no installation of DPDK found")
 endif
 
+# user DPDK?
+DPDK = '-DRTE_THREAD_MANAGEMENT -DRTE_MEM_MANAGEMENT'
+
+
 PC_FILE := $(shell $(PKGCONF) --path libdpdk 2>/dev/null)
 CFLAGS += -g $(shell $(PKGCONF) --cflags libdpdk)
 # Add flag to allow experimental API as l2fwd uses rte_ethdev_set_ptype API
@@ -36,24 +40,24 @@ LDFLAGS_SHARED = $(shell $(PKGCONF) --libs libdpdk)
 ############################### NET STACK APP ################################
 build/$(APP): $(BUILD-DIR)/libhandler.so $(addprefix $(OBJ-DIR)/, $(OBJS-MAIN))
 	mkdir -p $(BUILD-DIR)
-	$(CC) -L$(BUILD-DIR) $(CFLAGS) $(addprefix $(OBJ-DIR)/,$(OBJS-MAIN)) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
+	$(CC) $(DPDK) -L$(BUILD-DIR) $(CFLAGS) $(addprefix $(OBJ-DIR)/,$(OBJS-MAIN)) $(INCLUDES-TEST) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED) -lhandler
 
 $(OBJ-DIR)/%.o: %.c 
 	mkdir -p $(dir $@)
-	$(CC) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+	$(CC) $(DPDK) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 ############################### NET STACK HANDLERS ###########################
 $(BUILD-DIR)/libhandler.so: $(addprefix $(OBJ-DIR)/, $(OBJS))
 	mkdir -p $(BUILD-DIR)
-	$(CC) $(CFLAGS) -fpic -shared $(addprefix $(OBJ-DIR)/,$(OBJS)) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+	$(CC) $(DPDK) $(CFLAGS) -fpic -shared $(addprefix $(OBJ-DIR)/,$(OBJS)) $(INCLUDES) -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 $(OBJ-DIR)/handlers/%.o: handlers/%.c 
 	mkdir -p $(dir $@)
-	$(CC) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+	$(CC) $(DPDK) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 $(OBJ-DIR)/util/%.o: util/%.c 
 	mkdir -p $(dir $@)
-	$(CC) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
+	$(CC) $(DPDK) -L$(BUILD-DIR) $(CFLAGS) -fpic $(INCLUDES) -c $< -o $@ $(LDFLAGS) $(LDFLAGS_SHARED)
 
 ############################### TEST ##########################################
 $(BUILD-DIR)/$(APP)-test: $(addprefix $(OBJ-DIR)/, $(OBJS-TEST)) $(BUILD-DIR)/libhandler.so $(BUILD-DIR)/libtestoverrides.so | $(BUILD-DIR)

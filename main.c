@@ -351,7 +351,7 @@ int main(int argc, char **argv) {
 	struct handler_t** root_handlers = handler_create_stacks(handler_config);
 
 	// fixed thread count for now on same socket 
-	const uint8_t NUM_WORKERS = 2;
+	const uint8_t NUM_WORKERS = 1;
 	struct execution_context_t** workers = (struct execution_context_t**) NET_STACK_MALLOC("execution_contexts", sizeof(struct execution_context_t*));	;
 	struct offloader_t* offloader;
 
@@ -365,7 +365,7 @@ int main(int argc, char **argv) {
 																dpdk_packet_free_packet,
 																dpdk_packet_get_interface);
 		struct execution_context_t* execution_context = workers[worker_idx];
-		// execution_context->start(execution_context);
+		execution_context->start(execution_context);
 				
 		if(++worker_idx == NUM_WORKERS) {
 			break;

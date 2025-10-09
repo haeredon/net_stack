@@ -14,7 +14,9 @@
 
 #ifdef RTE_THREAD_MANAGEMENT
     #define EXECUTION_CONTEXT_THREAD_HANDLE uint64_t
-    #define EXECUTION_CONTEXT_THREAD_CREATE(HANDLE, CALL_FUN, ARG) rte_eal_remote_launch(CALL_FUN, ARG, HANDLE);
+    #define EXECUTION_CONTEXT_THREAD_CREATE(HANDLE, CALL_FUN, ARG) \
+        execution_context->thread_handle = execution_context->worker_id; \
+        rte_eal_remote_launch(CALL_FUN, ARG, HANDLE);
     #define EXECUTION_CONTEXT_THREAD_STOP(HANDLE) rte_eal_wait_lcore(HANDLE)
 #else
     #define EXECUTION_CONTEXT_THREAD_HANDLE pthread_t

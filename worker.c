@@ -43,7 +43,7 @@
 #include "util/memory.h"
 
 
-void* consume_tasks(void* execution_context_arg) {
+int consume_tasks(void* execution_context_arg) {
     NETSTACK_LOG(NETSTACK_INFO, "Worker thread started\n");   
 
 	struct execution_context_t* execution_context = (struct execution_context_t*) execution_context_arg;

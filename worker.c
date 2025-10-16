@@ -72,7 +72,8 @@ int consume_tasks(void* execution_context_arg) {
 
 			execution_context->handlers[i]->operations.read(&packet_stack, interface, execution_context->handlers[i]);
 
-			execution_context->free_packet(buffer);
+			struct rte_mbuf* kage = (struct rte_mbuf*) buffers[0];
+			execution_context->free_packet(buffers[0]);
 		}
 	}	
 }

@@ -12,3 +12,5 @@ void _netstack_log(char* level, char* msg, ...);
     _netstack_log(#level, __VA_ARGS__)
 
 #endif // LOG_H
+
+

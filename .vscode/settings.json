@@ -106,7 +106,8 @@
         "thread-shared-types.h": "c",
         "memory.h": "c",
         "custom.h": "c",
-        "packet.h": "c"
+        "packet.h": "c",
+        "stdarg.h": "c"
     }
     
 }

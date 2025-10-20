@@ -10,6 +10,10 @@
 
 #define TCP_DATA_OFFSET_MASK 0xF0
 
+struct tcp_priv_config_t {
+    int window;
+};
+
 struct tcp_write_args_t {
     uint32_t connection_id;
     struct tcp_socket_t* socket;

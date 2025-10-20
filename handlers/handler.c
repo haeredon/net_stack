@@ -6,6 +6,7 @@
 #include "handlers/ethernet/ethernet.h"
 #include "handlers/pcapng/pcapng.h"
 #include "handlers/ipv4/ipv4.h"
+#include "handlers/tcp/tcp.h"
 #include "util/log.h"
 #include "util/memory.h"
 
@@ -45,6 +46,12 @@ struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 
 	struct handler_t* ipv4_handler = ipv4_create_handler(config); // TODO: fix memory leak
 	ipv4_handler->init(ipv4_handler, 0);
+
+    struct tcp_priv_config_t tcp_config = {
+        .window = 4096
+    };
+    struct handler_t* tcp_handler = tcp_create_handler(config); // TODO: fix memory leak
+	tcp_handler->init(tcp_handler, (void*) &tcp_config);
 
     return handlers;
 }

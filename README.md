@@ -25,5 +25,6 @@
 
 ### Notes to self
 * [x] Fix return value of handler read function
+* [ ] Tcp does not reset connection if no socket is listening on incoming connection. Is this right?
 
 

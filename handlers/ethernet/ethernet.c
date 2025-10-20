@@ -81,7 +81,7 @@ uint16_t ethernet_read(struct in_packet_stack_t* packet_stack, struct interface_
 
             next_handler->operations.read(packet_stack, interface, next_handler);            
         } else {
-            NETSTACK_LOG(NETSTACK_WARNING, "Received non-supported ether_type: %hx\n", header->ethernet_type);            
+            NETSTACK_LOG(NETSTACK_WARNING, "Received non-supported ether_type: 0x%hx\n", ntohs(header->ethernet_type));            
         }        
     } else {
         NETSTACK_LOG(NETSTACK_WARNING, "Received IEEE 802.3 ethenet packet. This standard is not supported. ether_type: %hx\n", header->ethernet_type);        

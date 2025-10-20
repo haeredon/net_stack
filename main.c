@@ -155,12 +155,6 @@ static void offloader_loop(struct interface_t* interface,
 	struct rte_mbuf* write_buffers[MAX_PKT_BURST];
 	struct out_buffer_t* out_buffers[MAX_PKT_BURST];
 
-	int ret = rte_pktmbuf_alloc_bulk(pktmbuf_pool, write_buffers, MAX_PKT_BURST);
-
-	if(ret != 0) {
-		NETSTACK_LOG(NETSTACK_SEVERE, "Could not allocate write buffers\n");         
-	}
-
 	while (!force_quit) {
 		/* Read packet from RX queues. 8< */
 		uint16_t nb_rx = rte_eth_rx_burst(interface->port, 0, read_buffers, MAX_PKT_BURST);
@@ -174,15 +168,26 @@ static void offloader_loop(struct interface_t* interface,
 			rte_ring_sp_enqueue(workers[j % num_execution_contexts]->work_queue, buffer);
 		}
 		
-		int num_dequed = rte_ring_dequeue_bulk(dpdk_write_write_queue, (void**) write_buffers, MAX_PKT_BURST, NULL);
-		
+		int num_dequed = rte_ring_dequeue_bulk(dpdk_write_write_queue, (void**) out_buffers, 2, NULL);
+		int ret = rte_pktmbuf_alloc_bulk(pktmbuf_pool, write_buffers, 2);
+
+		if(ret) {
+			NETSTACK_LOG(NETSTACK_WARNING, "Could not allocate write buffers\n");         
+		}
+
 		if(num_dequed) {
-			for(uint8_t i = 0 ; i < num_dequed ; i++) {
-				write_buffers[i]->buf_addr = (uint8_t*) out_buffers[i]->buffer + out_buffers[i]->offset;
-				write_buffers[i]->data_len = out_buffers[i]->size - out_buffers[i]->offset;
+			NETSTACK_LOG(NETSTACK_DEBUG, "Dequeued %d packets for write. Writing now\n", num_dequed);         
+			for(uint8_t i = 0 ; i < num_dequed ; i++) {				
+				uint16_t data_length = out_buffers[i]->size - out_buffers[i]->offset;				
+				uint8_t* buf_addr = (uint8_t*) out_buffers[i]->buffer + out_buffers[i]->offset;				
+				uint8_t* buffer_start = rte_pktmbuf_mtod_offset(write_buffers[i], uint8_t*, 0);
+
+				write_buffers[i]->data_len = data_length;
+				write_buffers[i]->pkt_len = data_length;
+				memcpy(buffer_start, buf_addr, data_length);
 			}
 
-			uint16_t packages_sent = rte_eth_tx_burst(interface->port, 0 /* queue_id is always 0 */, write_buffers, num_dequed);
+			uint16_t packages_sent = rte_eth_tx_burst(interface->port, 0 /* queue_id is always 0 */, write_buffers, 2);
 
 			if(packages_sent != num_dequed) {
 				NETSTACK_LOG(NETSTACK_WARNING, "Failed to send all packages in transmit queue\n");         
@@ -329,7 +334,7 @@ int main(int argc, char **argv) {
 			struct interface_t* interface = interface_create_interface(interface_operations);			
 			interface->port = portid; 
 			memcpy(interface->mac, mac_addr.addr_bytes, ETHERNET_MAC_SIZE);
-			interface->ipv4_addr = 0;
+			interface->ipv4_addr = 0xEE00a8c0; // 192.168.0.238
 			first_port_initialized = true;
 
 			if(portid != 0) {
@@ -373,7 +378,7 @@ int main(int argc, char **argv) {
 	}
 
 	// initialize offloader write queue
-	dpdk_write_write_queue = rte_ring_create("write ring", 32, rte_socket_id(), RING_F_SC_DEQ);
+	dpdk_write_write_queue = rte_ring_create("write ring", 8, rte_socket_id(), RING_F_SC_DEQ);
 
 	if(!dpdk_write_write_queue) {
 		rte_exit(EXIT_FAILURE, "Could not create ring for write queue");
@@ -407,26 +412,3 @@ int main(int argc, char **argv) {
 
 	return ret;
 }
-
-
-
-
-// int worker_start_lcore_worker(void* setups) {
-// 	unsigned lcore_id = rte_lcore_id();
-
-// 	struct lcore_setup_t* lcore_setup = (struct lcore_setup_t*) setups;
-
-// 	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
-// 		struct handler_t* handler = lcore_setup->handlers[i];
-// 		handler->init(handler, 0);
-// 	}
-	
-// 	worker_main_loop(lcore_setup);
-	
-// 	for (uint8_t i = 0; i < lcore_setup->num_handlers; i++) {
-// 		struct handler_t* handler = lcore_setup->handlers[i];
-// 		handler->close(handler);
-// 	}
-
-// 	return 0;	
-// }

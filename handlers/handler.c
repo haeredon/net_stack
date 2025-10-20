@@ -11,7 +11,7 @@
 
 
 uint16_t handler_write(struct out_buffer_t* buffer, struct interface_t* interface, struct transmission_config_t* transmission_config) {
-	interface->operations.write(buffer->buffer);
+	interface->operations.write(buffer);
 }
 
 struct out_packet_stack_t* handler_create_out_package_stack(struct in_packet_stack_t* packet_stack, uint8_t package_depth) {
@@ -40,8 +40,8 @@ struct handler_t** handler_create_stacks(struct handler_config_t *config) {
 	
 	// these are handlers which will not be activated when a package arrives, but must still be 
 	// created because they might be called by a root handler
-    // struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
-	// arp_handler->init(arp_handler, 0);
+    struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
+	arp_handler->init(arp_handler, 0);
 
 	struct handler_t* ipv4_handler = ipv4_create_handler(config); // TODO: fix memory leak
 	ipv4_handler->init(ipv4_handler, 0);

@@ -91,7 +91,6 @@ struct handler_t {
 
 
 struct out_packet_stack_t* handler_create_out_package_stack(struct in_packet_stack_t* packet_stack, uint8_t package_depth);
-struct handler_t** handler_create_stacks(struct handler_config_t *config);
 uint16_t handler_write(struct out_buffer_t* buffer, struct interface_t* interface, struct transmission_config_t* transmission_config);
 
 

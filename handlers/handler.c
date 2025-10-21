@@ -30,28 +30,3 @@ struct out_packet_stack_t* handler_create_out_package_stack(struct in_packet_sta
 
     return out_package_stack;
 }
-
-
-struct handler_t** handler_create_stacks(struct handler_config_t *config) {
-	// these are root handlers which will be activated when a package arrives
-	struct handler_t** handlers = (struct handler_t**) NET_STACK_MALLOC("handler array for ethernet", sizeof(struct handler_t*) * 2);
-	
-	// handlers[0] = pcapng_create_handler(config);
-	handlers[0] = ethernet_create_handler(config);
-	
-	// these are handlers which will not be activated when a package arrives, but must still be 
-	// created because they might be called by a root handler
-    struct handler_t* arp_handler = arp_create_handler(config); // TODO: fix memory leak
-	arp_handler->init(arp_handler, 0);
-
-	struct handler_t* ipv4_handler = ipv4_create_handler(config); // TODO: fix memory leak
-	ipv4_handler->init(ipv4_handler, 0);
-
-    struct tcp_priv_config_t tcp_config = {
-        .window = 4096
-    };
-    struct handler_t* tcp_handler = tcp_create_handler(config); // TODO: fix memory leak
-	tcp_handler->init(tcp_handler, (void*) &tcp_config);
-
-    return handlers;
-}

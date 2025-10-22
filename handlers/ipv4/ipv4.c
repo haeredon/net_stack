@@ -72,6 +72,8 @@ bool ipv4_write(struct out_packet_stack_t* packet_stack, struct interface_t* int
         return false;   
     };
 
+    out_buffer->offset -= sizeof(struct ipv4_header_t);
+
     response_header->flags_1 = 0x45; // version 4 and length 20
     response_header->flags_2 = 0; // type of service is not supported
     response_header->total_length = 0;
@@ -85,8 +87,6 @@ bool ipv4_write(struct out_packet_stack_t* packet_stack, struct interface_t* int
     response_header->total_length = htons(out_buffer->size - out_buffer->offset);
     response_header->header_checksum = ipv4_calculate_checksum(response_header);
 
-    out_buffer->offset -= sizeof(struct ipv4_header_t);
-   
     // if this is the bottom of the packet stack, then write to the interface
     if(!packet_stack->stack_idx) {
         handler->handler_config->write(out_buffer, interface, 0);
@@ -137,6 +137,7 @@ uint16_t ipv4_read(struct in_packet_stack_t* packet_stack, struct interface_t* i
 
             packet_stack->return_args[packet_idx] = &ipv4_response_args;
             
+
             next_handler->operations.read(packet_stack, interface, next_handler);  
         } else {
             NETSTACK_LOG(NETSTACK_WARNING, "IPv4 received non-supported protocol type: %hx\n", header->protocol);            

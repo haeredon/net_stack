@@ -63,4 +63,3 @@ void* tcp_get_payload(struct tcp_header_t* tcp_header) {
     // it is multiplied by 4 because the header sizes are calculated in 32 bit chunks
     return ((uint8_t*) tcp_header) + ((tcp_header->data_offset & TCP_DATA_OFFSET_MASK) >> 4) * 4;
 }
-

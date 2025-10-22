@@ -155,9 +155,10 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     struct tcp_priv_t* priv = (struct tcp_priv_t*) handler->priv;
     
     pthread_mutex_lock(&priv->socket_list_lock);
-    for (uint64_t i = 0; i < SOCKET_BUFFER_SIZE; i++) {
+    for (uint64_t i = 0; i < SOCKET_BUFFER_SIZE - 1; i++) {
         if(!priv->tcp_sockets[i]) {
             priv->tcp_sockets[i] = socket;
+            priv->tcp_sockets[i + 1] = 0;
             pthread_mutex_unlock(&priv->socket_list_lock);
             return true;
         }        

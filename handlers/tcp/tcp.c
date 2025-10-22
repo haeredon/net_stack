@@ -135,7 +135,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
     
     memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t)); 
     out_buffer->offset -= sizeof(struct tcp_header_t);
-   
+ 
     // add buffer to outgoing block buffer
     tcp_block_buffer_add(tcb->out_buffer, packet_stack, out_header->sequence_num, payload_size);
         

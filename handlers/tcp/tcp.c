@@ -89,7 +89,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
     }
 
     struct out_buffer_t* out_buffer = &packet_stack->out_buffer;
-    struct tcp_header_t* response_header = (struct tcp_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct tcp_header_t)); // we don't calculate in options here
+    struct tcp_header_t* response_header = (struct tcp_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct tcp_header_t) -4); // we don't calculate in options here
 
     uint64_t payload_size = out_buffer->size - out_buffer->offset;
 
@@ -118,13 +118,16 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
     struct tcp_header_t* out_header = (struct tcp_header_t*) tcb->out_header;
     out_header->source_port = tcp_args->socket->port;
     out_header->destination_port = tcb->remote_port;
-    out_header->data_offset = (sizeof(struct tcp_header_t) / 4) << 4; // data offset is counted in 32 bit chunks 
+    out_header->data_offset = (sizeof(struct tcp_header_t) / 4 + 1) << 4; // data offset is counted in 32 bit chunks 
     out_header->window = htons(tcb->receive_window);
     out_header->urgent_pointer = 0; // Not supported
     out_header->control_bits = tcp_args->flags; 
 
     out_header->sequence_num = htonl(tcb->send_next);
     out_header->acknowledgement_num = htonl(tcb->receive_next);
+
+    uint32_t kage = 0xb4050402;
+    memcpy(tcb->out_header + 20, &kage, 4);
 
     if(payload_size) {
         out_header->control_bits |= TCP_PSH_FLAG;
@@ -133,8 +136,8 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
 
     out_header->checksum = _tcp_calculate_checksum(out_header, tcp_args->socket->ipv4, tcb->remote_ipv4);
     
-    memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t)); 
-    out_buffer->offset -= sizeof(struct tcp_header_t);
+    memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t) + 4); 
+    out_buffer->offset -= sizeof(struct tcp_header_t) + 4;
  
     // add buffer to outgoing block buffer
     tcp_block_buffer_add(tcb->out_buffer, packet_stack, out_header->sequence_num, payload_size);
@@ -145,7 +148,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
         struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) buffer_block->data;
     
         out_buffer = &out_package_stack->out_buffer;
-        response_header = (struct tcp_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct tcp_header_t)); // we don't calculate in options here
+        response_header = (struct tcp_header_t*) ((uint8_t*) out_buffer->buffer + out_buffer->offset - sizeof(struct tcp_header_t) - 4); // we don't calculate in options here
         
         uint16_t remote_window = ntohs(tcb->send_window);
         payload_size = buffer_block->payload_size;        
@@ -198,8 +201,6 @@ uint16_t tcp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
                 return 1;
             }
         } 
-
-        uint32_t aa = ntohl(header->sequence_num);
 
         uint16_t tcp_payload_size = tcp_get_payload_length(ipv4_header, header);
         tcp_block_buffer_add(tcb->in_buffer, packet_stack, header->sequence_num, tcp_payload_size);

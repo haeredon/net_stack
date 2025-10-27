@@ -11,6 +11,7 @@
 #include "test/tcp/overrides.h"
 #include "test/tcp/tests/download_1/download_1.h"
 #include "test/tcp/tests/active_mode/active_mode.h"
+#include "test/tcp/tests/unit/unit.h"
 
 
 #include <stdbool.h>
@@ -64,11 +65,16 @@ bool tcp_tests_start() {
     strncpy(active_mode_test->name, "Active mode: Handshake and send data followed by FIN", sizeof("Active mode: Handshake and send data followed by FIN"));    
     active_mode_test->test = tcp_test_active_mode;
 
+    struct test_t* unit_checksum_test = (struct test_t*) malloc(sizeof(struct test_t));
+    strncpy(unit_checksum_test->name, "Calculates correct checksum", sizeof("Calculates correct checksum"));    
+    unit_checksum_test->test = tcp_test_checksum;
+
     // queue tests
-    struct test_t* tests[3];
+    struct test_t* tests[4];
     tests[0] = download_1_test;
     tests[1] = active_mode_test;
-    tests[2] = 0; // zero out last pointer to mark end of array
+    tests[2] = unit_checksum_test;
+    tests[3] = 0; // zero out last pointer to mark end of array
 
     // run tests
     struct test_run_t tcp_test_run = {

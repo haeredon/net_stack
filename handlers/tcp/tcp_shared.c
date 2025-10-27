@@ -7,9 +7,11 @@
 #include <stdbool.h>
 #include <arpa/inet.h>
 
+int x = 500;
 
 uint32_t tcp_shared_generate_sequence_number() {
-    return 42;
+    x += 100;
+    return 42 + x;
 }
 
 uint32_t tcp_shared_calculate_connection_id(uint32_t remote_ip, uint16_t remote_port, uint16_t host_port) {
@@ -47,7 +49,7 @@ uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, uint32_t sourc
             .destination_ip = destination_ip,
             .zero = 0,
             .ptcl = 6,
-            .tcp_length = 0
+            .tcp_length = ((uint16_t) tcp_header->data_offset >> 4) * 4 << 8
         };
 
         return tcp_calculate_checksum(&pseudo_header, tcp_header);

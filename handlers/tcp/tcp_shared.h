@@ -35,6 +35,10 @@ struct tcp_pseudo_header_t {
     uint16_t tcp_length;
 } __attribute__((packed, aligned(2)));
 
+struct tcp_options_t {
+    uint16_t maximum_segment_size;
+};
+
 struct tcp_header_t {
     uint16_t source_port;
     uint16_t destination_port;

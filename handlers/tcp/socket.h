@@ -40,6 +40,8 @@ struct transmission_control_block_t {
 
     enum TCP_STATE state;
 
+    struct tcp_options_t options;
+
     bool active_mode;
 
     struct tcp_block_buffer_t* out_buffer;

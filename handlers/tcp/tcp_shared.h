@@ -69,7 +69,7 @@ uint32_t tcp_shared_generate_sequence_number();
 
 uint32_t tcp_shared_calculate_connection_id(uint32_t source_ip, uint16_t source_port, uint16_t destination_port);
 
-uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, uint32_t source_ip, uint32_t destination_ip);
+uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, uint32_t source_ip, uint32_t destination_ip, uint16_t payload_size);
 
 uint16_t tcp_get_payload_length(struct ipv4_header_t* ipv4_header, struct tcp_header_t* tcp_header);
 

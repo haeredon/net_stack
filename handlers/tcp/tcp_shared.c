@@ -43,13 +43,15 @@ uint16_t tcp_calculate_checksum(struct tcp_pseudo_header_t* pseudo_header, struc
     return (uint16_t) ~sum;
 }
 
-uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, uint32_t source_ip, uint32_t destination_ip)  {
+uint16_t _tcp_calculate_checksum(struct tcp_header_t* tcp_header, uint32_t source_ip, uint32_t destination_ip, uint16_t payload_size)  {
+        uint16_t tcp_header_size = ((uint16_t) tcp_header->data_offset >> 4) * 4;
+
         struct tcp_pseudo_header_t pseudo_header = {
             .source_ip = source_ip,
             .destination_ip = destination_ip,
             .zero = 0,
             .ptcl = 6,
-            .tcp_length = ((uint16_t) tcp_header->data_offset >> 4) * 4 << 8
+            .tcp_length = htons(tcp_header_size + payload_size) 
         };
 
         return tcp_calculate_checksum(&pseudo_header, tcp_header);

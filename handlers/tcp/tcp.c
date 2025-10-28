@@ -134,7 +134,7 @@ bool tcp_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
         tcb->send_next += payload_size;        
     }
 
-    out_header->checksum = _tcp_calculate_checksum(out_header, tcp_args->socket->ipv4, tcb->remote_ipv4);
+    out_header->checksum = _tcp_calculate_checksum(out_header, tcp_args->socket->ipv4, tcb->remote_ipv4, payload_size);
     
     memcpy(response_header, tcb->out_header, sizeof(struct tcp_header_t) + 4); 
     out_buffer->offset -= sizeof(struct tcp_header_t) + 4;

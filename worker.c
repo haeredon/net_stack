@@ -57,8 +57,6 @@ int consume_tasks(void* execution_context_arg) {
 			continue;
 		}
 
-		NETSTACK_LOG(NETSTACK_DEBUG, "Dequed packet\n");   
-
 		for(uint8_t i = 0 ; i < execution_context->num_handlers ; i++) {
 			void* buffer = execution_context->get_packet_buffer(buffers[0]);
 			struct interface_t* interface = execution_context->get_interface(buffers[0]);

@@ -193,20 +193,20 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
         .flags = TCP_SYN_FLAG
     };    
 
-    socket->socket.handler_args[socket->socket.depth - 1] = &tcp_args;
+    tcb->active_mode_args.handler_args[tcb->active_mode_args.depth - 1] = &tcp_args;
 
-    memcpy(out_package_stack->handlers, socket->socket.handlers, 10 * sizeof(struct handler_t*));
-    memcpy(out_package_stack->args, socket->socket.handler_args, 10 * sizeof(void*));
+    memcpy(out_package_stack->handlers, tcb->active_mode_args.handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, tcb->active_mode_args.handler_args, 10 * sizeof(void*));
 
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
     out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
 
-    out_package_stack->stack_idx = socket->socket.depth - 1;
+    out_package_stack->stack_idx = tcb->active_mode_args.depth - 1;
 
     tcp_add_transmission_control_block(socket, tcb);
     
-    if(!handler->operations.write(out_package_stack, socket->socket.interface, handler)) {
+    if(!handler->operations.write(out_package_stack, socket->interface, handler)) {
         NETSTACK_LOG(NETSTACK_ERROR, "TCP: Could not open socket connection\n");   
         return 0;
     } else {
@@ -217,9 +217,10 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
 
 bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size) {
     // if state is SYN-SENT STATE SYN-RECEIVED STATE, then queue the request to be sent when connection has been established
+    struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(socket, connection_id);
 
-    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("send package: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
-    struct handler_t* handler = socket->socket.handlers[socket->socket.depth - 1];
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("send package: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t));     
+    struct handler_t* handler = tcb->active_mode_args.handlers[tcb->active_mode_args.depth - 1];
     
     struct tcp_write_args_t tcp_args = {
         .connection_id = connection_id,
@@ -227,10 +228,10 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
         .flags = TCP_ACK_FLAG | TCP_PSH_FLAG
     };    
 
-    socket->socket.handler_args[socket->socket.depth - 1] = &tcp_args;
+    tcb->active_mode_args.handler_args[tcb->active_mode_args.depth - 1] = &tcp_args;
 
-    memcpy(out_package_stack->handlers, socket->socket.handlers, 10 * sizeof(struct handler_t*));
-    memcpy(out_package_stack->args, socket->socket.handler_args, 10 * sizeof(void*));
+    memcpy(out_package_stack->handlers, tcb->active_mode_args.handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, tcb->active_mode_args.handler_args, 10 * sizeof(void*));
 
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
@@ -238,9 +239,9 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
 
     memcpy((uint8_t*) (out_package_stack->out_buffer.buffer) + out_package_stack->out_buffer.offset, buffer, size);
 
-    out_package_stack->stack_idx = socket->socket.depth - 1;
+    out_package_stack->stack_idx = tcb->active_mode_args.depth - 1;
 
-    return handler->operations.write(out_package_stack, socket->socket.interface, handler);
+    return handler->operations.write(out_package_stack, socket->interface, handler);
 }
 
 void tcp_socket_close(struct tcp_socket_t* socket, uint32_t connection_id) {
@@ -258,15 +259,15 @@ void tcp_socket_status(struct tcp_socket_t* socket, uint32_t connection_id) {
 }
 
 
-struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
-    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)(), void (*on_close)()) {
+struct tcp_socket_t* tcp_create_socket(struct interface_t* interface, uint16_t port, uint32_t ipv4, 
+    void (*on_connect)(), void (*on_close)()) {
         struct tcp_socket_t* socket = (struct tcp_socket_t*) NET_STACK_MALLOC("TCP socket", sizeof(struct tcp_socket_t));
+
+        socket->interface = interface;
 
         socket->ipv4 = ipv4,
         socket->port = port,
-        socket->next_handler = next_handler, 
         socket->operations.connect = tcp_socket_connect,
-        socket->operations.on_receive = on_receive;
         socket->operations.on_connect = on_connect;
         socket->operations.on_close = on_close;
         socket->operations.close = tcp_socket_close;

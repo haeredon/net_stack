@@ -14,6 +14,8 @@
 #define TCP_SOCKET_NUM_TCB 32
 
 
+
+
 struct transmission_control_block_t {
     uint32_t id;
 
@@ -43,6 +45,7 @@ struct transmission_control_block_t {
     struct tcp_options_t options;
 
     bool active_mode;
+    struct socket_client_args* active_mode_args;
 
     struct tcp_block_buffer_t* out_buffer;
     struct tcp_block_buffer_t* in_buffer;
@@ -58,7 +61,6 @@ struct transmission_control_block_t {
 struct socket_operations_t {
     uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t local_port, uint32_t remote_ip, uint16_t port);
     bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);
-    void (*on_receive)(uint8_t* data, uint64_t size); // provided by user of socket. This is a callback function. it should not hold the thread since that will uphold the entire tcp stack
     void (*on_connect)();
     void (*on_close)();
     void (*close)(struct tcp_socket_t* socket, uint32_t connection_id);
@@ -75,8 +77,6 @@ struct tcp_socket_t {
 
     struct socket_operations_t operations;
 
-    struct socket_t socket;
-    
     // the read function of the handler is not allowed to block
     // because it will block ACKs from the tcp protocol. It should 
     // return fast to acknowledge that it takes ownership of the data
@@ -100,7 +100,36 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
 struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
-    void (*on_receive)(uint8_t* data, uint64_t size), void (*on_connect)(), void (*on_close)());
+    void (*on_connect)(), void (*on_close)());
 
 
 #endif // HANDLERS_TCP_SOCKET_H
+
+
+/*
+ problem:
+    next_handler bliver kaldt på alle modtagne pakker. next_handler bliver sat når en 
+    socket bliver lavet.
+    on_receive skulle egentlig kun kaldes når der svares på et client request fra en 
+    remote, men det er ikke muligt at se om man skal kalde on_receive eller next_handler
+
+    Måske skal on_connect bare være next_handler. Så next_handler altid bliver kaldt 
+    når en pakke modtages
+
+    ------------------------------------------------
+
+    socket.socket bliver anvendt til at lave en handler-stak med handler_args til en 
+    bestemt forbindelse under aktiv forbindelse. Hvis man connecter med flere bliver 
+    den overskrevet hvilket er problematisk
+
+*/ 
+
+/*
+ Afklaring
+    socket.port er listen adresse for passive forbindelser. For aktive forbindelse er  
+    den den port der sendes fra. Dette betyder at socket.operations.send ikke skal have 
+    en local_port
+
+    
+
+*/

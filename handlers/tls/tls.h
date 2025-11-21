@@ -25,7 +25,7 @@
 #define TLS_RECORD_CONTENT_TYPE_CHANGE_CIPHER_SPEC  20
 
 
-
+#define TLS_OUT_BUFFER_LENGTH 2048
 
 enum TLS_STATES {
     TLS_SERVER_START,
@@ -46,14 +46,26 @@ enum TLS_STATES {
     TLS_CONNECTED
 };
 
+struct tls_out_buffer {
+    uint8_t buffer[TLS_OUT_BUFFER_LENGTH];
+    uint16_t length;
+    uint8_t offset;
+};
+
 struct tls_control_block_t {
     void (*handshake)();
-    enum TLS_SERVER_STATE state;
-    uint8_t out_header[1024];
+    enum TLS_STATES state;
+    struct tls_out_buffer out_buffer;
+};
+
+struct tls_certificate_t {
+
 };
 
 struct tls_priv_t {
     struct tls_control_block_t control_block;
+
+    struct tls_certificate_t* certificate;
 };
 
 struct tls_write_args_t {
@@ -61,19 +73,15 @@ struct tls_write_args_t {
 };
 
 struct tls_server_hello_t {
-    //   struct {
-    //       ProtocolVersion legacy_version = 0x0303;    /* TLS v1.2 */
-    //       Random random;
-    //       opaque legacy_session_id_echo<0..32>;
-    //       CipherSuite cipher_suite;
-    //       uint8 legacy_compression_method = 0;
-    //       Extension extensions<6..2^16-1>;
-    //   } ServerHello;
+    uint16_t protocol_version;
+    uint32_t random;
+    void* data;
 } __attribute__((packed, aligned(2)));
 
 struct tls_client_hello_t {
     uint16_t protocol_version;
     uint32_t random;
+    void* data;
 } __attribute__((packed, aligned(2)));
 
 struct tls_legacy_compression_methods_t {

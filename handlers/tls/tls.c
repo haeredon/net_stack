@@ -27,50 +27,80 @@ bool tls_write(struct out_packet_stack_t* packet_stack, struct interface_t* inte
 }
 
 
+void tls_get_extensions() {
+
+}
+
+
+void tls_write_alert() {
+
+}
+
+
+
+void tls_write_server_hello(struct tls_priv_t* priv, struct tls_client_hello_t* client_helle) {
+    struct tls_out_buffer* buffer = &priv->control_block.out_buffer;
+    struct tls_server_hello_t* out = buffer->buffer[buffer->offset];
+
+    if(priv->certificate) {
+
+        
+    } else {
+
+    }
+    // create server hello message
+    // fill in fields
+    // write to out buffer
+}
 
 void tls_handle_handshake(struct tls_control_block_t* control_block, struct tls_handshake_t* handshake) {
-    struct tls_header_t* out;
+    struct tls_server_hello_t* out;
 
-    if(not supported version extension) {
-        abort
-    }
-
-    if(supported version extension != TLS 1.3) {
-        abort
-    }
-
-    if(header->record.content_type == )
-
-
-
-
-    switch(control_block->state) {
+    switch (control_block->state) {
         case TLS_SERVER_START:
-            if(server authenticates with certificate and signature algorithms extension is not set) {
-                alert 
-            } 
-
-            if(server does not authenticates with certificate and signature algorithms extension is set) {
-                alert
+            if(handshake->message_type != TLS_MSG_CLIENT_HELLO) {
+                tls_write_alert();
+                return;
             }
 
-            if(keyshare is not set) {
-                do hello retry 
-            } else {
-                keymaterial = get key material from keyshare
+            tls_write_server_hello(control_block, (struct tls_client_hello_t*) handshake->data);
+
+            control_block->state = TLS_SERVER_RECEIVED_CLIENT_HELLO;
+            break;    
+        default:
+            break;
+    }
+
+
+
+
+    // switch(control_block->state) {
+    //     case TLS_SERVER_START:
+    //         if(server authenticates with certificate and signature algorithms extension is not set) {
+    //             alert 
+    //         } 
+
+    //         if(server does not authenticates with certificate and signature algorithms extension is set) {
+    //             alert
+    //         }
+
+    //         if(keyshare is not set) {
+    //             do hello retry 
+    //         } else {
+    //             keymaterial = get key material from keyshare
                 
-                if(key material not in support groups extension) {
-                    alert(illegal_parameter)
-                }
+    //             if(key material not in support groups extension) {
+    //                 alert(illegal_parameter)
+    //             }
 
-                if(cipher suites not set) {
-                    alert(illegal_parameter)
-                }
+    //             if(cipher suites not set) {
+    //                 alert(illegal_parameter)
+    //             }
 
-                cipher_suite = select cipher suite from client cipher suites
+    //             cipher_suite = select cipher suite from client cipher suites
 
-                set_up_cryoptography(control_block, keymaterial, cipher_suite);
-            }
+    //             set_up_cryoptography(control_block, keymaterial, cipher_suite);
+    //         }
 
 
 
@@ -79,16 +109,16 @@ void tls_handle_handshake(struct tls_control_block_t* control_block, struct tls_
             // out->record.protocol_version = 0x0303;
             // out->record.length = 999999; // Some length
 
-            struct tls_server_hello_t* server_hello = (struct tls_server_hello_t*) out->data;
+        //     struct tls_server_hello_t* server_hello = (struct tls_server_hello_t*) out->data;
 
 
 
 
-            break;
-        case TLS_SERVER_RECEIVED_CLIENT_HELLO:
-            // send server hello, certificate, server key exchange, certificate request, server hello done
-            break;
-    }
+        //     break;
+        // case TLS_SERVER_RECEIVED_CLIENT_HELLO:
+        //     // send server hello, certificate, server key exchange, certificate request, server hello done
+        //     break;
+    // }
 }
 
 uint8_t tls_handle_record(struct tls_record_t* record, struct tls_control_block_t* control_block) {
@@ -122,6 +152,7 @@ uint16_t tls_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
         }
 
         // handle record        
+        // IF NEEDED, DECRYPT RECORD HERE
         uint8_t fail = tls_handle_record(record, &priv->control_block);
 
         if(fail) {

@@ -2,8 +2,15 @@
 #define HANDLER_HANDLERS_TLS_H
 
 #include "handlers/handler.h"
+#include "handlers/tls/handshake.h"
 
 #include <stdbool.h>
+
+#define TLS_EXTENSION_SERVER_NAME            0
+#define TLS_EXTENSION_SUPPORTED_GROUPS       10
+#define TLS_EXTENSION_SIGNATURE_ALGORITHMS   13
+#define TLS_EXTENSION_KEY_SHARE              51
+#define TLS_EXTENSION_SUPPORTED_VERSIONS     43
 
 #define TLS_SOCKET_BUFFER_SIZE          32
 
@@ -26,6 +33,9 @@
 
 
 #define TLS_OUT_BUFFER_LENGTH 2048
+
+#define TLS_PROTOCOL_VERSION_1_2 0x0303
+#define TLS_PROTOCOL_VERSION_1_3 0x0304
 
 enum TLS_STATES {
     TLS_SERVER_START,
@@ -66,6 +76,7 @@ struct tls_priv_t {
     struct tls_control_block_t control_block;
 
     struct tls_certificate_t* certificate;
+    struct tls_cipher_suites_t* supported_cipher_suites;
 };
 
 struct tls_write_args_t {
@@ -75,33 +86,28 @@ struct tls_write_args_t {
 struct tls_server_hello_t {
     uint16_t protocol_version;
     uint32_t random;
-    void* data;
+    uint8_t data;
 } __attribute__((packed, aligned(2)));
 
 struct tls_client_hello_t {
     uint16_t protocol_version;
     uint32_t random;
-    void* data;
+    uint8_t data;
 } __attribute__((packed, aligned(2)));
 
-struct tls_legacy_compression_methods_t {
-    uint8_t num_bytes;
-    void* methods;
-} __attribute__((packed, aligned(2)));
+// struct tls_legacy_compression_methods_t {
+//     uint8_t num_bytes;
+//     void* methods;
+// } __attribute__((packed, aligned(2)));
 
 struct tls_legacy_session_t {
     uint8_t num_bytes;
     uint16_t* suites;
 } __attribute__((packed, aligned(2)));
 
-struct tls_ciphersuites_t {
-    uint16_t num_bytes;
-    uint16_t* suites;
-} __attribute__((packed, aligned(2)));
-
 struct tls_extensions_t {
+    uint16_t type;
     uint16_t num_bytes;
-    uint16_t* extensions;
 } __attribute__((packed, aligned(2)));
 
 
@@ -109,18 +115,18 @@ struct tls_record_t {
     uint8_t content_type;
     uint16_t protocol_version;
     uint16_t length;
-    void* data;
+    uint8_t data;
 } __attribute__((packed, aligned(2)));
 
 struct tls_handshake_t {
     uint8_t message_type;
     uint8_t length[3];
-    void* data;
+    uint8_t data;
 } __attribute__((packed, aligned(2)));
 
 struct tls_header_t {
     struct tls_record_t record;
-    void* data;   
+    uint8_t data; 
 } __attribute__((packed, aligned(2)));
 
 struct handler_t* tls_create_handler(struct handler_config_t *handler_config);

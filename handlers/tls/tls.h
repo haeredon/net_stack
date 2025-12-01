@@ -6,11 +6,7 @@
 
 #include <stdbool.h>
 
-#define TLS_EXTENSION_SERVER_NAME            0
-#define TLS_EXTENSION_SUPPORTED_GROUPS       10
-#define TLS_EXTENSION_SIGNATURE_ALGORITHMS   13
-#define TLS_EXTENSION_KEY_SHARE              51
-#define TLS_EXTENSION_SUPPORTED_VERSIONS     43
+
 
 #define TLS_SOCKET_BUFFER_SIZE          32
 
@@ -77,6 +73,7 @@ struct tls_priv_t {
 
     struct tls_certificate_t* certificate;
     struct tls_cipher_suites_t* supported_cipher_suites;
+    struct tls_supported_groups_t* supported_groups;
 };
 
 struct tls_write_args_t {
@@ -89,26 +86,12 @@ struct tls_server_hello_t {
     uint8_t data;
 } __attribute__((packed, aligned(2)));
 
-struct tls_client_hello_t {
-    uint16_t protocol_version;
-    uint32_t random;
-    uint8_t data;
-} __attribute__((packed, aligned(2)));
-
-// struct tls_legacy_compression_methods_t {
-//     uint8_t num_bytes;
-//     void* methods;
-// } __attribute__((packed, aligned(2)));
-
 struct tls_legacy_session_t {
     uint8_t num_bytes;
     uint16_t* suites;
 } __attribute__((packed, aligned(2)));
 
-struct tls_extensions_t {
-    uint16_t type;
-    uint16_t num_bytes;
-} __attribute__((packed, aligned(2)));
+
 
 
 struct tls_record_t {

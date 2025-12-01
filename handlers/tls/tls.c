@@ -34,15 +34,6 @@ void tls_write_alert() {
 
 }
 
-tls_select_cipher_suite(struct tls_priv_t* priv, struct tls_ciphersuites_t* client_suites) {
-    // for each suite in client_suites
-        // if(suite is supported by server) 
-            // return suite
-
-    return 0;    
-}
-
-
 void tls_write_server_hello(struct tls_priv_t* priv, struct tls_client_hello_t* client_hello) {
     struct tls_out_buffer* buffer = &priv->control_block.out_buffer;
     struct tls_server_hello_t* out = buffer->buffer[buffer->offset];
@@ -53,13 +44,13 @@ void tls_write_server_hello(struct tls_priv_t* priv, struct tls_client_hello_t* 
     uint16_t server_hello_offset = 0;
 
     // set session echo
-    struct tls_legacy_session_t* client_legacy_session = (struct tls_legacy_session_t*) client_hello->data;
+    struct tls_legacy_session_t* client_legacy_session = (struct tls_legacy_session_t*) client_hello->legacy_session;
     server_hello_offset += sizeof(client_legacy_session->num_bytes) + client_legacy_session->num_bytes;
     memcpy(&out->data, client_legacy_session, server_hello_offset);
 
     // set cipher suites
-    struct tls_ciphersuites_t* client_ciphersuites = (struct tls_ciphersuites_t*) ((uint8_t*) client_hello->data + server_hello_offset);
-    uint16_t selected_cipher_suite = tls_select_cipher_suite(client_ciphersuites, priv->supported_cipher_suites );
+    struct tls_ciphersuites_t* client_ciphersuites = (struct tls_ciphersuites_t*) ((uint8_t*) client_hello->ciphersuites);
+    uint16_t selected_cipher_suite = tls_select_cipher_suite(client_ciphersuites, priv->supported_cipher_suites);
     struct tls_ciphersuites_t* server_cipher_suite = (struct tls_ciphersuites_t*) ((uint8_t*) &out->data + server_hello_offset);
     server_cipher_suite->num_bytes = htons(2);
     server_cipher_suite->suites[0] = selected_cipher_suite;
@@ -69,18 +60,15 @@ void tls_write_server_hello(struct tls_priv_t* priv, struct tls_client_hello_t* 
     server_hello_offset += 1;
 
     // set supported versions extension. No need to check client hello as the server only supports TLS 1.3
-    struct tls_extensions_t* supported_versions_extension = (struct tls_extensions_t*) (&out->data + server_hello_offset);
-    supported_versions_extension->type = TLS_EXTENSION_SUPPORTED_VERSIONS;
-    supported_versions_extension->num_bytes = htons(sizeof(TLS_PROTOCOL_VERSION_1_3));
-    uint16_t* tls_version = (uint16_t*) ((uint8_t*) supported_versions_extension + sizeof(struct tls_extensions_t));
-    *tls_version = TLS_PROTOCOL_VERSION_1_3;    
-    server_hello_offset += sizeof(struct tls_extensions_t) + sizeof(TLS_PROTOCOL_VERSION_1_3);
+    struct tls_supported_versions_server_hello_t version = {
+        .version = TLS_PROTOCOL_VERSION_1_3
+    };
+    server_hello_offset += tls_set_server_hello_supported_version(&version, &out->data + server_hello_offset);
     
     // set key share extension
-    struct tls_extensions_t* key_share_extension = (struct tls_extensions_t*) (&out->data + server_hello_offset);
-
-
-    // set key_share extension
+    struct tls_key_share_entry_t* selected_key_share = tls_select_key_share(client_hello->key_shares, priv->supported_groups,);
+    server_hello_offset += tls_set_server_hello_key_share(selected_key_share, tls_generate_key_share, &out->data + server_hello_offset);
+    
 }
 
 void tls_handle_handshake(struct tls_control_block_t* control_block, struct tls_handshake_t* handshake) {

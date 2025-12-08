@@ -1,5 +1,7 @@
 #include "handlers/tls/tls.h"
 #include "handlers/tls/handshake.h"
+#include "handlers/tls/record.h"
+#include "handlers/tls/extensions.h"
 
 #include "util/log.h"
 
@@ -68,10 +70,26 @@ void tls_write_server_hello(struct tls_priv_t* priv, struct tls_client_hello_t* 
     // set key share extension
     struct tls_key_share_entry_t* selected_key_share = tls_select_key_share(client_hello->key_shares, priv->supported_groups,);
     server_hello_offset += tls_set_server_hello_key_share(selected_key_share, tls_generate_key_share, &out->data + server_hello_offset);
-    
+
+    buffer->offset += server_hello_offset;    
 }
 
-void tls_handle_handshake(struct tls_control_block_t* control_block, struct tls_handshake_t* handshake) {
+void tls_write_change_cipher(struct tls_out_buffer* buffer) {
+    struct tls_record_t* record = buffer->buffer[buffer->offset];
+
+    record->content_type = TLS_RECORD_CONTENT_TYPE_CHANGE_CIPHER_SPEC;
+    record->protocol_version = TLS_PROTOCOL_VERSION_1_2;
+    buffer->length = htons(1);
+    *((uint8_t*) record + 1) = 1;
+
+    buffer->offset += sizeof(struct tls_record_t) + 1;    
+}
+
+void tls_write_server_hello_extensions(struct tls_out_buffer* buffer) {
+    // For now, no extensions
+}
+
+void tls_handle_handshake(struct tls_priv_t* priv, struct tls_handshake_msg_t* handshake) {
     struct tls_server_hello_t* out;
 
     switch (control_block->state) {
@@ -82,6 +100,11 @@ void tls_handle_handshake(struct tls_control_block_t* control_block, struct tls_
             }
 
             tls_write_server_hello(control_block, (struct tls_client_hello_t*) handshake->data);
+            tls_write_change_cipher(&control_block->out_buffer);
+            tls_write_server_hello_extensions(&control_block->out_buffer);
+            tls_write_certificate(priv->certificate, &priv->control_block.out_buffer);
+            // send certificate verify
+            // send finished
 
             control_block->state = TLS_SERVER_RECEIVED_CLIENT_HELLO;
             break;    

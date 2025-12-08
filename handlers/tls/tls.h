@@ -22,11 +22,6 @@
 #define TLS_MSG_KEY_UPDATE              24
 #define TLS_MSG_MESSAGE_HASH            254
 
-#define TLS_RECORD_CONTENT_TYPE_HANDSHAKE           22
-#define TLS_RECORD_CONTENT_TYPE_ALERT               21
-#define TLS_RECORD_CONTENT_TYPE_APPLICATION_DATA    23
-#define TLS_RECORD_CONTENT_TYPE_CHANGE_CIPHER_SPEC  20
-
 
 #define TLS_OUT_BUFFER_LENGTH 2048
 
@@ -59,13 +54,13 @@ struct tls_out_buffer {
 };
 
 struct tls_control_block_t {
-    void (*handshake)();
     enum TLS_STATES state;
     struct tls_out_buffer out_buffer;
 };
 
 struct tls_certificate_t {
-
+    uint8_t* certificate;
+    uint32_t length;
 };
 
 struct tls_priv_t {
@@ -94,22 +89,11 @@ struct tls_legacy_session_t {
 
 
 
-struct tls_record_t {
-    uint8_t content_type;
-    uint16_t protocol_version;
-    uint16_t length;
-    uint8_t data;
-} __attribute__((packed, aligned(2)));
 
-struct tls_handshake_t {
-    uint8_t message_type;
-    uint8_t length[3];
-    uint8_t data;
-} __attribute__((packed, aligned(2)));
+
 
 struct tls_header_t {
     struct tls_record_t record;
-    uint8_t data; 
 } __attribute__((packed, aligned(2)));
 
 struct handler_t* tls_create_handler(struct handler_config_t *handler_config);

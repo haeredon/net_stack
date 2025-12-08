@@ -108,7 +108,9 @@
         "custom.h": "c",
         "packet.h": "c",
         "stdarg.h": "c",
-        "unit_packages.h": "c"
+        "unit_packages.h": "c",
+        "random": "c",
+        "extensions.h": "c"
     }
     
 }

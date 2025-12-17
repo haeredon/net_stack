@@ -2,7 +2,7 @@
 #define HANDLER_HANDLERS_TLS_H
 
 #include "handlers/handler.h"
-#include "handlers/tls/handshake.h"
+#include "handlers/tls/handshake/handshake.h"
 
 #include <stdbool.h>
 

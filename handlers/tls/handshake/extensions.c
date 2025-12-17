@@ -1,5 +1,4 @@
-#include "handlers/tls/extensions.h"
-#include "handlers/tls/handshake.h"
+#include "handlers/tls/handshake/extensions.h"
 
 #include <string.h>
 

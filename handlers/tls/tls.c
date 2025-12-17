@@ -1,7 +1,7 @@
 #include "handlers/tls/tls.h"
-#include "handlers/tls/handshake.h"
+#include "handlers/tls/handshake/handshake.h"
 #include "handlers/tls/record.h"
-#include "handlers/tls/extensions.h"
+#include "handlers/tls/handshake/extensions.h"
 
 #include "util/log.h"
 

@@ -1,7 +1,7 @@
 #ifndef HANDLER_HANDLERS_TLS_HANDSHAKE_H
 #define HANDLER_HANDLERS_TLS_HANDSHAKE_H
 
-#include "handlers/tls/extensions.h"
+#include "handlers/tls/handshake/extensions.h"
 
 #include <stdint.h>
 
@@ -23,10 +23,9 @@ struct tls_handshake_msg_t {
     uint8_t length[3];
 } __attribute__((packed, aligned(2)));
 
-uint16_t tls_write_handshake_header(uint8_t handshake_type, uint8_t length[3], void* to_write);
 
-void* start_encrypted_extensions_handshake(void* to_write);
-void* end_encrypted_extensions_handshake(void* to_write, uint16_t extension_length, uint8_t handshake_length[3]);
+void* start_handshake(void* to_write, uint8_t handshake_type);
+void* end_handshake(void* to_write, uint8_t handshake_length[3]);
 
 
 

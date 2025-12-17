@@ -110,7 +110,8 @@
         "stdarg.h": "c",
         "unit_packages.h": "c",
         "random": "c",
-        "extensions.h": "c"
+        "extensions.h": "c",
+        "record.h": "c"
     }
     
 }

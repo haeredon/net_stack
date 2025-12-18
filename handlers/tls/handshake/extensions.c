@@ -6,13 +6,13 @@ void* start_extensions(void* to_write) {
     return (uint8_t*) to_write + sizeof(struct tls_extensions_msg_t);
 }
 
-void* end_extensions(void* to_write, uint16_t extension_length) {
+uint16_t end_extensions(void* to_write, uint16_t extension_length) {
     to_write = (uint8_t*) to_write - sizeof(struct tls_extensions_msg_t);
 
     struct tls_extensions_msg_t* extension = (struct tls_extensions_msg_t*) to_write;
     extension->extension_length = htons(extension_length);
 
-    return to_write;
+    return sizeof(struct tls_extensions_msg_t) + extension_length;
 }
 
 uint16_t tls_write_extension(const uint16_t extension_type, const uint16_t extension_length, const void* extension_data, void* to_write) {

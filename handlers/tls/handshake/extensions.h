@@ -24,7 +24,7 @@ struct tls_extensions_t {
 
 
 void* start_extensions(void* to_write);
-void* end_extensions(void* to_write, uint16_t extension_length);
+uint16_t end_extensions(void* to_write, uint16_t extension_length);
 
 /*
 * Key Share structures and functions
@@ -37,7 +37,7 @@ struct tls_key_share_entry_t {
 
 struct tls_key_share_client_hello_t {
     uint16_t num_bytes;
-    struct tls_key_share_entry_t key_share_entry;
+    struct tls_key_share_entry_t* key_share_entry;
 } __attribute__((packed, aligned(2)));
 
 struct tls_key_share_server_hello_t {

@@ -44,7 +44,7 @@ struct tls_ciphersuites_t {
 uint16_t tls_select_cipher_suite(struct tls_ciphersuites_t* client_suites, struct tls_ciphersuites_t* server_suites);
 
 
-struct tls_key_share_entry_t* tls_select_key_share(struct tls_key_share_client_hello_t* , struct tls_supported_groups_t* server_suites);
+struct tls_key_share_entry_t* tls_select_key_share(struct tls_key_share_client_hello_t* client_key_shares, struct tls_supported_groups_t* server_suites);
 uint16_t tls_generate_key_share(void* to_write);
 
 

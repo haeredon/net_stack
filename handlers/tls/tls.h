@@ -77,8 +77,7 @@ struct tls_write_args_t {
 
 struct tls_server_hello_t {
     uint16_t protocol_version;
-    uint32_t random;
-    uint8_t data;
+    uint32_t random[8]; // 32 bytes random
 } __attribute__((packed, aligned(2)));
 
 struct tls_legacy_session_t {

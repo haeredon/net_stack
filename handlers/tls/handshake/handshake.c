@@ -1,7 +1,7 @@
 #include "handlers/tls/handshake/handshake.h"
 
 struct tls_key_share_entry_t* tls_select_key_share(
-    struct tls_key_share_client_hello_t* , 
+    struct tls_key_share_client_hello_t* client_key_shares, 
     struct tls_supported_groups_t* server_suites) {
 
 }

@@ -16,39 +16,34 @@
  * Specification: RFC 826
  */
 
-
-// very basic slow implementation of ARP mapping. Should be optimized when more is known about use cases
-const uint16_t ARP_RESOLUTION_LIST_SIZE = 256;
-struct arp_resoltion_list_t arp_resolution_list; 
-
-void arp_insert_mapping(struct arp_entry_t* entry) {
-    pthread_rwlock_wrlock(&arp_resolution_list.lock);
-    struct arp_entry_t* old_entry = arp_resolution_list.list[arp_resolution_list.insert_idx];
+void arp_insert_mapping(struct arp_resoltion_list_t* resolution_list, struct arp_entry_t* entry) {
+    pthread_rwlock_wrlock(&resolution_list->lock);
+    struct arp_entry_t* old_entry = resolution_list->list[resolution_list->insert_idx];
     if(old_entry) {
         free(old_entry);
     }
-    
-    arp_resolution_list.list[arp_resolution_list.insert_idx] = entry;
-    arp_resolution_list.insert_idx = ++arp_resolution_list.insert_idx % ARP_RESOLUTION_LIST_SIZE;
-    pthread_rwlock_unlock(&arp_resolution_list.lock);
+
+    resolution_list->list[resolution_list->insert_idx] = entry;
+    resolution_list->insert_idx = ++resolution_list->insert_idx % ARP_RESOLUTION_LIST_SIZE;
+    pthread_rwlock_unlock(&resolution_list->lock);
 }
 
-struct arp_entry_t* arp_get_ip_mapping(uint32_t ipv4) {
-    pthread_rwlock_rdlock(&arp_resolution_list.lock);
+struct arp_entry_t* arp_get_ip_mapping(struct arp_resoltion_list_t* resolution_list, uint32_t ipv4) {
+    pthread_rwlock_rdlock(&resolution_list->lock);
     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
-        struct arp_entry_t* entry = arp_resolution_list.list[i];
+        struct arp_entry_t* entry = resolution_list->list[i];
 
         if(!entry) {
             break;
         }
 
         if(ipv4 == entry->ipv4) {
-            pthread_rwlock_unlock(&arp_resolution_list.lock);
+            pthread_rwlock_unlock(&resolution_list->lock);
             return entry;
         }        
     }
-    
-    pthread_rwlock_unlock(&arp_resolution_list.lock);
+
+    pthread_rwlock_unlock(&resolution_list->lock);
     return 0;    
 }
 
@@ -59,17 +54,20 @@ void arp_close_handler(struct handler_t* handler) {
 
 void arp_init_handler(struct handler_t* handler, void* priv_config) {
     struct arp_priv_t* arp_priv = (struct arp_priv_t*) NET_STACK_MALLOC("arp handler private data", sizeof(struct arp_priv_t)); 
-    handler->priv = (void*) arp_priv;
+    arp_priv->dummy = 0;
+    arp_priv->socket = 0;    
 
-    arp_resolution_list.list = (struct arp_entry_t**) NET_STACK_MALLOC("Arp resolution list", sizeof(struct arp_entry_t) * ARP_RESOLUTION_LIST_SIZE);     
+    arp_priv->resolution_list.list = (struct arp_entry_t**) NET_STACK_MALLOC("Arp resolution list", sizeof(struct arp_entry_t) * ARP_RESOLUTION_LIST_SIZE);     
     
-    if(pthread_rwlock_init(&arp_resolution_list.lock, 0)) {
+    if(pthread_rwlock_init(&arp_priv->resolution_list.lock, 0)) {
         NETSTACK_LOG(NETSTACK_ERROR, "Could not initialize lock for arp mapping table\n");         
     }
 
     for (uint32_t i = 0; i < ARP_RESOLUTION_LIST_SIZE; i++) {
-        arp_resolution_list.list[i] = 0;
+        arp_priv->resolution_list.list[i] = 0;
     }
+
+    handler->priv = (void*) arp_priv;
 }
 
 
@@ -104,12 +102,27 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
     packet_stack->handlers[packet_idx] = handler;  
 
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->in_buffer.packet_pointers[packet_idx];
- 
+    struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
+
+    if(private->socket) {
+        packet_stack->stack_idx++;
+        packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = ((uint8_t*) header) + sizeof(struct arp_header_t);
+        packet_stack->return_args[packet_stack->stack_idx] = 0;
+
+        uint16_t result = private->socket->next_handler->operations.read(packet_stack, interface, private->socket->next_handler);
+
+        if(private->socket->passthrough) {
+            return result;
+        } else {
+            packet_stack->stack_idx = packet_idx;            
+        }
+    }    
+
     if(header->hdw_type == ARP_HDW_TYPE_ETHERNET) {
         if(header->pro_type == ETHERNET_TYPE_IPV6) {
             struct arp_entry_t* mapping = 0;
 
-            if(mapping = arp_get_ip_mapping(header->sender_protocol_addr)) {
+            if(mapping = arp_get_ip_mapping(&private->resolution_list, header->sender_protocol_addr)) {
                 memcpy(mapping->mac, header->sender_hardware_addr, ETHERNET_MAC_SIZE);                
                 mapping->ipv4 = header->sender_protocol_addr;
             }
@@ -119,7 +132,7 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
                     struct arp_entry_t* new_arp_entry = NET_STACK_MALLOC("arp entry", sizeof(struct arp_entry_t));
                     new_arp_entry->ipv4 = header->sender_protocol_addr;
                     memcpy(new_arp_entry->mac, header->sender_hardware_addr, ETHERNET_MAC_SIZE);
-                    arp_insert_mapping(new_arp_entry);
+                    arp_insert_mapping(&private->resolution_list, new_arp_entry);
                 }
 
                 if(header->operation == ARP_OPERATION_REQUEST) {

@@ -81,7 +81,8 @@ bool arp_test_basic(struct handler_t* handler, struct test_config_t* config) {
     }
 
     actual_arp_header = (struct arp_header_t*) ((uint8_t*) arp_response_buffer->buffer + arp_response_buffer->offset);
-    struct arp_entry_t* arp_entry = arp_get_ip_mapping(arp_header->sender_protocol_addr);
+    struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
+    struct arp_entry_t* arp_entry = arp_get_ip_mapping(&private->resolution_list, actual_arp_header->sender_protocol_addr);
     
     if(!memcmp(arp_entry->mac, actual_arp_header->sender_hardware_addr, ETHERNET_MAC_SIZE) && 
         arp_entry->ipv4 == actual_arp_header->sender_protocol_addr) {

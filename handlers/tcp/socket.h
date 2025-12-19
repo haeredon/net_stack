@@ -57,7 +57,6 @@ struct transmission_control_block_t {
         struct transmission_control_block_t* tcb, uint16_t num_ready, struct interface_t* interface);
 };
 
-// IF WE GET MORE THAN ONE SOCKET. THIS MUST BE AUTO GENERATED WITH A MACRO
 struct socket_operations_t {
     uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, struct socket_client_args* tcp_active_mode_args, uint32_t local_port, uint32_t remote_ip, uint16_t port);
     bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);

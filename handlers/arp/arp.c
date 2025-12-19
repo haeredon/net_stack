@@ -4,8 +4,10 @@
 #include <pthread.h>
 
 #include "handlers/arp/arp.h"
+#include "handlers/arp/socket.h"
 #include "handlers/ethernet/ethernet.h"
 #include "handlers/handler.h"
+
 
 #include "util/array.h"
 #include "util/log.h"

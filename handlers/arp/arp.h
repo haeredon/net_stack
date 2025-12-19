@@ -3,7 +3,6 @@
 
 #include "handlers/handler.h"
 #include "handlers/ethernet/ethernet.h"
-#include "handlers/arp/socket.h"
 
 #include <pthread.h>
 #include <stdint.h>

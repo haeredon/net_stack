@@ -1,7 +1,7 @@
 #include "handlers/arp/socket.h"
 #include "handlers/arp/arp.h"
 #include "handlers/handler.h"
-
+#include "util/memory.h"
 #include "util/log.h"
 
 #include <pthread.h>
@@ -11,12 +11,6 @@ static bool send(struct arp_socket_t* socket, uint32_t connection_id, void* buff
     // not implemented
     return false;
 }
-
-
-struct arp_status_t {
-    struct arp_entry_t entries[ARP_RESOLUTION_LIST_SIZE];
-    uint16_t num_arp_entries;
-};
 
 static struct arp_status_t* status(struct handler_t* handler, struct arp_socket_t* socket) {
     struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
@@ -52,7 +46,7 @@ void arp_set_socket(struct handler_t* handler, struct arp_socket_t* socket) {
     struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
 
     if(private->socket) {
-        LOG_WARNING("Overwriting existing ARP socket in handler. This is not a thread safe operation.");
+        NETSTACK_LOG(NETSTACK_WARNING, "Overwriting existing ARP socket in handler. This is not a thread safe operation.");
     }
 
     private->socket = socket;

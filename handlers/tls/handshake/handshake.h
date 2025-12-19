@@ -25,7 +25,7 @@ struct tls_handshake_msg_t {
 
 
 void* start_handshake(void* to_write, uint8_t handshake_type);
-void* end_handshake(void* to_write, uint8_t handshake_length[3]);
+uint32_t end_handshake(void* to_write, uint32_t handshake_length);
 
 
 

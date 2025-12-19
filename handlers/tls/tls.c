@@ -97,11 +97,27 @@ void tls_write_server_hello_extensions(struct tls_out_buffer* buffer) {
     // For now, no extensions
 }
 
-void tls_write_certificate(struct tls_out_buffer* buffer) {
-  
+void tls_write_certificate(struct tls_certificate_t* certificate, struct tls_out_buffer* buffer) {    
+    // Write Record header    
+    struct tls_record_t* record = buffer->buffer[buffer->offset];
+
+    record->content_type = TLS_RECORD_CONTENT_TYPE_APPLICATION_DATA;
+    record->protocol_version = TLS_PROTOCOL_VERSION_1_2;
+    
+    // Write handshake header
+    void* handshake = start_handshake((uint8_t*) record + sizeof(struct tls_record_t), TLS_MSG_CERTIFICATE);
+    
+    // Write certificate data
+    uint32_t num_written = tls_write_certificates(certificate, 1, handshake);
+    
+    uint32_t handshake_length = end_handshake(handshake, num_written);
+    record->length = htons(handshake_length);
+    
+    buffer->offset += handshake_length + sizeof(struct tls_record_t);   
 }
 
 void tls_write_certificate_verify(struct tls_out_buffer* buffer) {
+    
 
 }
 
@@ -125,8 +141,8 @@ void tls_handle_handshake(struct tls_priv_t* priv, struct tls_handshake_msg_t* h
             tls_write_change_cipher(&priv->control_block.out_buffer);
             tls_write_server_hello_extensions(&priv->control_block.out_buffer);
             tls_write_certificate(priv->certificate, &priv->control_block.out_buffer);
-            tls_write_certificate_verify(&priv->control_block.out_buffer);
-            tls_write_certificate_finished(&priv->control_block.out_buffer);
+            tls_write_certificate_verify(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX);
+            tls_write_certificate_finished(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX);
           
             priv->control_block.state = TLS_SERVER_RECEIVED_CLIENT_HELLO;
             break;    

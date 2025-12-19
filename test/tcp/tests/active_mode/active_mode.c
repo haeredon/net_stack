@@ -10,9 +10,11 @@
 #include "handlers/ipv4/ipv4.h"
 #include "handlers/custom/custom.h"
 #include "handlers/ethernet/ethernet.h"
+#include "handlers/socket.h"
 #include "test/utility.h"
 #include "test/tcp/utility.h"
 #include "util/array.h"
+
  
 static struct out_buffer_t* tcp_response_buffer;
 static uint8_t out_buffer[2048]; // used for writing
@@ -57,10 +59,6 @@ void on_close(uint8_t *data, uint64_t size) {
     // DUMMY, Not called in this test
 }
 
-void receive(uint8_t *data, uint64_t size) {
-    // DUMMY, Not called in this test
-}
-
 bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* config) {
     struct ipv4_header_t* ipv4_first_header = get_ipv4_header_from_package(pkt1);
     struct tcp_header_t* tcp_first_header = get_tcp_header_from_package(pkt1);
@@ -88,27 +86,27 @@ bool tcp_test_active_mode(struct handler_t* handler, struct test_config_t* confi
     
       
     // set up tcp socket 
-    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->source_port, ipv4_first_header->source_ip, receive, connect_callback, on_close); 
+    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, 0, tcp_first_header->source_port, ipv4_first_header->source_ip, connect_callback, on_close); 
 
-    tcp_socket->socket.handlers[0] = ip_handler; // ipv4
-    tcp_socket->socket.handlers[1] = handler; // tcp
+    struct socket_client_args tcp_active_mode_args = {
+        .handlers = { ip_handler, handler },        
+        .depth = 2
+    };
 
     struct ipv4_write_args_t ipv4_args = {
         .destination_ip = ipv4_first_header->destination_ip,
         .protocol = 0x06       
     };
 
-    tcp_socket->socket.handler_args[0] = &ipv4_args;
+    tcp_active_mode_args.handler_args[0] = &ipv4_args;
     // no need for tcp, because those args will be set by the connect call to the tcp socket
-
-    tcp_socket->socket.depth = 2;
 
     tcp_add_socket(handler, tcp_socket);
 
     /******************************* TESTING START ****************************/
 
     // 1st (SYN)
-    uint32_t connection_id = tcp_socket->operations.connect(handler, tcp_socket, 
+    uint32_t connection_id = tcp_socket->operations.connect(handler, tcp_socket, &tcp_active_mode_args, 
         tcp_first_header->source_port,
         ipv4_first_header->destination_ip, 
         tcp_first_header->destination_port);

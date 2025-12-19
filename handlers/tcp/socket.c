@@ -167,9 +167,11 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket) {
     return false;     
 }
 
-uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t local_port, uint32_t remote_ip, uint16_t remote_port) {    
+uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* socket, 
+        struct socket_client_args* tcp_active_mode_args, uint32_t local_port, 
+        uint32_t remote_ip, uint16_t remote_port) {    
     // create connection id
-    uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, remote_port, local_port);
+    uint32_t connection_id = tcp_shared_calculate_connection_id(remote_ip, remote_port, socket->port);
 
     // stub tcp header for tcb initialization of active mode. This is the supposed incoming remote header to kick 
     // of the connection
@@ -183,6 +185,8 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
     // create a TCB somehow        
     struct transmission_control_block_t* tcb = tcp_create_transmission_control_block(handler, socket, connection_id, 
                 &initial_header, remote_ip, SYN_SENT);
+    tcb->active_mode = true;
+    tcb->active_mode_args = tcp_active_mode_args;
                 
     // initiate a handshake    
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("response: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t)); 
@@ -193,16 +197,16 @@ uint32_t tcp_socket_connect(struct handler_t* handler, struct tcp_socket_t* sock
         .flags = TCP_SYN_FLAG
     };    
 
-    tcb->active_mode_args.handler_args[tcb->active_mode_args.depth - 1] = &tcp_args;
+    tcb->active_mode_args->handler_args[tcb->active_mode_args->depth - 1] = &tcp_args;
 
-    memcpy(out_package_stack->handlers, tcb->active_mode_args.handlers, 10 * sizeof(struct handler_t*));
-    memcpy(out_package_stack->args, tcb->active_mode_args.handler_args, 10 * sizeof(void*));
+    memcpy(out_package_stack->handlers, tcb->active_mode_args->handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, tcb->active_mode_args->handler_args, 10 * sizeof(void*));
 
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
     out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;      
 
-    out_package_stack->stack_idx = tcb->active_mode_args.depth - 1;
+    out_package_stack->stack_idx = tcb->active_mode_args->depth - 1;
 
     tcp_add_transmission_control_block(socket, tcb);
     
@@ -220,7 +224,7 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
     struct transmission_control_block_t* tcb = tcp_get_transmission_control_block(socket, connection_id);
 
     struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("send package: tcp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t));     
-    struct handler_t* handler = tcb->active_mode_args.handlers[tcb->active_mode_args.depth - 1];
+    struct handler_t* handler = tcb->active_mode_args->handlers[tcb->active_mode_args->depth - 1];
     
     struct tcp_write_args_t tcp_args = {
         .connection_id = connection_id,
@@ -228,10 +232,10 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
         .flags = TCP_ACK_FLAG | TCP_PSH_FLAG
     };    
 
-    tcb->active_mode_args.handler_args[tcb->active_mode_args.depth - 1] = &tcp_args;
+    tcb->active_mode_args->handler_args[tcb->active_mode_args->depth - 1] = &tcp_args;
 
-    memcpy(out_package_stack->handlers, tcb->active_mode_args.handlers, 10 * sizeof(struct handler_t*));
-    memcpy(out_package_stack->args, tcb->active_mode_args.handler_args, 10 * sizeof(void*));
+    memcpy(out_package_stack->handlers, tcb->active_mode_args->handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, tcb->active_mode_args->handler_args, 10 * sizeof(void*));
 
     out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
     out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
@@ -239,7 +243,7 @@ bool tcp_socket_send(struct tcp_socket_t* socket, uint32_t connection_id, void* 
 
     memcpy((uint8_t*) (out_package_stack->out_buffer.buffer) + out_package_stack->out_buffer.offset, buffer, size);
 
-    out_package_stack->stack_idx = tcb->active_mode_args.depth - 1;
+    out_package_stack->stack_idx = tcb->active_mode_args->depth - 1;
 
     return handler->operations.write(out_package_stack, socket->interface, handler);
 }
@@ -258,8 +262,7 @@ void tcp_socket_status(struct tcp_socket_t* socket, uint32_t connection_id) {
     // return some status from TCB
 }
 
-
-struct tcp_socket_t* tcp_create_socket(struct interface_t* interface, uint16_t port, uint32_t ipv4, 
+struct tcp_socket_t* tcp_create_socket(struct interface_t* interface, struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
     void (*on_connect)(), void (*on_close)()) {
         struct tcp_socket_t* socket = (struct tcp_socket_t*) NET_STACK_MALLOC("TCP socket", sizeof(struct tcp_socket_t));
 
@@ -274,6 +277,7 @@ struct tcp_socket_t* tcp_create_socket(struct interface_t* interface, uint16_t p
         socket->operations.abort = tcp_socket_abort;
         socket->operations.status = tcp_socket_status;
         socket->operations.send = tcp_socket_send;
+        socket->next_handler = next_handler;
 
         int init_lock_res = pthread_mutex_init(&socket->tcb_list_lock, 0);
 

@@ -59,7 +59,7 @@ struct transmission_control_block_t {
 
 // IF WE GET MORE THAN ONE SOCKET. THIS MUST BE AUTO GENERATED WITH A MACRO
 struct socket_operations_t {
-    uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, uint32_t local_port, uint32_t remote_ip, uint16_t port);
+    uint32_t (*connect)(struct handler_t* handler, struct tcp_socket_t* socket, struct socket_client_args* tcp_active_mode_args, uint32_t local_port, uint32_t remote_ip, uint16_t port);
     bool (*send)(struct tcp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);
     void (*on_connect)();
     void (*on_close)();
@@ -76,6 +76,7 @@ struct tcp_socket_t {
     pthread_mutex_t tcb_list_lock;
 
     struct socket_operations_t operations;
+    struct interface_t* interface;   
 
     // the read function of the handler is not allowed to block
     // because it will block ACKs from the tcp protocol. It should 
@@ -99,9 +100,8 @@ bool tcp_add_socket(struct handler_t* handler, struct tcp_socket_t* socket);
 
 struct tcp_socket_t* tcp_get_socket(const struct handler_t* handler, uint32_t ipv4, uint16_t port);
 
-struct tcp_socket_t* tcp_create_socket(struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
+struct tcp_socket_t* tcp_create_socket(struct interface_t* interface, struct handler_t* next_handler, uint16_t port, uint32_t ipv4, 
     void (*on_connect)(), void (*on_close)());
-
 
 #endif // HANDLERS_TCP_SOCKET_H
 

@@ -72,7 +72,6 @@ static void connect_callback() {}
 
 static void on_close(uint8_t *data, uint64_t size) {}
 
-static void receive(uint8_t *data, uint64_t size) {}
 
 bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config) {
     struct ipv4_header_t* ipv4_first_header = get_ipv4_header_from_package(pkt37);
@@ -104,8 +103,7 @@ bool tcp_test_download_1(struct handler_t* handler, struct test_config_t* config
 
     // add mock socket
     // set up tcp socket 
-    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, tcp_first_header->destination_port, ipv4_first_header->destination_ip, receive, connect_callback, on_close); 
-    tcp_socket->next_handler = custom_handler;
+    struct tcp_socket_t* tcp_socket = tcp_create_socket(0, custom_handler, tcp_first_header->destination_port, ipv4_first_header->destination_ip, connect_callback, on_close); 
     tcp_add_socket(handler, tcp_socket);
 
     // add arguments for socket writes

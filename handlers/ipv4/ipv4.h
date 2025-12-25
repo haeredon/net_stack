@@ -7,6 +7,7 @@
 
 #define IP_NUM_PROTOCOL_TYPE_ENTRIES 64
 
+#define IPV4_ADDR_SIZE 4
 #define IPV4_IHL_MASK 0x0F
 
 struct ipv4_priv_t {

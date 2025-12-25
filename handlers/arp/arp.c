@@ -106,7 +106,7 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
     struct arp_header_t* header = (struct arp_header_t*) packet_stack->in_buffer.packet_pointers[packet_idx];
     struct arp_priv_t* private = (struct arp_priv_t*) handler->priv;    
 
-    if(private->socket) {
+    if(private->socket && private->socket->next_handler) {
         packet_stack->stack_idx++;
         packet_stack->in_buffer.packet_pointers[packet_stack->stack_idx] = ((uint8_t*) header) + sizeof(struct arp_header_t);
         packet_stack->return_args[packet_stack->stack_idx] = 0;
@@ -144,7 +144,7 @@ uint16_t arp_read(struct in_packet_stack_t* packet_stack, struct interface_t* in
                             .pro_type = header->pro_type,
                             .hdw_addr_length = header->hdw_addr_length,
                             .pro_addr_length = header->pro_addr_length,
-                            .operation = ARP_OPERATION_RESPOENSE,
+                            .operation = ARP_OPERATION_RESPONSE,
                             .sender_hardware_addr = 0,
                             .sender_protocol_addr = header->target_protocol_addr,
                             .target_hardware_addr = 0,

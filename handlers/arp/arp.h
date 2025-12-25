@@ -10,12 +10,14 @@
 #define ETHERNET_NUM_ETH_TYPE_ENTRIES 512
 
 #define ARP_OPERATION_REQUEST 256 // big_endian
-#define ARP_OPERATION_RESPOENSE 512 // big_endian
+#define ARP_OPERATION_RESPONSE 512 // big_endian
 
 #define ARP_HDW_TYPE_ETHERNET 256 // big_endian
 
 #define ARP_RESOLUTION_LIST_SIZE 256
 
+#define ARP_HDW_TYPE_ETHERNET 256 // big_endian
+#define ARP_PRO_TYPE_IPV4 2048 // big_endian
 
 
 struct arp_header_t {

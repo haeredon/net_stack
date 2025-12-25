@@ -7,9 +7,19 @@
 #include <pthread.h>
 #include <string.h>
 
-static bool send(struct arp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size) {
-    // not implemented
-    return false;
+static bool send(struct handler_t* handler, struct arp_socket_t* socket, struct socket_client_args* protocol_stack) {  
+    struct out_packet_stack_t* out_package_stack = (struct out_packet_stack_t*) NET_STACK_MALLOC("send package: arp_package", DEFAULT_PACKAGE_BUFFER_SIZE + sizeof(struct out_packet_stack_t));     
+    
+    memcpy(out_package_stack->handlers, protocol_stack->handlers, 10 * sizeof(struct handler_t*));
+    memcpy(out_package_stack->args, protocol_stack->handler_args, 10 * sizeof(void*));
+
+    out_package_stack->out_buffer.buffer = (uint8_t*) out_package_stack + sizeof(struct out_packet_stack_t);
+    out_package_stack->out_buffer.size = DEFAULT_PACKAGE_BUFFER_SIZE;
+    out_package_stack->out_buffer.offset = DEFAULT_PACKAGE_BUFFER_SIZE;          
+
+    out_package_stack->stack_idx = protocol_stack->depth - 1;
+
+    return handler->operations.write(out_package_stack, socket->interface, handler);
 }
 
 static struct arp_status_t* status(struct handler_t* handler, struct arp_socket_t* socket) {
@@ -33,9 +43,10 @@ static struct arp_status_t* status(struct handler_t* handler, struct arp_socket_
     return arp_status;     
 }
 
-struct arp_socket_t* arp_create_socket(struct handler_t* next_handler, bool passthrough) {
+struct arp_socket_t* arp_create_socket(struct handler_t* next_handler, struct interface_t* interface, bool passthrough) {
     struct arp_socket_t* socket = (struct arp_socket_t*) NET_STACK_MALLOC("arp socket", sizeof(struct arp_socket_t));
     socket->next_handler = next_handler;
+    socket->interface = interface;
     socket->passthrough = passthrough;
     socket->operations.send = send;
     socket->operations.status = status;

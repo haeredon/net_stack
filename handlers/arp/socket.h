@@ -11,7 +11,7 @@
 
 struct arp_socket_t;
 struct arp_socket_operations_t {
-    bool (*send)(struct arp_socket_t* socket, uint32_t connection_id, void* buffer, uint64_t size);
+    bool (*send)(struct handler_t* handler, struct arp_socket_t* socket, struct socket_client_args* protocol_stack);
     struct arp_status_t* (*status)(struct handler_t* handler, struct arp_socket_t* socket);
 };
 
@@ -23,6 +23,8 @@ struct arp_socket_t {
     struct arp_socket_operations_t operations;
 
     bool passthrough; // if true, then all incoming packets are passed to next handler without processing
+
+    struct interface_t* interface;   
 };
 
 struct arp_status_t {
@@ -30,8 +32,7 @@ struct arp_status_t {
     uint16_t num_arp_entries;
 };
 
-
-struct arp_socket_t* arp_create_socket(struct handler_t* next_handler, bool passthrough);
+struct arp_socket_t* arp_create_socket(struct handler_t* next_handler, struct interface_t* interface, bool passthrough);
 
 void arp_set_socket(struct handler_t* handler, struct arp_socket_t* socket);
 

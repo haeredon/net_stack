@@ -55,6 +55,7 @@
 #include "dpdk/write.h"
 #include "dpdk/packet.h"
 #include "server.h"
+#include "net_stack.h"
 
 /* Ports set in promiscuous mode off by default. */
 static int promiscuous_on = 1;
@@ -354,31 +355,10 @@ int main(int argc, char **argv) {
 	ret = 0;
 
 	/****************** INITIALIZATION DONE. START WORKERS AND OFFLOADER ********************************* */
-	// create config which contains write information for all handlers
-	struct handler_config_t *handler_config = (struct handler_config_t*) NET_STACK_MALLOC("Handler Config", sizeof(struct handler_config_t));	
-	handler_config->write = handler_write;
-
-	// these are root handlers which will be activated when a package arrives
-	struct handler_t** handlers = (struct handler_t**) NET_STACK_MALLOC("handler array for ethernet", sizeof(struct handler_t*) * 2);
-	
-	handlers[0] = ethernet_create_handler(handler_config);
-	
-	// these are handlers which will not be activated when a package arrives, but must still be 
-	// created because they might be called by a root handler
-    struct handler_t* arp_handler = arp_create_handler(handler_config); // TODO: fix memory leak
-	arp_handler->init(arp_handler, 0);
-
-	struct handler_t* ipv4_handler = ipv4_create_handler(handler_config); // TODO: fix memory leak
-	ipv4_handler->init(ipv4_handler, 0);
-
-    struct tcp_priv_config_t tcp_config = {
-        .window = 4096
-    };
-    struct handler_t* tcp_handler = tcp_create_handler(handler_config); // TODO: fix memory leak
-	tcp_handler->init(tcp_handler, (void*) &tcp_config);
+	struct net_stack_app* net_stack = net_stack_init();
 
 	// Set up TCP server socket on port 1337
-	server_start(tcp_handler, interfaces[0]->ipv4_addr, 1337);
+	server_start(net_stack->tcp_handler, interfaces[0]->ipv4_addr, 1337);
 
 	// fixed thread count for now on same socket 
 	const uint8_t NUM_WORKERS = 1;
@@ -389,7 +369,7 @@ int main(int argc, char **argv) {
 	uint8_t worker_idx = 0;
 	RTE_LCORE_FOREACH_WORKER(lcore_id) {		
 		workers[worker_idx] = create_netstack_execution_context(lcore_id,
-																handlers, 
+																net_stack->root_handlers, 
 																1 /* num_handlers */, // this should be calculated at runtime. Right now it is a latent bug
 															  	dpdk_packet_get_packet_buffer, 
 																dpdk_packet_free_packet,
@@ -437,3 +417,4 @@ int main(int argc, char **argv) {
 
 	return ret;
 }
+

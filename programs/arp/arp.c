@@ -7,13 +7,21 @@
 #include "handlers/ipv4/ipv4.h"
 #include "programs/arp/arp.h"
 #include "net_stack.h"
+#include "util/log.h"
 
 #include <arpa/inet.h>
 #include <string.h>
 
+
 void arp_program_start(const struct net_stack_app* net_stack) {
-    struct arp_socket_t* socket = arp_create_socket(0, true);
+    struct arp_socket_t* socket = arp_create_socket(0, net_stack->interface, true);
     arp_set_socket(net_stack->arp_handler, socket);
+
+    while(1) {
+        NETSTACK_LOG(NETSTACK_INFO, "Sending ARP spoof packet\n");
+        arp_spoof(net_stack, socket);
+        sleep(3);
+    }
 }
 
 void arp_spoof(const struct net_stack_app* net_stack, struct arp_socket_t* socket) {

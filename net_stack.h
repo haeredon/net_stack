@@ -4,6 +4,11 @@
 #include "handlers/handler.h"
 #include "handlers/interface.h"
 
+enum net_stack_state_t {
+    NET_STACK_STOPPED,
+    NET_STACK_RUNNING
+};
+
 struct net_stack_app {
     struct handler_t** root_handlers;
 
@@ -12,7 +17,9 @@ struct net_stack_app {
 	struct handler_t* tcp_handler;
 	struct handler_t* ethernet_handler;
 
-    struct interface_t* interface;    
+    struct interface_t* interface;   
+    
+    enum net_stack_state_t state;  
 };
 
 

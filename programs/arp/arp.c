@@ -8,23 +8,15 @@
 #include "programs/arp/arp.h"
 #include "net_stack.h"
 #include "util/log.h"
+#include "util/memory.h"
 
 #include <arpa/inet.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <unistd.h>
 
-
-void arp_program_start(const struct net_stack_app* net_stack) {
-    struct arp_socket_t* socket = arp_create_socket(0, net_stack->interface, true);
-    arp_set_socket(net_stack->arp_handler, socket);
-
-    while(1) {
-        NETSTACK_LOG(NETSTACK_INFO, "Sending ARP spoof packet\n");
-        arp_spoof(net_stack, socket);
-        sleep(3);
-    }
-}
-
-void arp_spoof(const struct net_stack_app* net_stack, struct arp_socket_t* socket) {
+static void arp_spoof(const struct net_stack_app* net_stack, struct arp_socket_t* socket) {
     struct arp_write_args_t arp_write_args = {
         .header = {
             .hdw_type = ARP_HDW_TYPE_ETHERNET,
@@ -53,7 +45,7 @@ void arp_spoof(const struct net_stack_app* net_stack, struct arp_socket_t* socke
     socket->operations.send(net_stack->arp_handler, socket, &write_args);        
 }
 
-void arp_status(const struct net_stack_app* net_stack, struct arp_socket_t* socket) {
+static void arp_status(const struct net_stack_app* net_stack, struct arp_socket_t* socket) {
     struct arp_status_t* status = socket->operations.status(net_stack->arp_handler, socket);
 
     printf("ARP Status: %d entries\n", status->num_arp_entries);
@@ -69,3 +61,23 @@ void arp_status(const struct net_stack_app* net_stack, struct arp_socket_t* sock
 
     NET_STACK_FREE(status);
 }
+
+void* arp_thread_run(void* net_stack_ptr) {
+    const struct net_stack_app* net_stack = (const struct net_stack_app*) net_stack_ptr;
+
+    struct arp_socket_t* socket = arp_create_socket(0, net_stack->interface, true);
+    arp_set_socket(net_stack->arp_handler, socket);
+
+    while(true && net_stack->state == NET_STACK_RUNNING) {        
+        arp_status(net_stack, socket);
+        sleep(5);
+    }
+}
+
+pthread_t arp_program_start(const struct net_stack_app* net_stack) {
+    pthread_t thread;
+    pthread_create(&thread, NULL, arp_thread_run, (struct net_stack_app*) net_stack);
+
+    return thread;
+}
+

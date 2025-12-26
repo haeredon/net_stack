@@ -56,6 +56,7 @@
 #include "dpdk/packet.h"
 #include "server.h"
 #include "net_stack.h"
+#include "programs/arp/arp.h"
 
 /* Ports set in promiscuous mode off by default. */
 static int promiscuous_on = 1;
@@ -355,10 +356,11 @@ int main(int argc, char **argv) {
 	ret = 0;
 
 	/****************** INITIALIZATION DONE. START WORKERS AND OFFLOADER ********************************* */
-	struct net_stack_app* net_stack = net_stack_init();
+	struct net_stack_app* net_stack = net_stack_init(interfaces[0]);
 
 	// Set up TCP server socket on port 1337
-	server_start(net_stack->tcp_handler, interfaces[0]->ipv4_addr, 1337);
+	// server_start(net_stack->tcp_handler, net_stack->interface->ipv4_addr, 1337);
+	arp_program_start(net_stack);
 
 	// fixed thread count for now on same socket 
 	const uint8_t NUM_WORKERS = 1;

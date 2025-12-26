@@ -2,6 +2,9 @@
 #define HANDLER_HANDLERS_ARP_SOCKET_H
 
 #include "handlers/arp/arp.h"
+#include "handlers/handler.h"
+#include "handlers/interface.h"
+#include "handlers/socket.h"
 
 #include <stdint.h>
 #include <stdbool.h>

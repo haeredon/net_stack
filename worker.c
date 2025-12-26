@@ -49,7 +49,7 @@ int consume_tasks(void* execution_context_arg) {
 	struct execution_context_t* execution_context = (struct execution_context_t*) execution_context_arg;
 	void* buffers[1]; // only support single buffer dequeue for now
      
-	while(execution_context->state == NET_STACK_RUNNING) {
+	while(execution_context->state == NET_STACK_EXECUTION_RUNNING) {
 		int ret = QUEUE_DEQUEUE(execution_context->work_queue, buffers);	
 
 		// if nothing was dequeued, just try again
@@ -80,7 +80,7 @@ void stop(struct execution_context_t* execution_context) {
 	pthread_mutex_lock(&execution_context->state_lock);
 
 	EXECUTION_CONTEXT_THREAD_STOP(execution_context->thread_handle);
-	execution_context->state = NET_STACK_STOPPED;
+	execution_context->state = NET_STACK_EXECUTION_STOPPED;
 	
 	pthread_mutex_unlock(&execution_context->state_lock);
 }
@@ -90,7 +90,7 @@ int start(struct execution_context_t* execution_context) {
 
 	pthread_mutex_lock(&execution_context->state_lock);
 	
-	execution_context->state = NET_STACK_RUNNING;
+	execution_context->state = NET_STACK_EXECUTION_RUNNING;
     EXECUTION_CONTEXT_THREAD_CREATE(execution_context->thread_handle, consume_tasks, execution_context);
 
 	pthread_mutex_unlock(&execution_context->state_lock);

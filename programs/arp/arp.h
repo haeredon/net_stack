@@ -4,8 +4,9 @@
 #include <stdint.h>
 
 #include "handlers/handler.h"
+#include "net_stack.h"
 
-void arp_program_start(struct handler_t* arp_handler);
+pthread_t arp_program_start(const struct net_stack_app* net_stack);
 
 
 #endif // PROGRAMS_ARP_ARP_H

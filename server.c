@@ -20,17 +20,17 @@ static void on_close() {
 
 
 void server_start(struct handler_t* tcp_handler, uint32_t ipv4, uint16_t port) {
-	uint8_t* response = "Echo\n";
-	uint32_t response_length = sizeof("Echo\n");
+	// uint8_t* response = "Echo\n";
+	// uint32_t response_length = sizeof("Echo\n");
 
-	struct handler_config_t handler_config = {
-        .write = 0 
-    };
+	// struct handler_config_t handler_config = {
+    //     .write = 0 
+    // };
 
-	struct handler_t* custom_handler = custom_create_handler(&handler_config);
-    custom_handler->init(custom_handler, 0);
-    custom_set_response(custom_handler, response, response_length);
+	// struct handler_t* custom_handler = custom_create_handler(&handler_config);
+    // custom_handler->init(custom_handler, 0);
+    // custom_set_response(custom_handler, response, response_length);
 
-	struct tcp_socket_t* tcp_socket = tcp_create_socket(custom_handler, htons(port), ipv4, on_receive, on_connect, on_close); 
-	tcp_add_socket(tcp_handler, tcp_socket);
+	// struct tcp_socket_t* tcp_socket = tcp_create_socket(custom_handler, htons(port), ipv4, on_receive, on_connect, on_close); 
+	// tcp_add_socket(tcp_handler, tcp_socket);
 }

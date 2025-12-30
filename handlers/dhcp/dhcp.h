@@ -41,6 +41,28 @@ struct dhcp_write_args_t {
     int dummy;
 };
 
+struct tlv_t {
+    uint8_t type;
+    uint8_t length;
+    uint8_t* value;
+};
+
+struct dhcp_options {
+    struct tlv_t* dhcp_message_type;
+    struct tlv_t* requested_ip;
+    struct tlv_t* server_identifier;
+    struct tlv_t* parameter_request_list; 
+    struct tlv_t* ip_address_lease_time;
+    struct tlv_t* renewal_time;
+    struct tlv_t* rebinding_time;
+    struct tlv_t* subnet_mask;
+    struct tlv_t* router;
+    struct tlv_t* broadcast_address;
+    struct tlv_t* dns_servers;
+    struct tlv_t* domain_name;
+    struct tlv_t* end; 
+};
+
 struct dhcp_header_t {
     uint8_t op;
     uint8_t htype;
